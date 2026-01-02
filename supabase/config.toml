@@ -1,0 +1,4 @@
+project_id = "cjcxtbygwzinfqivqhyk"
+
+[functions.generate-trip-plans]
+verify_jwt = false

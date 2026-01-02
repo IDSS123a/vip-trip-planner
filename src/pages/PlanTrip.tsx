@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { format } from "date-fns";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -12,30 +13,39 @@ import { useToast } from "@/hooks/use-toast";
 import TripPlannerForm from "@/components/trip/TripPlannerForm";
 import TripRouteMap from "@/components/trip/TripRouteMap";
 import TripItinerary from "@/components/trip/TripItinerary";
-import { MapPin, FileText, Route, Sparkles } from "lucide-react";
+import { MapPin, FileText, Route, Sparkles, Download, Printer } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const tripSchema = z.object({
-  tripName: z.string().min(3, "Naziv mora imati najmanje 3 karaktera").max(100),
+  tripName: z.string().optional(),
   departureCity: z.string().min(1, "Unesite grad polaska"),
-  destinationCity: z.string().min(1, "Unesite grad odredišta"),
+  destinations: z.array(z.string()).min(1, "Dodajte barem jednu destinaciju"),
   departureAddress: z.string().optional(),
-  destinationAddress: z.string().optional(),
-  schoolType: z.string().min(1, "Odaberite vrstu škole"),
+  tripType: z.string().min(1, "Odaberite tip ekskurzije"),
+  gradeLevel: z.string().min(1, "Odaberite razred"),
   studentCount: z.string().min(1, "Unesite broj učenika"),
-  teacherCount: z.string().min(1, "Unesite broj nastavnika"),
-  numberOfDays: z.string().min(1, "Odaberite broj dana"),
+  chaperones: z.array(z.string()).optional(),
+  transport: z.string().min(1, "Odaberite prevoz"),
   tripDate: z.date().optional(),
   returnDate: z.date().optional(),
   budgetPerStudent: z.string().optional(),
-  educationalObjectives: z.string().max(500).optional(),
-  tripDescription: z.string().max(1000).optional(),
+  educationalFocus: z.string().optional(),
+  specialNeeds: z.string().optional(),
 });
 
 type TripFormData = z.infer<typeof tripSchema>;
 
+interface TripPlansData {
+  plans: any[];
+  route_coordinates: any[];
+  educational_resources: any[];
+}
+
 const PlanTrip = () => {
   const [activeTab, setActiveTab] = useState("form");
-  const [showItinerary, setShowItinerary] = useState(false);
+  const [plansData, setPlansData] = useState<TripPlansData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<TripFormData>({
@@ -43,29 +53,75 @@ const PlanTrip = () => {
     defaultValues: {
       tripName: "",
       departureCity: "Sarajevo",
-      destinationCity: "",
+      destinations: [],
       departureAddress: "",
-      destinationAddress: "",
-      schoolType: "",
-      studentCount: "30",
-      teacherCount: "3",
-      numberOfDays: "3",
+      tripType: "",
+      gradeLevel: "",
+      studentCount: "14",
+      chaperones: [],
+      transport: "bus",
       budgetPerStudent: "",
-      educationalObjectives: "",
-      tripDescription: "",
+      educationalFocus: "",
+      specialNeeds: "",
     },
   });
 
   const watchedValues = form.watch();
+  const destinations = watchedValues.destinations || [];
+  const chaperones = watchedValues.chaperones || [];
 
-  const onSubmit = (data: TripFormData) => {
-    console.log(data);
-    setShowItinerary(true);
+  const onSubmit = async (data: TripFormData) => {
+    setIsLoading(true);
+    setError(null);
     setActiveTab("itinerary");
-    toast({
-      title: "Plan Putovanja Generiran!",
-      description: "Vaš plan putovanja je uspješno kreiran. Možete ga pregledati, urediti i preuzeti.",
-    });
+
+    try {
+      console.log("Generating trip plans with data:", data);
+
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('generate-trip-plans', {
+        body: {
+          departureCity: data.departureCity,
+          destinations: data.destinations,
+          tripType: data.tripType,
+          gradeLevel: data.gradeLevel,
+          studentCount: parseInt(data.studentCount) || 14,
+          chaperones: data.chaperones || [],
+          transport: data.transport,
+          departureDate: data.tripDate ? format(data.tripDate, "yyyy-MM-dd") : "",
+          returnDate: data.returnDate ? format(data.returnDate, "yyyy-MM-dd") : "",
+          budget: data.budgetPerStudent ? parseInt(data.budgetPerStudent) : undefined,
+          educationalFocus: data.educationalFocus || "",
+          specialNeeds: data.specialNeeds || "",
+        }
+      });
+
+      if (functionError) {
+        throw new Error(functionError.message);
+      }
+
+      if (responseData.error) {
+        throw new Error(responseData.error);
+      }
+
+      console.log("Received plans data:", responseData);
+      setPlansData(responseData);
+
+      toast({
+        title: "3 Plana Putovanja Generirana!",
+        description: "Vaši planovi putovanja su uspješno kreirani. Pregledajte Budget, Balanced i Premium opcije.",
+      });
+    } catch (err) {
+      console.error("Error generating plans:", err);
+      const errorMessage = err instanceof Error ? err.message : "Greška pri generiranju planova";
+      setError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "Greška",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGeneratePlan = () => {
@@ -88,7 +144,7 @@ const PlanTrip = () => {
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Planirajte školske ekskurzije, izlete i putovanja uz napredne alate za generiranje plana puta
+              Generates 3 verified plans & full cost estimates across multiple countries.
             </p>
           </div>
 
@@ -102,7 +158,7 @@ const PlanTrip = () => {
                 <MapPin className="h-4 w-4" />
                 Karta
               </TabsTrigger>
-              <TabsTrigger value="itinerary" className="gap-2" disabled={!showItinerary}>
+              <TabsTrigger value="itinerary" className="gap-2">
                 <Route className="h-4 w-4" />
                 Plan Puta
               </TabsTrigger>
@@ -116,25 +172,49 @@ const PlanTrip = () => {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <TripPlannerForm form={form} />
                       
-                      {/* Generate Button */}
-                      <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
+                      {/* Generate Buttons */}
+                      <div className="flex flex-wrap gap-4 pt-6 border-t border-border">
                         <Button 
                           type="submit" 
                           size="lg" 
                           className="gap-2"
+                          disabled={isLoading}
                         >
                           <Sparkles className="h-4 w-4" />
-                          Generiši Plan Putovanja
+                          Generate 3 Plans (Live)
                         </Button>
                         <Button 
                           type="button" 
                           variant="outline" 
                           size="lg"
-                          onClick={() => setActiveTab("map")}
                           className="gap-2"
                         >
-                          <MapPin className="h-4 w-4" />
-                          Prikaži na Karti
+                          <FileText className="h-4 w-4" />
+                          Generate Templates (Offline)
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="lg"
+                          className="gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Load Browser Saves
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <Button type="button" variant="outline" className="gap-2">
+                          <Download className="h-4 w-4" />
+                          Load from File
+                        </Button>
+                        <Button type="button" variant="outline" className="gap-2">
+                          <Printer className="h-4 w-4" />
+                          Print
+                        </Button>
+                        <Button type="button" variant="outline" className="gap-2">
+                          <Download className="h-4 w-4" />
+                          Download PDF
                         </Button>
                       </div>
                     </form>
@@ -143,7 +223,7 @@ const PlanTrip = () => {
               </Card>
 
               {/* Live Map Preview */}
-              {(watchedValues.departureCity || watchedValues.destinationCity) && (
+              {(watchedValues.departureCity || destinations.length > 0) && (
                 <Card className="border-border">
                   <CardContent className="pt-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -152,7 +232,7 @@ const PlanTrip = () => {
                     </h3>
                     <TripRouteMap 
                       departureCity={watchedValues.departureCity || "Sarajevo"}
-                      destinationCity={watchedValues.destinationCity || "Budapest"}
+                      destinationCity={destinations[destinations.length - 1] || ""}
                     />
                   </CardContent>
                 </Card>
@@ -169,12 +249,12 @@ const PlanTrip = () => {
                       Interaktivna Karta Putovanja
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Vizualizirajte rutu od {watchedValues.departureCity || "polazišta"} do {watchedValues.destinationCity || "odredišta"}
+                      Vizualizirajte rutu: {watchedValues.departureCity || "Polazište"} → {destinations.join(" → ") || "Destinacije"}
                     </p>
                   </div>
                   <TripRouteMap 
                     departureCity={watchedValues.departureCity || "Sarajevo"}
-                    destinationCity={watchedValues.destinationCity || "Budapest"}
+                    destinationCity={destinations[destinations.length - 1] || "Budapest"}
                   />
                 </CardContent>
               </Card>
@@ -186,18 +266,21 @@ const PlanTrip = () => {
                 >
                   Nazad na Formular
                 </Button>
-                <Button onClick={handleGeneratePlan} className="gap-2">
+                <Button onClick={handleGeneratePlan} className="gap-2" disabled={isLoading}>
                   <Sparkles className="h-4 w-4" />
-                  Generiši Plan Putovanja
+                  Generiši 3 Plana Putovanja
                 </Button>
               </div>
             </TabsContent>
 
             {/* Itinerary Tab */}
             <TabsContent value="itinerary" className="space-y-6">
-              {showItinerary && (
-                <TripItinerary formData={watchedValues} />
-              )}
+              <TripItinerary 
+                plansData={plansData}
+                isLoading={isLoading}
+                error={error}
+                chaperones={chaperones}
+              />
               
               <div className="flex gap-4 pt-4">
                 <Button 
