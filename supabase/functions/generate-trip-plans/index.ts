@@ -35,106 +35,36 @@ serve(async (req) => {
 
     console.log("Generating trip plans for:", tripData);
 
-    const systemPrompt = `Ti si stručni planer školskih ekskurzija sa detaljnim znanjem o destinacijama u Europi, posebno na Balkanu i centralnoj Europi. Tvoj zadatak je generirati 3 različite opcije plana putovanja: Budget (ekonomična), Balanced (uravnotežena) i Premium (luksuzna).
+    // Calculate trip duration
+    const startDate = new Date(tripData.departureDate);
+    const endDate = new Date(tripData.returnDate);
+    const tripDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-Za svaku opciju moraš uključiti:
-1. Reliability Score (60-95%) - procjena pouzdanosti plana
-2. Ukupnu udaljenost u km i vrijeme putovanja
-3. Trošak po učeniku u EUR
-4. Detaljnu raščlambu troškova:
-   - Transport (bus/voz)
-   - Smještaj (po noći po osobi)
-   - Ishrana (dnevno)
-   - Ulaznice
-   - Aktivnosti
-   - Lokalni transport
-   - Rezerva (5%)
-5. Detaljan dnevni itinerar sa:
-   - Preciznim vremenima (npr. 08:00 AM - 09:30 AM)
-   - Konkretnim lokacijama i imenima restorana/hotela
-   - Edukativnim opisom svake aktivnosti
-   - Napomenama o alergijama i posebnim potrebama
+    const systemPrompt = `Ti si stručni planer školskih ekskurzija. Generiraj 3 plana (Budget, Balanced, Premium) u čistom JSON formatu.
 
-VRLO VAŽNO:
-- Koristi stvarne nazive hotela, hostela, restorana koji postoje
-- Vremena vožnje moraju biti realistična (prosječno 80 km/h za bus)
-- Cijene moraju biti realistične za 2026. godinu
-- Uključi pauze za odmor na dugim putovanjima
-- Za svakog učenika sa alergijama, navedi kako će se to riješiti na svakom obroku
+KRITIČNO - PRAVILA ZA ODGOVOR:
+1. Odgovori SAMO sa validnim JSON objektom - bez markdown, bez \`\`\`
+2. Itinerar mora imati TAČNO ${tripDays} dana (od ${tripData.departureDate} do ${tripData.returnDate})
+3. Svaki dan ima MAKSIMALNO 5 ključnih aktivnosti (kombinuj sitne aktivnosti)
+4. Koristi kratke opise (max 100 karaktera po opisu)
+5. Cijena u EUR, realistična za 2026.
 
-Odgovori ISKLJUČIVO u JSON formatu bez dodatnog teksta.`;
+JSON STRUKTURA:
+{"plans":[{"id":1,"type":"Budget","route":"string","reliability":75,"days":${tripDays},"distance_km":1500,"travel_hours":20,"cost_per_student":400,"costs":{"transport":100,"accommodation":100,"meals":80,"entry_fees":50,"activity_fees":30,"local_transport":20,"contingency":20,"total":400},"why_this_fits":"kratak opis","accommodation_info":"tip smještaja","itinerary":[{"day":1,"title":"naslov dana","activities":[{"time":"08:00-12:00","description":"opis","type":"travel","location":"lokacija","notes":""}]}]}],"route_coordinates":[{"city":"Grad","lat":43.85,"lng":18.41,"order":1}]}`;
 
-    const userPrompt = `Generiraj 3 plana putovanja sa sljedećim podacima:
-
+    const userPrompt = `Generiraj 3 plana za:
 Polazište: ${tripData.departureCity}
-Destinacije (ruta): ${tripData.destinations.join(' → ')}
-Tip ekskurzije: ${tripData.tripType}
-Razred: ${tripData.gradeLevel}
-Broj učenika: ${tripData.studentCount}
-Pratitelji: ${tripData.chaperones.join(', ')}
+Destinacije: ${tripData.destinations.join(' → ')}
+Razred: ${tripData.gradeLevel}, Učenika: ${tripData.studentCount}
+Pratitelji: ${tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : 'TBD'}
 Prevoz: ${tripData.transport}
-Datum polaska: ${tripData.departureDate}
-Datum povratka: ${tripData.returnDate}
-${tripData.budget ? `Budžet: ${tripData.budget} EUR` : ''}
-Obrazovni fokus: ${tripData.educationalFocus}
-Posebne napomene (alergije, potrebe): ${tripData.specialNeeds}
+Datum: ${tripData.departureDate} - ${tripData.returnDate} (${tripDays} dana)
+${tripData.educationalFocus ? `Fokus: ${tripData.educationalFocus}` : ''}
+${tripData.specialNeeds ? `Napomene: ${tripData.specialNeeds}` : ''}
 
-Generiraj JSON odgovor u formatu:
-{
-  "plans": [
-    {
-      "id": 1,
-      "type": "Budget",
-      "route": "string - opis rute",
-      "reliability": number (60-95),
-      "days": number,
-      "distance_km": number,
-      "travel_hours": number,
-      "cost_per_student": number,
-      "costs": {
-        "transport": number,
-        "accommodation": number,
-        "meals": number,
-        "entry_fees": number,
-        "activity_fees": number,
-        "local_transport": number,
-        "contingency": number,
-        "total": number
-      },
-      "why_this_fits": "string - zašto ova opcija odgovara",
-      "accommodation_info": "string - tip smještaja",
-      "itinerary": [
-        {
-          "day": number,
-          "title": "string",
-          "activities": [
-            {
-              "time": "string - npr. 08:00 AM - 09:30 AM",
-              "description": "string - detaljan opis aktivnosti",
-              "type": "travel|meal|activity|accommodation|free_time",
-              "location": "string - naziv lokacije",
-              "notes": "string - napomene o alergijama itd"
-            }
-          ]
-        }
-      ]
-    }
-  ],
-  "route_coordinates": [
-    {
-      "city": "string",
-      "lat": number,
-      "lng": number,
-      "order": number
-    }
-  ],
-  "educational_resources": [
-    {
-      "city": "string",
-      "sites": ["string - nazivi POI"]
-    }
-  ]
-}`;
+Odgovori SAMO JSON, bez teksta prije ili poslije.`;
+
+    console.log("Calling AI Gateway with gemini-2.5-pro for better output handling...");
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -143,13 +73,13 @@ Generiraj JSON odgovor u formatu:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.7,
-        max_tokens: 8000,
+        temperature: 0.5,
+        max_tokens: 16000,
       }),
     });
 
@@ -176,24 +106,53 @@ Generiraj JSON odgovor u formatu:
     const content = data.choices?.[0]?.message?.content;
     
     if (!content) {
+      console.error("No content in AI response:", JSON.stringify(data));
       throw new Error("No content in AI response");
     }
 
-    console.log("AI response received, parsing JSON...");
+    console.log("AI response received, length:", content.length, "chars");
 
-    // Parse the JSON from the response
+    // Parse the JSON from the response - handle various formats
     let plans;
     try {
+      // First, try to extract JSON from markdown code blocks
+      let jsonString = content;
+      
       // Remove markdown code blocks if present
-      const jsonString = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        jsonString = jsonMatch[1].trim();
+        console.log("Extracted JSON from markdown block");
+      } else {
+        // Just clean up the content
+        jsonString = content.trim();
+      }
+      
+      // Try to find JSON object if there's extra text
+      const jsonStart = jsonString.indexOf('{');
+      const jsonEnd = jsonString.lastIndexOf('}');
+      
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        jsonString = jsonString.substring(jsonStart, jsonEnd + 1);
+      }
+      
+      console.log("Parsing JSON string of length:", jsonString.length);
       plans = JSON.parse(jsonString);
+      
     } catch (parseError) {
       console.error("JSON parse error:", parseError);
-      console.error("Raw content:", content);
+      console.error("Raw content (first 2000 chars):", content.substring(0, 2000));
+      console.error("Raw content (last 500 chars):", content.substring(content.length - 500));
       throw new Error("Failed to parse AI response as JSON");
     }
 
-    console.log("Successfully generated", plans.plans?.length || 0, "trip plans");
+    // Validate the response structure
+    if (!plans.plans || !Array.isArray(plans.plans) || plans.plans.length === 0) {
+      console.error("Invalid plans structure:", JSON.stringify(plans).substring(0, 500));
+      throw new Error("Invalid response structure - no plans array");
+    }
+
+    console.log("Successfully generated", plans.plans.length, "trip plans");
 
     return new Response(JSON.stringify(plans), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
