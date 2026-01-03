@@ -14,7 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      trips: {
+        Row: {
+          chaperones: string[] | null
+          created_at: string
+          departure_city: string
+          departure_date: string | null
+          destinations: string[]
+          educational_focus: string | null
+          grade_level: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          plans_data: Json
+          return_date: string | null
+          selected_plan_id: number | null
+          share_id: string
+          special_needs: string | null
+          student_count: number | null
+          transport: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          chaperones?: string[] | null
+          created_at?: string
+          departure_city: string
+          departure_date?: string | null
+          destinations?: string[]
+          educational_focus?: string | null
+          grade_level?: string | null
+          id?: string
+          is_public?: boolean | null
+          name: string
+          plans_data: Json
+          return_date?: string | null
+          selected_plan_id?: number | null
+          share_id?: string
+          special_needs?: string | null
+          student_count?: number | null
+          transport?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          chaperones?: string[] | null
+          created_at?: string
+          departure_city?: string
+          departure_date?: string | null
+          destinations?: string[]
+          educational_focus?: string | null
+          grade_level?: string | null
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          plans_data?: Json
+          return_date?: string | null
+          selected_plan_id?: number | null
+          share_id?: string
+          special_needs?: string | null
+          student_count?: number | null
+          transport?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
