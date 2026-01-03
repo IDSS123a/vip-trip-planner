@@ -282,17 +282,14 @@ const TripItinerary = ({ plansData, isLoading, error, chaperones }: TripItinerar
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary" />
-                    Ruta Putovanja
+                    Ruta Putovanja ({route_coordinates.length} tačaka)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <TripRouteMap
                     departureCity={route_coordinates[0]?.city || "Sarajevo"}
                     destinationCity={route_coordinates[route_coordinates.length - 1]?.city || ""}
-                    departureLat={route_coordinates[0]?.lat}
-                    departureLng={route_coordinates[0]?.lng}
-                    destinationLat={route_coordinates[route_coordinates.length - 1]?.lat}
-                    destinationLng={route_coordinates[route_coordinates.length - 1]?.lng}
+                    routeCoordinates={route_coordinates}
                   />
                 </CardContent>
               </Card>
