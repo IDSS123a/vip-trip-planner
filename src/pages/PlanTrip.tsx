@@ -13,7 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import TripPlannerForm from "@/components/trip/TripPlannerForm";
 import TripRouteMap from "@/components/trip/TripRouteMap";
 import TripItinerary from "@/components/trip/TripItinerary";
-import { MapPin, FileText, Route, Sparkles, Download, Printer } from "lucide-react";
+import ShareTripDialog from "@/components/trip/ShareTripDialog";
+import { useTripStorage } from "@/hooks/useTripStorage";
+import { usePdfExport } from "@/hooks/usePdfExport";
+import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const tripSchema = z.object({
@@ -46,7 +49,14 @@ const PlanTrip = () => {
   const [plansData, setPlansData] = useState<TripPlansData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedTripId, setSavedTripId] = useState<string | null>(null);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const [isPublic, setIsPublic] = useState(false);
+  const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  
   const { toast } = useToast();
+  const { saveTrip, updateTrip, makePublic, isSaving } = useTripStorage();
+  const { exportToPdf, isExporting } = usePdfExport();
 
   const form = useForm<TripFormData>({
     resolver: zodResolver(tripSchema),
@@ -128,6 +138,103 @@ const PlanTrip = () => {
     form.handleSubmit(onSubmit)();
   };
 
+  const handleSaveTrip = async () => {
+    if (!plansData) {
+      toast({
+        variant: "destructive",
+        title: "Greška",
+        description: "Prvo generirajte plan putovanja.",
+      });
+      return;
+    }
+
+    const data = form.getValues();
+    const tripName = data.tripName || `${data.departureCity} → ${data.destinations.join(" → ")}`;
+
+    if (savedTripId) {
+      // Update existing trip
+      const success = await updateTrip(savedTripId, {
+        name: tripName,
+        departureCity: data.departureCity,
+        destinations: data.destinations,
+        departureDate: data.tripDate ? format(data.tripDate, "yyyy-MM-dd") : undefined,
+        returnDate: data.returnDate ? format(data.returnDate, "yyyy-MM-dd") : undefined,
+        gradeLevel: data.gradeLevel,
+        studentCount: parseInt(data.studentCount) || 14,
+        chaperones: data.chaperones || [],
+        transport: data.transport,
+        educationalFocus: data.educationalFocus,
+        specialNeeds: data.specialNeeds,
+        plansData: plansData,
+        selectedPlanId: selectedPlanIndex + 1,
+      });
+    } else {
+      // Save new trip
+      const savedTrip = await saveTrip({
+        name: tripName,
+        departureCity: data.departureCity,
+        destinations: data.destinations,
+        departureDate: data.tripDate ? format(data.tripDate, "yyyy-MM-dd") : undefined,
+        returnDate: data.returnDate ? format(data.returnDate, "yyyy-MM-dd") : undefined,
+        gradeLevel: data.gradeLevel,
+        studentCount: parseInt(data.studentCount) || 14,
+        chaperones: data.chaperones || [],
+        transport: data.transport,
+        educationalFocus: data.educationalFocus,
+        specialNeeds: data.specialNeeds,
+        plansData: plansData,
+        selectedPlanId: selectedPlanIndex + 1,
+      });
+
+      if (savedTrip) {
+        setSavedTripId(savedTrip.id);
+        setShareId(savedTrip.shareId);
+      }
+    }
+  };
+
+  const handleMakePublic = async () => {
+    if (!savedTripId) return;
+
+    const newShareId = await makePublic(savedTripId);
+    if (newShareId) {
+      setShareId(newShareId);
+      setIsPublic(true);
+      toast({
+        title: "Plan je sada javno dostupan!",
+        description: "Možete podijeliti link s drugima.",
+      });
+    }
+  };
+
+  const handleExportPdf = () => {
+    if (!plansData?.plans?.[selectedPlanIndex]) {
+      toast({
+        variant: "destructive",
+        title: "Greška",
+        description: "Odaberite plan za export.",
+      });
+      return;
+    }
+
+    const data = form.getValues();
+    exportToPdf({
+      tripName: data.tripName || `${data.departureCity} → ${data.destinations.join(" → ")}`,
+      departureCity: data.departureCity,
+      destinations: data.destinations,
+      departureDate: data.tripDate ? format(data.tripDate, "yyyy-MM-dd") : undefined,
+      returnDate: data.returnDate ? format(data.returnDate, "yyyy-MM-dd") : undefined,
+      gradeLevel: data.gradeLevel,
+      studentCount: parseInt(data.studentCount) || 14,
+      chaperones: data.chaperones || [],
+      plan: plansData.plans[selectedPlanIndex],
+    });
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -181,7 +288,7 @@ const PlanTrip = () => {
                           disabled={isLoading}
                         >
                           <Sparkles className="h-4 w-4" />
-                          Generate 3 Plans (Live)
+                          {isLoading ? "Generiranje..." : "Generate 3 Plans (Live)"}
                         </Button>
                         <Button 
                           type="button" 
@@ -208,13 +315,19 @@ const PlanTrip = () => {
                           <Download className="h-4 w-4" />
                           Load from File
                         </Button>
-                        <Button type="button" variant="outline" className="gap-2">
+                        <Button type="button" variant="outline" className="gap-2" onClick={handlePrint}>
                           <Printer className="h-4 w-4" />
                           Print
                         </Button>
-                        <Button type="button" variant="outline" className="gap-2">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="gap-2"
+                          onClick={handleExportPdf}
+                          disabled={!plansData || isExporting}
+                        >
                           <Download className="h-4 w-4" />
-                          Download PDF
+                          {isExporting ? "Exporting..." : "Download PDF"}
                         </Button>
                       </div>
                     </form>
@@ -255,6 +368,7 @@ const PlanTrip = () => {
                   <TripRouteMap 
                     departureCity={watchedValues.departureCity || "Sarajevo"}
                     destinationCity={destinations[destinations.length - 1] || "Budapest"}
+                    routeCoordinates={plansData?.route_coordinates}
                   />
                 </CardContent>
               </Card>
@@ -275,6 +389,43 @@ const PlanTrip = () => {
 
             {/* Itinerary Tab */}
             <TabsContent value="itinerary" className="space-y-6">
+              {/* Action buttons for saving/sharing */}
+              {plansData && (
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    onClick={handleSaveTrip} 
+                    className="gap-2"
+                    disabled={isSaving}
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? "Spremanje..." : savedTripId ? "Ažuriraj Plan" : "Spremi Plan"}
+                  </Button>
+                  
+                  <ShareTripDialog
+                    shareId={shareId}
+                    tripName={watchedValues.tripName || `${watchedValues.departureCity} → ${destinations.join(" → ")}`}
+                    isPublic={isPublic}
+                    onMakePublic={handleMakePublic}
+                    disabled={!savedTripId}
+                  />
+
+                  <Button 
+                    variant="outline" 
+                    className="gap-2"
+                    onClick={handleExportPdf}
+                    disabled={isExporting}
+                  >
+                    <Download className="h-4 w-4" />
+                    {isExporting ? "Exporting..." : "Export PDF"}
+                  </Button>
+
+                  <Button variant="outline" className="gap-2" onClick={handlePrint}>
+                    <Printer className="h-4 w-4" />
+                    Print
+                  </Button>
+                </div>
+              )}
+
               <TripItinerary 
                 plansData={plansData}
                 isLoading={isLoading}

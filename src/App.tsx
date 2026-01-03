@@ -8,6 +8,7 @@ import PlanTrip from "./pages/PlanTrip";
 import MyTrips from "./pages/MyTrips";
 import Destinations from "./pages/Destinations";
 import Contact from "./pages/Contact";
+import SharedTrip from "./pages/SharedTrip";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/my-trips" element={<MyTrips />} />
           <Route path="/destinations" element={<Destinations />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/trip/:shareId" element={<SharedTrip />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
