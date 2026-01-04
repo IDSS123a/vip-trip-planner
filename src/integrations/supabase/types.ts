@@ -14,8 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          school_name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          school_name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          school_name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      school_info: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          headmaster_name: string | null
+          id: string
+          logo_url: string | null
+          phone: string | null
+          school_name: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          headmaster_name?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          school_name: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          headmaster_name?: string | null
+          id?: string
+          logo_url?: string | null
+          phone?: string | null
+          school_name?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      trip_versions: {
+        Row: {
+          change_description: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          plans_data: Json
+          trip_id: string
+          version_number: number
+        }
+        Insert: {
+          change_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plans_data: Json
+          trip_id: string
+          version_number?: number
+        }
+        Update: {
+          change_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plans_data?: Json
+          trip_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_versions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
+          budget_per_student: number | null
           chaperones: string[] | null
           created_at: string
           departure_city: string
@@ -35,8 +146,10 @@ export type Database = {
           transport: string | null
           updated_at: string
           user_id: string | null
+          version: number | null
         }
         Insert: {
+          budget_per_student?: number | null
           chaperones?: string[] | null
           created_at?: string
           departure_city: string
@@ -56,8 +169,10 @@ export type Database = {
           transport?: string | null
           updated_at?: string
           user_id?: string | null
+          version?: number | null
         }
         Update: {
+          budget_per_student?: number | null
           chaperones?: string[] | null
           created_at?: string
           departure_city?: string
@@ -77,6 +192,28 @@ export type Database = {
           transport?: string | null
           updated_at?: string
           user_id?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -85,10 +222,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "teacher" | "student" | "parent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -215,6 +362,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "teacher", "student", "parent"],
+    },
   },
 } as const

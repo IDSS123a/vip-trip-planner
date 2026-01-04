@@ -2,3 +2,9 @@ project_id = "cjcxtbygwzinfqivqhyk"
 
 [functions.generate-trip-plans]
 verify_jwt = false
+
+[functions.scrape-school-data]
+verify_jwt = false
+
+[functions.send-trip-email]
+verify_jwt = false
