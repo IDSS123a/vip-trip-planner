@@ -9,6 +9,7 @@ import MyTrips from "./pages/MyTrips";
 import Destinations from "./pages/Destinations";
 import Contact from "./pages/Contact";
 import SharedTrip from "./pages/SharedTrip";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/plan-trip" element={<PlanTrip />} />
           <Route path="/my-trips" element={<MyTrips />} />
           <Route path="/destinations" element={<Destinations />} />
