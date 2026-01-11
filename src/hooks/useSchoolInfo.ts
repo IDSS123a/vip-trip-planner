@@ -15,10 +15,10 @@ interface SchoolInfo {
 // Default school info (IDSS)
 const defaultSchoolInfo: SchoolInfo = {
   id: "default",
-  schoolName: "Internacionalna Demokratska Srednja Škola (IDSS)",
-  address: "Dolačka 11, 71000 Sarajevo, Bosnia and Herzegovina",
-  phone: "+387 33 665 900",
-  email: "info@idss.edu.ba",
+  schoolName: "Internationale Deutsche Schule Sarajevo",
+  address: "Buka 13, 71000 Sarajevo, Bosnia and Herzegovina",
+  phone: "+38733560520",
+  email: "info@idss.ba",
   website: "https://idss.edu.ba",
   logoUrl: "https://idss.edu.ba/wp-content/uploads/2023/09/IDSS-Logo.png",
   headmasterName: null,
