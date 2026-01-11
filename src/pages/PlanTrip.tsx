@@ -247,11 +247,11 @@ const PlanTrip = () => {
                 <Route className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                IDSS — Superior Field Trip Planner
+                IDSS — Planer Ekskurzija
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Generates 3 verified plans & full cost estimates across multiple countries.
+              Generira 3 verificirana plana i kompletne procjene troškova za više zemalja.
             </p>
           </div>
 
