@@ -15,11 +15,11 @@ const Footer = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-foreground">IDSS Field Trip</span>
-                <span className="text-xs text-muted-foreground">Superior Planner</span>
+                <span className="text-xs text-muted-foreground">Planer Ekskurzija</span>
               </div>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Empowering educators to create unforgettable learning experiences through seamless field trip planning.
+              Internationale Deutsche Schule Sarajevo - Planiranje nezaboravnih obrazovnih iskustava.
             </p>
           </div>
 
@@ -59,19 +59,19 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">Contact Us</h4>
+            <h4 className="text-sm font-semibold text-foreground">Kontakt</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary" />
-                support@idssfieldtrip.com
+                info@idss.ba
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 text-primary" />
-                (555) 123-4567
+                +387 33 560 520
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary mt-0.5" />
-                <span>123 Education Lane<br />Learning City, ED 12345</span>
+                <span>Buka 13<br />71000 Sarajevo, BiH</span>
               </li>
             </ul>
           </div>
