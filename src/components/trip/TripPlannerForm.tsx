@@ -5,32 +5,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Plus, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CalendarIcon, Plus, X, AlertTriangle, Info, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-
-interface TripFormData {
-  tripName?: string;
-  departureCity?: string;
-  destinations?: string[];
-  departureAddress?: string;
-  tripType?: string;
-  gradeLevel?: string;
-  studentCount?: string;
-  chaperones?: string[];
-  transport?: string;
-  tripDate?: Date;
-  returnDate?: Date;
-  budgetPerStudent?: string;
-  educationalFocus?: string;
-  specialNeeds?: string;
-}
+import { useState, useEffect, useMemo } from "react";
+import { 
+  IDSS_GROUPS, 
+  TRIP_TYPES, 
+  TRANSPORT_OPTIONS,
+  MEAL_OPTIONS,
+  ACCOMMODATION_TYPES,
+  calculateMinChaperones,
+  calculateTripDays,
+  isTripTypeAllowedForGrade,
+  getMaxTripDays,
+  type ValidatedTripFormData 
+} from "@/lib/tripValidation";
 
 interface TripPlannerFormProps {
-  form: UseFormReturn<TripFormData>;
+  form: UseFormReturn<ValidatedTripFormData>;
 }
 
 const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
@@ -39,24 +35,112 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
 
   const destinations = form.watch("destinations") || [];
   const chaperones = form.watch("chaperones") || [];
+  const gradeLevel = form.watch("gradeLevel");
+  const studentCount = form.watch("studentCount");
+  const tripType = form.watch("tripType");
+  const tripDate = form.watch("tripDate");
+  const returnDate = form.watch("returnDate");
+  const transport = form.watch("transport");
+
+  // Calculate validation info
+  const validationInfo = useMemo(() => {
+    const info: {
+      minChaperones: number;
+      maxTripDays: number;
+      tripDays: number | null;
+      warnings: string[];
+      allowedTripTypes: string[];
+    } = {
+      minChaperones: 1,
+      maxTripDays: 7,
+      tripDays: null,
+      warnings: [],
+      allowedTripTypes: Object.keys(TRIP_TYPES),
+    };
+
+    if (gradeLevel && studentCount) {
+      const studentNum = parseInt(studentCount, 10);
+      if (!isNaN(studentNum)) {
+        info.minChaperones = calculateMinChaperones(gradeLevel, studentNum);
+        info.maxTripDays = getMaxTripDays(gradeLevel);
+        
+        // Get allowed trip types for grade
+        const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
+        const gradeConfig = IDSS_GROUPS[gradeKey];
+        if (gradeConfig) {
+          info.allowedTripTypes = [...gradeConfig.allowedTripTypes];
+        }
+      }
+    }
+
+    if (tripDate && returnDate) {
+      info.tripDays = calculateTripDays(tripDate, returnDate);
+      
+      if (info.tripDays > info.maxTripDays) {
+        info.warnings.push(`Trajanje putovanja (${info.tripDays} dana) prelazi maksimum za ovaj razred (${info.maxTripDays} dana)`);
+      }
+    }
+
+    if (tripType === "day-trip" && info.tripDays && info.tripDays > 1) {
+      info.warnings.push("Za jednodnevni izlet, datum polaska i povratka moraju biti isti");
+    }
+
+    if (tripType === "multi-day" && !returnDate && tripDate) {
+      info.warnings.push("Za višednevnu ekskurziju morate odabrati datum povratka");
+    }
+
+    if (chaperones.length > 0 && chaperones.length < info.minChaperones) {
+      info.warnings.push(`Potrebno je najmanje ${info.minChaperones} pratitelja za ${studentCount} učenika`);
+    }
+
+    if (gradeLevel && tripType && !isTripTypeAllowedForGrade(gradeLevel, tripType)) {
+      info.warnings.push("Odabrani tip ekskurzije nije dozvoljen za ovaj razred");
+    }
+
+    if (transport === "plane" && gradeLevel) {
+      const gradeNum = parseInt(gradeLevel, 10);
+      if (!isNaN(gradeNum) && gradeNum < 7) {
+        info.warnings.push("Avionski prijevoz nije dozvoljen za učenike mlađe od 7. razreda");
+      }
+    }
+
+    return info;
+  }, [gradeLevel, studentCount, tripType, tripDate, returnDate, chaperones.length, transport]);
+
+  // Update student count when grade changes
+  useEffect(() => {
+    if (gradeLevel) {
+      const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
+      const gradeConfig = IDSS_GROUPS[gradeKey];
+      if (gradeConfig && !studentCount) {
+        form.setValue("studentCount", String(gradeConfig.defaultStudentCount));
+      }
+    }
+  }, [gradeLevel, form, studentCount]);
 
   const addDestination = () => {
-    if (newDestination.trim()) {
+    const trimmed = newDestination.trim();
+    if (trimmed && trimmed.length >= 2 && trimmed.length <= 100) {
       const current = form.getValues("destinations") || [];
-      form.setValue("destinations", [...current, newDestination.trim()]);
-      setNewDestination("");
+      if (current.length < 10) {
+        form.setValue("destinations", [...current, trimmed]);
+        setNewDestination("");
+        form.trigger("destinations");
+      }
     }
   };
 
   const removeDestination = (index: number) => {
     const current = form.getValues("destinations") || [];
     form.setValue("destinations", current.filter((_, i) => i !== index));
+    form.trigger("destinations");
   };
 
   const addChaperone = () => {
-    if (newChaperone.trim()) {
+    const trimmed = newChaperone.trim();
+    if (trimmed && trimmed.length >= 2 && trimmed.length <= 100) {
       const current = form.getValues("chaperones") || [];
-      form.setValue("chaperones", [...current, newChaperone.trim()]);
+      form.setValue("chaperones", [...current, trimmed]);
       setNewChaperone("");
     }
   };
@@ -65,6 +149,26 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     const current = form.getValues("chaperones") || [];
     form.setValue("chaperones", current.filter((_, i) => i !== index));
   };
+
+  // Grade options for IDSS
+  const gradeOptions = [
+    { value: "preschool", label: "Predškolska grupa (4-6 god.)" },
+    { value: "1", label: "1. razred (Grundschule)" },
+    { value: "2", label: "2. razred (Grundschule)" },
+    { value: "3", label: "3. razred (Grundschule)" },
+    { value: "4", label: "4. razred (Grundschule)" },
+    { value: "5", label: "5. razred (Orientierungsstufe)" },
+    { value: "6", label: "6. razred (Orientierungsstufe)" },
+    { value: "7", label: "7. razred (Sekundarstufe I)" },
+    { value: "8", label: "8. razred (Sekundarstufe I)" },
+    { value: "9", label: "9. razred (Sekundarstufe I)" },
+    { value: "10", label: "10. razred (Sekundarstufe II)" },
+    { value: "11", label: "11. razred (Sekundarstufe II)" },
+    { value: "12", label: "12. razred (Sekundarstufe II)" },
+    { value: "13", label: "13. razred (Abitur)" },
+    { value: "mixed", label: "Mješovita grupa (više razreda)" },
+    { value: "all", label: "Cijela škola" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -78,6 +182,42 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         </p>
       </div>
 
+      {/* Validation Warnings */}
+      {validationInfo.warnings.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <ul className="list-disc list-inside space-y-1">
+              {validationInfo.warnings.map((warning, idx) => (
+                <li key={idx}>{warning}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Trip Name (Optional) */}
+      <FormField
+        control={form.control}
+        name="tripName"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Naziv putovanja (opcionalno)</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="npr. Maturalna ekskurzija Beč 2025" 
+                maxLength={100}
+                {...field} 
+              />
+            </FormControl>
+            <FormDescription>
+              Ako ne unesete naziv, automatski će se generirati iz rute
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Row 1: Departure City and Destinations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Departure City */}
@@ -86,98 +226,94 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
           name="departureCity"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Polazna tačka (ostavite prazno za IDSS)</FormLabel>
+              <FormLabel>Polazište *</FormLabel>
               <FormControl>
-                <Input placeholder="npr. Sarajevo" {...field} />
+                <Input 
+                  placeholder="Sarajevo (IDSS, Buka 13)" 
+                  maxLength={100}
+                  {...field} 
+                />
               </FormControl>
+              <FormDescription>
+                Ostavite "Sarajevo" za polazak iz škole
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
         {/* Destinations - Multi-stop */}
-        <FormItem>
-          <FormLabel>Ruta Putovanja (Destinacije)</FormLabel>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Unesite destinaciju"
-                value={newDestination}
-                onChange={(e) => setNewDestination(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addDestination())}
-              />
-              <Button type="button" variant="outline" size="icon" onClick={addDestination}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 min-h-[32px]">
-              {destinations.map((dest, index) => (
-                <Badge key={index} variant="secondary" className="gap-1 pr-1">
-                  {dest}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => removeDestination(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Dodajte jednu ili više destinacija u redoslijedu posjete
-            </p>
-          </div>
-        </FormItem>
-      </div>
-
-      {/* Row 2: Trip Type, Grade Level, Search Scope */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Trip Type */}
         <FormField
           control={form.control}
-          name="tripType"
-          render={({ field }) => (
+          name="destinations"
+          render={() => (
             <FormItem>
-              <FormLabel>Tip ekskurzije</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Odaberite tip" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="day-trip">Jednodnevni izlet</SelectItem>
-                  <SelectItem value="multi-day">Višednevna ekskurzija</SelectItem>
-                  <SelectItem value="educational">Obrazovna ekskurzija</SelectItem>
-                  <SelectItem value="cultural">Kulturna ekskurzija</SelectItem>
-                  <SelectItem value="sports">Sportska ekskurzija</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormLabel>Ruta Putovanja (Destinacije) *</FormLabel>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Unesite destinaciju"
+                    value={newDestination}
+                    onChange={(e) => setNewDestination(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addDestination())}
+                    maxLength={100}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={addDestination}
+                    disabled={destinations.length >= 10}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 min-h-[32px]">
+                  {destinations.map((dest, index) => (
+                    <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                      <span className="text-xs text-muted-foreground mr-1">{index + 1}.</span>
+                      {dest}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => removeDestination(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+                <FormDescription>
+                  Dodajte destinacije u redoslijedu posjete (maks. 10)
+                </FormDescription>
+              </div>
               <FormMessage />
             </FormItem>
           )}
         />
+      </div>
 
+      {/* Row 2: Grade Level, Student Count, Trip Type */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Grade Level */}
         <FormField
           control={form.control}
           name="gradeLevel"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Razred</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>Razred/Grupa *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Odaberite" />
+                    <SelectValue placeholder="Odaberite razred" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {[...Array(13)].map((_, i) => (
-                    <SelectItem key={i} value={String(i + 1)}>
-                      {i + 1}. razred
+                  {gradeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -193,70 +329,55 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
           name="studentCount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Broj učenika</FormLabel>
+              <FormLabel>Broj učenika *</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="14" {...field} />
+                <Input 
+                  type="number" 
+                  min={1}
+                  max={500}
+                  placeholder="14" 
+                  {...field} 
+                />
               </FormControl>
+              <FormDescription>
+                Min. pratitelja: {validationInfo.minChaperones}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-      </div>
 
-      {/* Row 3: Chaperones, Transport */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Chaperones - Multi-input */}
-        <FormItem>
-          <FormLabel>Pratitelji (imena)</FormLabel>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ime i prezime pratitelja"
-                value={newChaperone}
-                onChange={(e) => setNewChaperone(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addChaperone())}
-              />
-              <Button type="button" variant="outline" size="icon" onClick={addChaperone}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2 min-h-[32px]">
-              {chaperones.map((chap, index) => (
-                <Badge key={index} variant="secondary" className="gap-1 pr-1">
-                  {chap}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 p-0 hover:bg-transparent"
-                    onClick={() => removeChaperone(index)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </FormItem>
-
-        {/* Transport */}
+        {/* Trip Type */}
         <FormField
           control={form.control}
-          name="transport"
+          name="tripType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Prevoz</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>Tip ekskurzije *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Odaberite prevoz" />
+                    <SelectValue placeholder="Odaberite tip" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="bus">Bus</SelectItem>
-                  <SelectItem value="train">Voz</SelectItem>
-                  <SelectItem value="mixed">Mješovito (Bus + Voz)</SelectItem>
-                  <SelectItem value="plane">Avion</SelectItem>
+                  {Object.values(TRIP_TYPES).map((type) => {
+                    const isAllowed = validationInfo.allowedTripTypes.includes(type.id);
+                    return (
+                      <SelectItem 
+                        key={type.id} 
+                        value={type.id}
+                        disabled={!isAllowed}
+                      >
+                        <div className="flex flex-col">
+                          <span>{type.name}</span>
+                          {!isAllowed && (
+                            <span className="text-xs text-muted-foreground">(nije dozvoljeno za ovaj razred)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -265,7 +386,7 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         />
       </div>
 
-      {/* Row 4: Dates and Budget */}
+      {/* Row 3: Dates and Transport */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Trip Date */}
         <FormField
@@ -273,7 +394,7 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
           name="tripDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Datum polaska</FormLabel>
+              <FormLabel>Datum polaska *</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -284,7 +405,7 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                         !field.value && "text-muted-foreground"
                       )}
                     >
-                      {field.value ? format(field.value, "yyyy-MM-dd") : "Odaberite datum"}
+                      {field.value ? format(field.value, "dd.MM.yyyy") : "Odaberite datum"}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
@@ -293,8 +414,20 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    onSelect={field.onChange}
-                    disabled={(date) => date < new Date()}
+                    onSelect={(date) => {
+                      field.onChange(date);
+                      // Auto-set return date for day trips
+                      if (tripType === "day-trip" && date) {
+                        form.setValue("returnDate", date);
+                      }
+                    }}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const maxDate = new Date();
+                      maxDate.setFullYear(maxDate.getFullYear() + 2);
+                      return date < today || date > maxDate;
+                    }}
                     initialFocus
                     className="pointer-events-auto"
                   />
@@ -311,7 +444,9 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
           name="returnDate"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Datum povratka</FormLabel>
+              <FormLabel>
+                Datum povratka {tripType === "multi-day" ? "*" : "(opcionalno)"}
+              </FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -322,7 +457,7 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                         !field.value && "text-muted-foreground"
                       )}
                     >
-                      {field.value ? format(field.value, "yyyy-MM-dd") : "Odaberite datum"}
+                      {field.value ? format(field.value, "dd.MM.yyyy") : "Odaberite datum"}
                       <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                     </Button>
                   </FormControl>
@@ -332,34 +467,200 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
-                    disabled={(date) => date < new Date()}
+                    disabled={(date) => {
+                      const minDate = tripDate || new Date();
+                      minDate.setHours(0, 0, 0, 0);
+                      const maxDate = new Date(minDate);
+                      maxDate.setDate(maxDate.getDate() + validationInfo.maxTripDays - 1);
+                      return date < minDate || date > maxDate;
+                    }}
                     initialFocus
                     className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
+              {validationInfo.tripDays && (
+                <FormDescription>
+                  Trajanje: {validationInfo.tripDays} {validationInfo.tripDays === 1 ? "dan" : validationInfo.tripDays < 5 ? "dana" : "dana"}
+                  {" "}(maks. {validationInfo.maxTripDays})
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Budget per Student */}
+        {/* Transport */}
         <FormField
           control={form.control}
-          name="budgetPerStudent"
+          name="transport"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Budžet (opcionalno)</FormLabel>
-              <FormControl>
-                <Input placeholder="npr. 500 EUR" {...field} />
-              </FormControl>
+              <FormLabel>Vrsta prijevoza *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Odaberite prijevoz" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Object.values(TRANSPORT_OPTIONS).map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      <div className="flex items-center gap-2">
+                        <span>{option.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
         />
       </div>
 
-      {/* Row 5: Educational Focus */}
+      {/* Row 4: Chaperones and Budget */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Chaperones */}
+        <FormField
+          control={form.control}
+          name="chaperones"
+          render={() => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Pratitelji (min. {validationInfo.minChaperones})
+              </FormLabel>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ime i prezime pratitelja"
+                    value={newChaperone}
+                    onChange={(e) => setNewChaperone(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addChaperone())}
+                    maxLength={100}
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={addChaperone}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 min-h-[32px]">
+                  {chaperones.map((chap, index) => (
+                    <Badge 
+                      key={index} 
+                      variant={index < validationInfo.minChaperones ? "default" : "secondary"} 
+                      className="gap-1 pr-1"
+                    >
+                      {chap}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => removeChaperone(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+                {chaperones.length < validationInfo.minChaperones && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Potrebno još {validationInfo.minChaperones - chaperones.length} pratitelja
+                  </p>
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Budget */}
+        <FormField
+          control={form.control}
+          name="budgetPerStudent"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Budžet po učeniku (EUR)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number"
+                  min={0}
+                  max={10000}
+                  step={10}
+                  placeholder="npr. 500" 
+                  {...field} 
+                />
+              </FormControl>
+              <FormDescription>
+                Opcionalno - za optimizaciju plana prema budžetu
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Row 5: Meal Plan and Accommodation (for multi-day) */}
+      {(tripType === "multi-day" || (validationInfo.tripDays && validationInfo.tripDays > 1)) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="mealPlan"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Plan obroka</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Odaberite plan obroka" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.values(MEAL_OPTIONS).map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        <div className="flex flex-col">
+                          <span>{option.name}</span>
+                          <span className="text-xs text-muted-foreground">{option.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="accommodationType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Vrsta smještaja</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Odaberite smještaj" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.values(ACCOMMODATION_TYPES).map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
+
+      {/* Row 6: Educational Focus */}
       <FormField
         control={form.control}
         name="educationalFocus"
@@ -368,7 +669,71 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
             <FormLabel>Obrazovni fokus</FormLabel>
             <FormControl>
               <Input 
-                placeholder="kulturno nasljeđe, obrazovanje, zabava..."
+                placeholder="npr. njemačka kultura, historija, umjetnost, STEM..."
+                maxLength={500}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription>
+              Navedite obrazovne ciljeve ili teme koje želite pokriti
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Row 7: Special Needs and Medical Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="specialNeeds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Posebne potrebe i napomene</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="npr. alergije, invalidska kolica, posebna dijeta..."
+                  className="min-h-[80px] resize-none"
+                  maxLength={1000}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="medicalInfo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Medicinske informacije</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="npr. lijekovi, kronične bolesti, hitni kontakti..."
+                  className="min-h-[80px] resize-none"
+                  maxLength={1000}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Emergency Contact */}
+      <FormField
+        control={form.control}
+        name="emergencyContact"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Kontakt za hitne slučajeve</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="Ime, telefon, odnos (npr. Dr. Müller, +387 33 560 520, Direktor)"
+                maxLength={200}
                 {...field}
               />
             </FormControl>
@@ -377,24 +742,40 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         )}
       />
 
-      {/* Row 6: Special Needs */}
-      <FormField
-        control={form.control}
-        name="specialNeeds"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Trip Notes (Alergije, Posebne Potrebe)</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="npr. dva studenta imaju alergije na orašaste plodove..."
-                className="min-h-[80px] resize-none"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Summary Card */}
+      {(destinations.length > 0 || gradeLevel || tripDate) && (
+        <Alert className="bg-primary/5 border-primary/20">
+          <Info className="h-4 w-4 text-primary" />
+          <AlertDescription>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              {gradeLevel && (
+                <div>
+                  <span className="text-muted-foreground">Razred:</span>{" "}
+                  <strong>{gradeOptions.find(g => g.value === gradeLevel)?.label.split(" ")[0]}</strong>
+                </div>
+              )}
+              {studentCount && (
+                <div>
+                  <span className="text-muted-foreground">Učenika:</span>{" "}
+                  <strong>{studentCount}</strong>
+                </div>
+              )}
+              {chaperones.length > 0 && (
+                <div>
+                  <span className="text-muted-foreground">Pratitelja:</span>{" "}
+                  <strong>{chaperones.length}/{validationInfo.minChaperones}</strong>
+                </div>
+              )}
+              {validationInfo.tripDays && (
+                <div>
+                  <span className="text-muted-foreground">Trajanje:</span>{" "}
+                  <strong>{validationInfo.tripDays} dana</strong>
+                </div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
