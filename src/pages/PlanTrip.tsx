@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { format } from "date-fns";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -18,25 +17,7 @@ import { useTripStorage } from "@/hooks/useTripStorage";
 import { usePdfExport } from "@/hooks/usePdfExport";
 import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-
-const tripSchema = z.object({
-  tripName: z.string().optional(),
-  departureCity: z.string().min(1, "Unesite grad polaska"),
-  destinations: z.array(z.string()).min(1, "Dodajte barem jednu destinaciju"),
-  departureAddress: z.string().optional(),
-  tripType: z.string().min(1, "Odaberite tip ekskurzije"),
-  gradeLevel: z.string().min(1, "Odaberite razred"),
-  studentCount: z.string().min(1, "Unesite broj učenika"),
-  chaperones: z.array(z.string()).optional(),
-  transport: z.string().min(1, "Odaberite prevoz"),
-  tripDate: z.date().optional(),
-  returnDate: z.date().optional(),
-  budgetPerStudent: z.string().optional(),
-  educationalFocus: z.string().optional(),
-  specialNeeds: z.string().optional(),
-});
-
-type TripFormData = z.infer<typeof tripSchema>;
+import { tripValidationSchema, type ValidatedTripFormData } from "@/lib/tripValidation";
 
 interface TripPlansData {
   plans: any[];
@@ -58,29 +39,37 @@ const PlanTrip = () => {
   const { saveTrip, updateTrip, makePublic, isSaving } = useTripStorage();
   const { exportToPdf, isExporting } = usePdfExport();
 
-  const form = useForm<TripFormData>({
-    resolver: zodResolver(tripSchema),
+  const form = useForm<ValidatedTripFormData>({
+    resolver: zodResolver(tripValidationSchema),
     defaultValues: {
       tripName: "",
       departureCity: "Sarajevo",
       destinations: [],
-      departureAddress: "",
-      tripType: "",
+      departureAddress: "IDSS, Buka 13, 71000 Sarajevo",
+      tripType: undefined,
       gradeLevel: "",
-      studentCount: "14",
+      studentCount: "",
       chaperones: [],
-      transport: "bus",
+      transport: undefined,
+      tripDate: undefined,
+      returnDate: undefined,
       budgetPerStudent: "",
       educationalFocus: "",
       specialNeeds: "",
+      mealPlan: undefined,
+      accommodationType: undefined,
+      emergencyContact: "",
+      insuranceIncluded: false,
+      medicalInfo: "",
     },
+    mode: "onChange", // Validate on every change for real-time feedback
   });
 
   const watchedValues = form.watch();
   const destinations = watchedValues.destinations || [];
   const chaperones = watchedValues.chaperones || [];
 
-  const onSubmit = async (data: TripFormData) => {
+  const onSubmit = async (data: ValidatedTripFormData) => {
     setIsLoading(true);
     setError(null);
     setActiveTab("itinerary");
