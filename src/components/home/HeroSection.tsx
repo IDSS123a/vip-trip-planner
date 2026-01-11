@@ -24,41 +24,41 @@ const HeroSection = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            <span className="text-sm font-medium text-primary">Trusted by 500+ Schools</span>
+            <span className="text-sm font-medium text-primary">Internationale Deutsche Schule Sarajevo</span>
           </div>
 
           {/* Main Heading */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-            Plan Unforgettable{" "}
-            <span className="text-primary">Field Trips</span>{" "}
-            with Ease
+            Planirajte Nezaboravne{" "}
+            <span className="text-primary">Ekskurzije</span>{" "}
+            s Lakoćom
           </h1>
 
           {/* Description */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
-            From destination discovery to permission slips, manage every aspect of your educational adventures in one powerful platform.
+            Od otkrivanja destinacija do dozvola, upravljajte svakim aspektom vaših obrazovnih avantura na jednoj moćnoj platformi.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-4">
             <Link to="/plan-trip">
               <Button size="lg" className="group">
-                Start Planning
+                Počnite Planirati
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
             <Button size="lg" variant="outline" className="gap-2">
               <Play className="h-4 w-4" />
-              Watch Demo
+              Pogledajte Demo
             </Button>
           </div>
 
           {/* Stats */}
           <div className="flex flex-wrap gap-8 pt-8">
             {[
-              { icon: MapPin, value: "1,200+", label: "Destinations" },
-              { icon: Calendar, value: "50,000+", label: "Trips Planned" },
-              { icon: Users, value: "2M+", label: "Students Served" },
+              { icon: MapPin, value: "50+", label: "Destinacija" },
+              { icon: Calendar, value: "200+", label: "Planiranih Ekskurzija" },
+              { icon: Users, value: "500+", label: "Učenika" },
             ].map((stat, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">

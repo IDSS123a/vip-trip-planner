@@ -14,48 +14,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const features = [
   {
     icon: MapPin,
-    title: "Destination Discovery",
-    description: "Browse curated educational destinations with reviews, ratings, and curriculum alignment details.",
+    title: "Otkrijte Destinacije",
+    description: "Pregledajte obrazovne destinacije s recenzijama, ocjenama i detaljima o usklađenosti s nastavnim planom.",
   },
   {
     icon: Calendar,
-    title: "Smart Scheduling",
-    description: "Intelligent date selection with conflict detection, weather forecasts, and venue availability.",
+    title: "Pametno Zakazivanje",
+    description: "Inteligentni odabir datuma s detekcijom konflikata, vremenskom prognozom i dostupnošću lokacija.",
   },
   {
     icon: ClipboardCheck,
-    title: "Digital Permission Slips",
-    description: "Paperless consent forms with e-signatures, automatic reminders, and status tracking.",
+    title: "Digitalne Dozvole",
+    description: "Elektronski obrasci za pristanak s e-potpisima, automatskim podsjećanjima i praćenjem statusa.",
   },
   {
     icon: Shield,
-    title: "Safety Management",
-    description: "Emergency contacts, medical info, headcount tools, and real-time location sharing.",
+    title: "Upravljanje Sigurnošću",
+    description: "Hitni kontakti, medicinske informacije, alati za prebrojavanje i dijeljenje lokacije u realnom vremenu.",
   },
   {
     icon: Users,
-    title: "Chaperone Coordination",
-    description: "Volunteer management, background check tracking, and group assignments.",
+    title: "Koordinacija Pratitelja",
+    description: "Upravljanje volonterima, praćenje provjera i raspodjela grupa.",
   },
   {
     icon: Bus,
-    title: "Transportation Planning",
-    description: "Bus reservations, seating charts, route optimization, and driver coordination.",
+    title: "Planiranje Prijevoza",
+    description: "Rezervacije autobusa, raspored sjedenja, optimizacija rute i koordinacija vozača.",
   },
   {
     icon: DollarSign,
-    title: "Budget Tracking",
-    description: "Cost estimates, payment collection, expense tracking, and financial reports.",
+    title: "Praćenje Budžeta",
+    description: "Procjena troškova, prikupljanje uplata, praćenje rashoda i financijski izvještaji.",
   },
   {
     icon: FileText,
-    title: "Itinerary Builder",
-    description: "Drag-and-drop schedule creation with time buffers, meal planning, and activity details.",
+    title: "Graditelj Itinerera",
+    description: "Drag-and-drop kreiranje rasporeda s vremenskim rezervama, planiranjem obroka i detaljima aktivnosti.",
   },
   {
     icon: Bell,
-    title: "Communication Hub",
-    description: "Announcements, updates, and notifications to parents, students, and staff.",
+    title: "Centar za Komunikaciju",
+    description: "Obavijesti, ažuriranja i notifikacije roditeljima, učenicima i osoblju.",
   },
 ];
 
@@ -66,11 +66,11 @@ const FeaturesSection = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Everything You Need to Plan the{" "}
-            <span className="text-primary">Perfect Trip</span>
+            Sve Što Vam Treba za{" "}
+            <span className="text-primary">Savršenu Ekskurziju</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Our comprehensive suite of tools handles every detail, so you can focus on creating meaningful learning experiences.
+            Naš sveobuhvatni skup alata brine o svakom detalju, tako da se možete fokusirati na kreiranje smislenih obrazovnih iskustava.
           </p>
         </div>
 

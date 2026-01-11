@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
-  { name: "Home", href: "/" },
-  { name: "Plan a Trip", href: "/plan-trip" },
-  { name: "My Trips", href: "/my-trips" },
-  { name: "Destinations", href: "/destinations" },
-  { name: "Contact", href: "/contact" },
+  { name: "Početna", href: "/" },
+  { name: "Planiraj Ekskurziju", href: "/plan-trip" },
+  { name: "Moje Ekskurzije", href: "/my-trips" },
+  { name: "Destinacije", href: "/destinations" },
+  { name: "Kontakt", href: "/contact" },
 ];
 
 const Header = () => {
@@ -60,8 +60,8 @@ const Header = () => {
             <MapPin className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-bold text-foreground">IDSS Field Trip</span>
-            <span className="text-xs text-muted-foreground">Superior Planner</span>
+            <span className="text-lg font-bold text-foreground">IDSS Ekskurzije</span>
+            <span className="text-xs text-muted-foreground">Planer Putovanja</span>
           </div>
         </Link>
 
@@ -111,19 +111,19 @@ const Header = () => {
                 <DropdownMenuItem asChild>
                   <Link to="/my-trips" className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
-                    My Trips
+                    Moje Ekskurzije
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/plan-trip" className="cursor-pointer">
                     <MapPin className="mr-2 h-4 w-4" />
-                    Plan New Trip
+                    Nova Ekskurzija
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign Out
+                  Odjava
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -131,12 +131,12 @@ const Header = () => {
             <>
               <Link to="/auth">
                 <Button variant="outline" size="sm">
-                  Sign In
+                  Prijava
                 </Button>
               </Link>
               <Link to="/auth">
                 <Button size="sm">
-                  Get Started
+                  Registracija
                 </Button>
               </Link>
             </>
@@ -191,19 +191,19 @@ const Header = () => {
                       }}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
+                      Odjava
                     </Button>
                   </>
                 ) : (
                   <>
                     <Link to="/auth" onClick={() => setIsOpen(false)}>
                       <Button variant="outline" className="w-full">
-                        Sign In
+                        Prijava
                       </Button>
                     </Link>
                     <Link to="/auth" onClick={() => setIsOpen(false)}>
                       <Button className="w-full">
-                        Get Started
+                        Registracija
                       </Button>
                     </Link>
                   </>
