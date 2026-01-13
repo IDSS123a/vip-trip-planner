@@ -28,11 +28,9 @@ interface POI {
   kind: string;
   lat: number;
   lng: number;
-  osm?: string;
-  wikidata?: string;
-  description?: string;
   address?: string;
   website?: string;
+  phone?: string;
   openingHours?: string;
 }
 
@@ -48,7 +46,7 @@ interface CityPOIs {
   educational: POI[];
 }
 
-// Geocode city using Nominatim
+// Geocode city using Nominatim (completely free, no API key needed)
 async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
     const response = await fetch(
@@ -77,104 +75,102 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
   }
 }
 
-// Fetch POIs from OpenTripMap
-async function fetchPOIs(lat: number, lng: number, kinds: string, limit: number = 20): Promise<POI[]> {
+// Fetch POIs using Overpass API (completely free, no API key needed)
+async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 15): Promise<POI[]> {
   try {
-    // OpenTripMap radius endpoint (5km radius for city center POIs)
-    const radius = 5000;
-    const response = await fetch(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=${radius}&lon=${lng}&lat=${lat}&kinds=${kinds}&rate=2&limit=${limit}&format=json`,
-      {
-        headers: {
-          'User-Agent': 'IDSS-Trip-Planner/1.0'
-        }
-      }
-    );
+    // Build Overpass query based on POI type
+    let query = '';
+    const radius = 3000; // 3km radius
+    
+    switch (poiType) {
+      case 'museums':
+        query = `[out:json][timeout:10];(node["tourism"="museum"](around:${radius},${lat},${lng});way["tourism"="museum"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'monuments':
+        query = `[out:json][timeout:10];(node["historic"](around:${radius},${lat},${lng});node["tourism"="attraction"](around:${radius},${lat},${lng});node["memorial"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'restaurants':
+        query = `[out:json][timeout:10];(node["amenity"="restaurant"](around:${radius},${lat},${lng});node["amenity"="cafe"](around:${radius},${lat},${lng});node["amenity"="fast_food"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'hotels':
+        query = `[out:json][timeout:10];(node["tourism"="hotel"](around:${radius},${lat},${lng});node["tourism"="hostel"](around:${radius},${lat},${lng});node["tourism"="guest_house"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'parks':
+        query = `[out:json][timeout:10];(node["leisure"="park"](around:${radius},${lat},${lng});way["leisure"="park"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'educational':
+        query = `[out:json][timeout:10];(node["tourism"="gallery"](around:${radius},${lat},${lng});node["amenity"="theatre"](around:${radius},${lat},${lng});node["amenity"="library"](around:${radius},${lat},${lng});node["historic"="castle"](around:${radius},${lat},${lng});node["historic"="monument"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      default:
+        return [];
+    }
+
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `data=${encodeURIComponent(query)}`
+    });
     
     if (!response.ok) {
-      console.log(`OpenTripMap response status: ${response.status}`);
+      console.log(`Overpass API response status: ${response.status} for ${poiType}`);
       return [];
     }
     
     const data = await response.json();
     
-    if (!Array.isArray(data)) return [];
+    if (!data.elements || !Array.isArray(data.elements)) return [];
     
-    return data.map((item: any) => ({
-      name: item.name || 'Unknown',
-      kind: item.kinds || kinds,
-      lat: item.point?.lat || lat,
-      lng: item.point?.lon || lng,
-      osm: item.osm,
-      wikidata: item.wikidata,
-    }));
+    return data.elements
+      .filter((item: any) => item.tags && item.tags.name)
+      .map((item: any) => ({
+        name: item.tags.name,
+        kind: poiType,
+        lat: item.lat || (item.center ? item.center.lat : lat),
+        lng: item.lon || (item.center ? item.center.lon : lng),
+        address: item.tags['addr:street'] ? `${item.tags['addr:street']} ${item.tags['addr:housenumber'] || ''}, ${item.tags['addr:city'] || ''}`.trim() : undefined,
+        website: item.tags.website || item.tags.url,
+        phone: item.tags.phone || item.tags['contact:phone'],
+        openingHours: item.tags.opening_hours
+      }));
   } catch (error) {
-    console.error(`OpenTripMap error:`, error);
+    console.error(`Overpass API error for ${poiType}:`, error);
     return [];
   }
 }
 
-// Fetch detailed POI info
-async function fetchPOIDetails(xid: string): Promise<Partial<POI>> {
-  try {
-    const response = await fetch(
-      `https://api.opentripmap.com/0.1/en/places/xid/${xid}`,
-      {
-        headers: {
-          'User-Agent': 'IDSS-Trip-Planner/1.0'
-        }
-      }
-    );
-    
-    if (!response.ok) return {};
-    
-    const data = await response.json();
-    return {
-      description: data.wikipedia_extracts?.text || data.info?.descr,
-      address: data.address?.road ? `${data.address.road} ${data.address.house_number || ''}, ${data.address.city || data.address.town || ''}`.trim() : undefined,
-      website: data.url,
-      openingHours: data.info?.opening_hours
-    };
-  } catch {
-    return {};
-  }
-}
-
-// Fetch all POIs for a city
+// Fetch all POIs for a city using Overpass API
 async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
-  console.log(`Fetching POIs for ${cityName}...`);
+  console.log(`Fetching POIs for ${cityName} using Overpass API...`);
   
   // First, geocode the city
-  const geoData = await geocodeCity(cityName);
+  let geoData = await geocodeCity(cityName);
+  
   if (!geoData) {
-    console.log(`Could not geocode ${cityName}, using fallback`);
+    console.log(`Could not geocode ${cityName}, trying fallback...`);
     const fallbackCoords = getFallbackCoordinates(cityName);
-    if (!fallbackCoords) return null;
-    
-    return {
-      city: cityName,
-      lat: fallbackCoords.lat,
-      lng: fallbackCoords.lng,
-      museums: [],
-      monuments: [],
-      restaurants: [],
-      hotels: [],
-      parks: [],
-      educational: []
-    };
+    if (fallbackCoords) {
+      geoData = { ...fallbackCoords, displayName: cityName };
+    } else {
+      console.log(`No fallback coordinates for ${cityName}`);
+      return null;
+    }
   }
   
-  // Fetch different categories of POIs in parallel
+  console.log(`Geocoded ${cityName}: ${geoData.lat}, ${geoData.lng}`);
+  
+  // Fetch different categories of POIs in parallel using Overpass API
   const [museums, monuments, restaurants, hotels, parks, educational] = await Promise.all([
-    fetchPOIs(geoData.lat, geoData.lng, 'museums', 15),
-    fetchPOIs(geoData.lat, geoData.lng, 'monuments,historic,memorials', 15),
-    fetchPOIs(geoData.lat, geoData.lng, 'cafes,restaurants,fast_food', 20),
-    fetchPOIs(geoData.lat, geoData.lng, 'other_hotels,hostels', 10),
-    fetchPOIs(geoData.lat, geoData.lng, 'parks,gardens,nature_reserves', 10),
-    fetchPOIs(geoData.lat, geoData.lng, 'cultural,theatres_and_entertainments,urban_environment', 15)
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 12),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 15),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 20),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 10),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 8),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 12)
   ]);
   
-  console.log(`Found for ${cityName}: ${museums.length} museums, ${monuments.length} monuments, ${restaurants.length} restaurants, ${hotels.length} hotels`);
+  console.log(`✓ Found for ${cityName}: ${museums.length} museums, ${monuments.length} monuments, ${restaurants.length} restaurants, ${hotels.length} hotels, ${parks.length} parks, ${educational.length} educational sites`);
   
   return {
     city: cityName,
@@ -189,7 +185,7 @@ async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
   };
 }
 
-// Calculate route distance using OSRM
+// Calculate route distance using OSRM (completely free, no API key needed)
 async function calculateRouteDistance(coordinates: Array<{lat: number; lng: number}>): Promise<{distance_km: number; duration_hours: number}> {
   if (coordinates.length < 2) {
     return { distance_km: 0, duration_hours: 0 };
@@ -243,8 +239,13 @@ function estimateDistance(coordinates: Array<{lat: number; lng: number}>): {dist
   };
 }
 
-// Get fallback coordinates
+// Get fallback coordinates for common cities
 function getFallbackCoordinates(cityName: string): { lat: number; lng: number } | null {
+  const normalizedName = cityName.toLowerCase()
+    .replace(/,.*$/, '') // Remove country suffix
+    .replace(/\s+/g, ' ')
+    .trim();
+    
   const cityCoords: Record<string, { lat: number; lng: number }> = {
     'sarajevo': { lat: 43.8563, lng: 18.4131 },
     'beograd': { lat: 44.7866, lng: 20.4489 },
@@ -304,34 +305,51 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'visoko': { lat: 43.9889, lng: 18.1781 },
   };
   
-  return cityCoords[cityName.toLowerCase().trim()] || null;
+  // Try exact match first
+  if (cityCoords[normalizedName]) {
+    return cityCoords[normalizedName];
+  }
+  
+  // Try partial match
+  for (const [key, coords] of Object.entries(cityCoords)) {
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      return coords;
+    }
+  }
+  
+  return null;
 }
 
-// Find rest stops along route
+// Find rest stops along route using Overpass API
 async function findRestStops(fromCoords: {lat: number; lng: number}, toCoords: {lat: number; lng: number}): Promise<POI[]> {
   // Calculate midpoint
   const midLat = (fromCoords.lat + toCoords.lat) / 2;
   const midLng = (fromCoords.lng + toCoords.lng) / 2;
   
   try {
-    const response = await fetch(
-      `https://api.opentripmap.com/0.1/en/places/radius?radius=10000&lon=${midLng}&lat=${midLat}&kinds=fuel,foods,cafes&limit=5&format=json`,
-      {
-        headers: { 'User-Agent': 'IDSS-Trip-Planner/1.0' }
-      }
-    );
+    const query = `[out:json][timeout:10];(node["amenity"="fuel"](around:15000,${midLat},${midLng});node["highway"="services"](around:15000,${midLat},${midLng});node["highway"="rest_area"](around:15000,${midLat},${midLng}););out body 5;`;
+    
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `data=${encodeURIComponent(query)}`
+    });
     
     if (!response.ok) return [];
     
     const data = await response.json();
-    if (!Array.isArray(data)) return [];
+    if (!data.elements || !Array.isArray(data.elements)) return [];
     
-    return data.map((item: any) => ({
-      name: item.name || 'Odmorište',
-      kind: 'rest_stop',
-      lat: item.point?.lat || midLat,
-      lng: item.point?.lon || midLng,
-    }));
+    return data.elements
+      .filter((item: any) => item.tags)
+      .map((item: any) => ({
+        name: item.tags.name || 'Odmorište',
+        kind: 'rest_stop',
+        lat: item.lat,
+        lng: item.lon,
+      }));
   } catch {
     return [];
   }
@@ -350,8 +368,10 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating verified trip plans for:", tripData);
-    console.log("Step 1: Fetching real POI data from OpenTripMap and Nominatim...");
+    console.log("=".repeat(60));
+    console.log("IDSS TRIP PLANNER - Generating verified trip plans");
+    console.log("=".repeat(60));
+    console.log("Request:", JSON.stringify(tripData, null, 2));
 
     // Calculate trip duration
     const startDate = new Date(tripData.departureDate);
@@ -362,12 +382,20 @@ serve(async (req) => {
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
     const fullRoute = allCities.join(' → ');
 
+    console.log("\n📍 Step 1: Fetching real POI data from Overpass/Nominatim APIs...");
+
     // Fetch POIs for all cities in parallel
-    const cityPOIsPromises = [...new Set([tripData.departureCity, ...tripData.destinations])].map(city => fetchCityPOIs(city));
+    const uniqueCities = [...new Set([tripData.departureCity, ...tripData.destinations])];
+    const cityPOIsPromises = uniqueCities.map(city => fetchCityPOIs(city));
     const cityPOIsResults = await Promise.all(cityPOIsPromises);
     const cityPOIs = cityPOIsResults.filter((result): result is CityPOIs => result !== null);
 
-    console.log(`Step 2: Fetched POIs for ${cityPOIs.length} cities`);
+    const totalPOIs = cityPOIs.reduce((sum, c) => 
+      sum + c.museums.length + c.monuments.length + c.restaurants.length + 
+      c.hotels.length + c.parks.length + c.educational.length, 0
+    );
+    
+    console.log(`✓ Step 2: Fetched POIs for ${cityPOIs.length}/${uniqueCities.length} cities (${totalPOIs} total POIs)`);
 
     // Calculate route coordinates and distances
     const routeCoordinates = cityPOIs.map((city, index) => ({
@@ -390,44 +418,45 @@ serve(async (req) => {
 
     // Calculate total route distance
     const routeInfo = await calculateRouteDistance(routeCoordinates.map(c => ({ lat: c.lat, lng: c.lng })));
-    console.log(`Step 3: Route calculated - ${routeInfo.distance_km}km, ~${routeInfo.duration_hours}h`);
+    console.log("Step 3: Route calculated - " + routeInfo.distance_km + "km, " + routeInfo.duration_hours + "h");
 
     // Find rest stops between major segments
     const restStops: POI[] = [];
-    for (let i = 0; i < routeCoordinates.length - 1; i++) {
+    for (let i = 0; i < Math.min(routeCoordinates.length - 1, 3); i++) {
       const stops = await findRestStops(routeCoordinates[i], routeCoordinates[i + 1]);
       restStops.push(...stops.slice(0, 2));
     }
-    console.log(`Found ${restStops.length} rest stops along route`);
+    console.log("Found " + restStops.length + " rest stops along route");
 
     // Build comprehensive POI data for AI prompt
     const poisByCity = cityPOIs.map(city => {
+      const formatPOIs = (pois: POI[], label: string) => {
+        if (pois.length === 0) return `**${label}:** Nema pronađenih lokacija u bazi`;
+        return `**${label} (${pois.length}):**\n${pois.slice(0, 8).map((p, i) => 
+          `${i + 1}. ${p.name} (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})${p.address ? ` - ${p.address}` : ''}${p.phone ? ` Tel: ${p.phone}` : ''}`
+        ).join('\n')}`;
+      };
+      
       return `
-### ${city.city.toUpperCase()} (${city.lat.toFixed(4)}, ${city.lng.toFixed(4)})
+### ${city.city.toUpperCase()} (GPS: ${city.lat.toFixed(4)}, ${city.lng.toFixed(4)})
 
-**MUZEJI (${city.museums.length} pronađeno):**
-${city.museums.slice(0, 8).map((m, i) => `${i + 1}. ${m.name} (${m.lat.toFixed(5)}, ${m.lng.toFixed(5)})`).join('\n') || 'Nema dostupnih podataka'}
+${formatPOIs(city.museums, 'MUZEJI')}
 
-**SPOMENICI I HISTORIJSKE LOKACIJE (${city.monuments.length} pronađeno):**
-${city.monuments.slice(0, 8).map((m, i) => `${i + 1}. ${m.name} (${m.lat.toFixed(5)}, ${m.lng.toFixed(5)})`).join('\n') || 'Nema dostupnih podataka'}
+${formatPOIs(city.monuments, 'SPOMENICI I HISTORIJSKE LOKACIJE')}
 
-**RESTORANI I KAFIĆI (${city.restaurants.length} pronađeno):**
-${city.restaurants.slice(0, 10).map((r, i) => `${i + 1}. ${r.name} (${r.lat.toFixed(5)}, ${r.lng.toFixed(5)})`).join('\n') || 'Nema dostupnih podataka'}
+${formatPOIs(city.restaurants, 'RESTORANI I KAFIĆI')}
 
-**HOTELI I SMJEŠTAJ (${city.hotels.length} pronađeno):**
-${city.hotels.slice(0, 6).map((h, i) => `${i + 1}. ${h.name} (${h.lat.toFixed(5)}, ${h.lng.toFixed(5)})`).join('\n') || 'Nema dostupnih podataka'}
+${formatPOIs(city.hotels, 'HOTELI I SMJEŠTAJ')}
 
-**PARKOVI I ZELENE POVRŠINE (${city.parks.length} pronađeno):**
-${city.parks.slice(0, 5).map((p, i) => `${i + 1}. ${p.name} (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})`).join('\n') || 'Nema dostupnih podataka'}
+${formatPOIs(city.parks, 'PARKOVI')}
 
-**KULTURNE I EDUKATIVNE LOKACIJE (${city.educational.length} pronađeno):**
-${city.educational.slice(0, 6).map((e, i) => `${i + 1}. ${e.name} (${e.lat.toFixed(5)}, ${e.lng.toFixed(5)})`).join('\n') || 'Nema dostupnih podataka'}
+${formatPOIs(city.educational, 'KULTURNE I EDUKATIVNE LOKACIJE')}
 `;
     }).join('\n');
 
     const restStopsInfo = restStops.length > 0 
       ? `\n**ODMORIŠTA NA RUTI:**\n${restStops.map((s, i) => `${i + 1}. ${s.name} (${s.lat.toFixed(5)}, ${s.lng.toFixed(5)})`).join('\n')}`
-      : '';
+      : '\n**ODMORIŠTA:** Koristite standardna odmorišta na autoputu svaka 2 sata vožnje';
 
     // Meeting point - IDSS School
     const meetingPoint = {
@@ -439,15 +468,18 @@ ${city.educational.slice(0, 6).map((e, i) => `${i + 1}. ${e.name} (${e.lat.toFix
     };
 
     const systemPrompt = `Ti si PREMIUM stručni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS).
-KRITIČNO: Sigurnost djece je APSOLUTNI prioritet. Svaki detalj MORA biti TAČAN i PROVJEREN.
 
-# PODACI IZ BAZE (OpenTripMap + Nominatim API - VERIFICIRANI):
+# KRITIČNO - SIGURNOST DJECE JE APSOLUTNI PRIORITET!
+Svaki detalj MORA biti TAČAN, PROVJEREN i SIGURAN za djecu.
+
+# VERIFICIRANI PODACI IZ OPENSTREETMAP BAZE:
 ${poisByCity}
 ${restStopsInfo}
 
-# KALKULIRANI PODACI O RUTI:
+# KALKULIRANI PODACI O RUTI (OSRM API):
 - Ukupna udaljenost: ${routeInfo.distance_km} km
 - Procijenjeno vrijeme vožnje: ${routeInfo.duration_hours} sati
+- Ruta: ${fullRoute}
 
 # MJESTO OKUPLJANJA I POLASKA:
 - ${meetingPoint.name}
@@ -455,79 +487,60 @@ ${restStopsInfo}
 - Koordinate: ${meetingPoint.lat}, ${meetingPoint.lng}
 - Telefon: ${meetingPoint.phone}
 
-# STRIKTNA PRAVILA:
+# OBAVEZNA PRAVILA ZA PLAN:
 
-1. **3 OBAVEZNE VARIJANTE PLANA:**
-   - BUDGET (Ekonomična): Hosteli, sendviči/pizze, besplatne atrakcije, javni prevoz
-   - BALANCED (Uravnotežena): 3* hoteli, lokalni restorani, glavne atrakcije
-   - PREMIUM (VIP): 4-5* hoteli, fine dining, privatne ture, sve atrakcije
+1. **GENERIRAJ TAČNO 3 VARIJANTE PLANA:**
+   - "Budget" (Ekonomična): Hosteli, jednostavni obroci, besplatne atrakcije
+   - "Balanced" (Uravnotežena): 3* hoteli, lokalni restorani, glavne atrakcije
+   - "Premium" (VIP): 4-5* hoteli, kvalitetna hrana, sve atrakcije
 
-2. **SIGURNOSNI ZAHTJEVI:**
-   - Tačno vrijeme i lokacija SVAKOG okupljanja/prebacivanja
-   - Kontakt podaci za svaki hotel/restoran (ako dostupno)
-   - Alternativni plan za svaku aktivnost
-   - GPS koordinate za SVAKU lokaciju
-   - Pauze svakih 2h za mlađu djecu, 3h za stariju
+2. **SIGURNOSNI ZAHTJEVI (OBAVEZNO):**
+   - GPS koordinate za SVAKU lokaciju (iz gornje baze)
+   - Pauze svakih 2h za mlađu djecu (do 10 god), 3h za stariju
+   - Odgovorna osoba za svaku aktivnost
+   - Alternativni plan za kišne dane
 
-3. **DETALJI OBROKA:**
-   - Tačan naziv restorana/kafića iz gornje liste
-   - Tip hrane i procjena cijene
-   - Vegetarijanske/halal opcije ako potrebno
+3. **SMJEŠTAJ I OBROCI:**
+   - Koristi hotele/restorane IZ GORNJE LISTE ili poznate međunarodne lance
+   - Sobe: dječaci i djevojčice odvojeno, pratitelji u susjednim sobama
 
-4. **SMJEŠTAJ:**
-   - Koristi SAMO hotele/hostele iz gornje liste ili poznate lance
-   - Broj soba i raspored (dječaci/djevojčice odvojeno, pratitelji u susjednim sobama)
-   - Check-in/check-out vrijeme
+4. **VREMENSKA ORGANIZACIJA:**
+   - Realistična vremena (gužve, pauze, prelasci)
+   - Buđenje najranije 06:30, spavanje najkasnije 22:00 za mlađe
+   - Slobodno vrijeme za kupovinu/odmor
 
-5. **TRANSPORT:**
-   - Tačno vrijeme polaska i dolaska
-   - Planirane pauze na odmorištima iz liste
-   - Kompanija autobusa (ako relevantno)
-
-6. **FORMAT ODGOVORA:**
-   - Odgovori SAMO validnim JSON objektom
-   - NIKAKO markdown formatiranje
-   - Svaka lokacija MORA imati GPS koordinate
+5. **CIJENE (EUR, 2025/2026):**
+   - Realistične procjene po kategorijama
+   - Uključiti: transport, smještaj, obroke, ulaznice, osiguranje
 
 ${tripData.specialNeeds ? `\n## SPECIJALNE POTREBE (OBAVEZNO UKLJUČITI):\n${tripData.specialNeeds}` : ''}
 ${tripData.medicalInfo ? `\n## MEDICINSKE INFORMACIJE:\n${tripData.medicalInfo}` : ''}
 
-JSON STRUKTURA:
+# FORMAT ODGOVORA:
+Odgovori ISKLJUČIVO validnim JSON objektom. NIKAKO markdown formatiranje, samo čisti JSON.
+
 {
   "plans": [
     {
       "id": 1,
       "type": "Budget",
       "route": "${fullRoute}",
-      "reliability": 92,
+      "reliability": 90-95,
       "days": ${tripDays},
       "distance_km": ${routeInfo.distance_km},
       "travel_hours": ${routeInfo.duration_hours},
-      "cost_per_student": 0,
+      "cost_per_student": broj_u_eurima,
       "costs": {
-        "transport": 0,
-        "accommodation": 0,
-        "meals": 0,
-        "entry_fees": 0,
-        "activity_fees": 0,
-        "local_transport": 0,
-        "insurance": 0,
-        "contingency": 0,
-        "total": 0
+        "transport": broj,
+        "accommodation": broj,
+        "meals": broj,
+        "entry_fees": broj,
+        "insurance": broj,
+        "contingency": broj,
+        "total": broj
       },
-      "why_this_fits": "obrazloženje zašto ova opcija odgovara grupi",
-      "accommodation_info": "detalji o smještaju sa kontaktima",
-      "transport_details": {
-        "company": "naziv kompanije",
-        "vehicle_type": "tip vozila",
-        "capacity": 0,
-        "amenities": ["wifi", "wc", "klima"]
-      },
-      "emergency_contacts": {
-        "tour_leader": "+387...",
-        "hotel": "+...",
-        "local_emergency": "broj"
-      },
+      "why_this_fits": "kratko obrazloženje",
+      "accommodation_info": "naziv hotela, adresa, kontakt",
       "meeting_point": {
         "name": "${meetingPoint.name}",
         "address": "${meetingPoint.address}",
@@ -538,83 +551,54 @@ JSON STRUKTURA:
       "itinerary": [
         {
           "day": 1,
-          "date": "${tripData.departureDate}",
-          "title": "naslov dana",
-          "summary": "kratak pregled dana",
+          "date": "YYYY-MM-DD",
+          "title": "Naslov dana",
+          "summary": "Kratak opis",
           "activities": [
             {
-              "time": "07:00-07:30",
-              "description": "Okupljanje učenika i pratitelja ispred škole IDSS, provjera prisutnosti",
-              "type": "meeting",
-              "location": "${meetingPoint.name}, ${meetingPoint.address}",
-              "lat": ${meetingPoint.lat},
-              "lng": ${meetingPoint.lng},
-              "notes": "Roditelji mogu ispratiti djecu. Lista prisutnosti kod voditelja.",
-              "responsible": "Voditelj ekskurzije"
-            },
-            {
-              "time": "07:30-07:45",
-              "description": "Polazak autobusom prema [destinacija]",
-              "type": "travel",
-              "location": "IDSS parking",
-              "lat": ${meetingPoint.lat},
-              "lng": ${meetingPoint.lng},
-              "vehicle": "Autobus kompanija XY",
-              "notes": "Sjedišta označena po grupama"
+              "time": "HH:MM-HH:MM",
+              "description": "Opis aktivnosti",
+              "type": "meeting|travel|meal|visit|accommodation|free_time",
+              "location": "Naziv lokacije",
+              "lat": broj,
+              "lng": broj,
+              "notes": "Dodatne napomene"
             }
           ]
         }
       ],
-      "packing_list": ["pasoš/lična karta", "lijekovi", "novac za džeparac"],
-      "rules": ["Uvijek ostati u grupi", "Telefoni isključeni tokom edukativnih aktivnosti"]
+      "packing_list": ["stavka1", "stavka2"],
+      "rules": ["pravilo1", "pravilo2"]
     }
-  ],
-  "route_coordinates": ${JSON.stringify(routeCoordinates)},
-  "educational_resources": [
-    {"city": "Grad", "sites": ["muzej1", "spomenik2"], "curriculum_links": ["historija", "geografija"]}
-  ],
-  "verification": {
-    "data_source": "OpenTripMap + Nominatim API",
-    "last_verified": "${new Date().toISOString()}",
-    "route_verified": true,
-    "pois_count": ${cityPOIs.reduce((sum, c) => sum + c.museums.length + c.monuments.length + c.educational.length, 0)}
-  }
+  ]
 }`;
 
-    const userPrompt = `Generiraj 3 STROGO PROVJERENE opcije plana putovanja koristeći ISKLJUČIVO podatke iz baze:
+    const userPrompt = `Generiraj 3 DETALJNE opcije plana putovanja:
 
 ## PODACI O EKSKURZIJI:
 - **Škola:** Internationale Deutsche Schule Sarajevo
-- **Polazište:** ${tripData.departureCity} (${meetingPoint.address})
-- **Ruta:** ${fullRoute}
+- **Polazište:** ${tripData.departureCity}
+- **Destinacije:** ${tripData.destinations.join(', ')}
 - **Razred:** ${tripData.gradeLevel}
 - **Broj učenika:** ${tripData.studentCount}
-- **Broj pratitelja:** ${tripData.chaperones.length || Math.ceil(tripData.studentCount / 15)}
+- **Pratitelji:** ${tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : Math.ceil(tripData.studentCount / 15) + ' pratitelja'}
 - **Prevoz:** ${tripData.transport}
 - **Period:** ${tripData.departureDate} do ${tripData.returnDate} (${tripDays} dana)
 - **Plan obroka:** ${tripData.mealPlan || 'polupansion'}
-- **Tip smještaja:** ${tripData.accommodationType || 'hotel'}
+- **Smještaj:** ${tripData.accommodationType || 'hotel'}
+- **Budžet po učeniku:** ${tripData.budget || 300} EUR
 ${tripData.educationalFocus ? `- **Edukativni fokus:** ${tripData.educationalFocus}` : ''}
 ${tripData.specialNeeds ? `- **Posebne napomene:** ${tripData.specialNeeds}` : ''}
-${tripData.medicalInfo ? `- **Medicinske informacije:** ${tripData.medicalInfo}` : ''}
 
 ## KRITIČNI ZAHTJEVI:
-1. SVAKA lokacija mora imati TAČNE GPS koordinate iz gornje baze
-2. SVAKI obrok mora biti u KONKRETNOM restoranu iz liste
-3. SVAKI smještaj mora biti KONKRETNI hotel/hostel iz liste
-4. SVAKA atrakcija mora biti STVARNA lokacija iz liste
-5. Vremena moraju biti REALISTIČNA (uzeti u obzir gužve, pauze, itd.)
-6. Cijene moraju biti u EUR i REALISTIČNE za 2026. godinu
+1. Koristi SAMO lokacije iz OpenStreetMap baze iznad
+2. Svaka lokacija MORA imati GPS koordinate
+3. Vremena moraju biti REALISTIČNA
+4. Cijene u EUR za 2025/2026
 
-## SIGURNOSNE NAPOMENE:
-- Svaka aktivnost mora imati odgovornu osobu
-- Pauze za WC i osvježenje svakih 2-3 sata
-- Brojanje učenika pri svakom prelasku
-- Noćna kontrola u hotelima
+Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
 
-Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
-
-    console.log("Step 4: Calling AI Gateway for comprehensive itinerary generation...");
+    console.log("\n🤖 Step 4: Calling AI Gateway for itinerary generation...");
     const startTime = Date.now();
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -629,12 +613,12 @@ Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.3, // Lower temperature for more consistent, reliable output
+        temperature: 0.3,
       }),
     });
 
     const responseTime = Date.now() - startTime;
-    console.log(`AI Gateway response time: ${responseTime}ms`);
+    console.log("AI Gateway response time: " + responseTime + "ms");
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -652,18 +636,18 @@ Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI Gateway error: ${response.status}`);
+      throw new Error("AI Gateway error: " + response.status);
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     
     if (!content) {
-      console.error("No content in AI response:", JSON.stringify(data));
+      console.error("No content in AI response");
       throw new Error("Prazan odgovor od AI servisa");
     }
 
-    console.log("Step 5: Parsing and validating AI response...");
+    console.log("\n📋 Step 5: Parsing and validating AI response...");
 
     // Parse the JSON from the response
     let plans;
@@ -671,14 +655,17 @@ Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
       let jsonString = content.trim();
       
       // Remove markdown code blocks if present
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        jsonString = jsonMatch[1].trim();
+      if (jsonString.includes("json")) {
+        const startIdx = jsonString.indexOf("{");
+        const endIdx = jsonString.lastIndexOf("}");
+        if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+          jsonString = jsonString.substring(startIdx, endIdx + 1);
+        }
       }
       
       // Find the JSON object boundaries
-      const jsonStart = jsonString.indexOf('{');
-      const jsonEnd = jsonString.lastIndexOf('}');
+      const jsonStart = jsonString.indexOf("{");
+      const jsonEnd = jsonString.lastIndexOf("}");
       
       if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
         jsonString = jsonString.substring(jsonStart, jsonEnd + 1);
@@ -688,13 +675,18 @@ Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
       
     } catch (parseError) {
       console.error("JSON parse error:", parseError);
+      console.error("Raw content:", content.substring(0, 500));
       throw new Error("Greška pri parsiranju odgovora. Molimo pokušajte ponovo.");
     }
 
     // Validate the response structure
-    if (!plans.plans || !Array.isArray(plans.plans) || plans.plans.length < 3) {
-      console.error("Invalid plans structure - need exactly 3 plans");
-      throw new Error("Nedovoljan broj planova generisan. Potrebne su 3 varijante.");
+    if (!plans.plans || !Array.isArray(plans.plans)) {
+      console.error("Invalid plans structure");
+      throw new Error("Neispravan format planova.");
+    }
+
+    if (plans.plans.length < 3) {
+      console.warn("Only " + plans.plans.length + " plans generated, expected 3");
     }
 
     // Ensure route_coordinates exists with our verified data
@@ -702,18 +694,22 @@ Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
 
     // Add verification metadata
     plans.verification = {
-      data_source: "OpenTripMap + Nominatim API",
+      data_source: "OpenStreetMap (Overpass API) + Nominatim + OSRM",
       last_verified: new Date().toISOString(),
       route_verified: true,
       distance_km: routeInfo.distance_km,
       travel_hours: routeInfo.duration_hours,
-      pois_count: cityPOIs.reduce((sum, c) => sum + c.museums.length + c.monuments.length + c.educational.length, 0),
+      pois_count: totalPOIs,
       cities_data: cityPOIs.map(c => ({
         city: c.city,
+        lat: c.lat,
+        lng: c.lng,
         museums: c.museums.length,
         monuments: c.monuments.length,
         restaurants: c.restaurants.length,
-        hotels: c.hotels.length
+        hotels: c.hotels.length,
+        parks: c.parks.length,
+        educational: c.educational.length
       }))
     };
 
@@ -725,13 +721,20 @@ Odgovori SAMO validnim JSON objektom. NIKAKO markdown formatiranje.`;
           ...city.museums.slice(0, 3).map(m => m.name),
           ...city.monuments.slice(0, 3).map(m => m.name),
           ...city.educational.slice(0, 2).map(e => e.name)
-        ].filter(Boolean)
+        ].filter(Boolean),
+        curriculum_links: tripData.educationalFocus ? [tripData.educationalFocus] : ["historija", "kultura", "geografija"]
       }));
     }
 
-    console.log(`✓ Successfully generated ${plans.plans.length} verified trip plans`);
-    console.log(`✓ Included data from ${cityPOIs.length} cities with ${plans.verification.pois_count} verified POIs`);
-    console.log(`✓ Plan types: ${plans.plans.map((p: any) => `${p.type}=${p.cost_per_student}EUR`).join(', ')}`);
+    console.log("=".repeat(60));
+    console.log("USPJESNO GENERIRANO:");
+    console.log("   - " + plans.plans.length + " varijanti plana");
+    console.log("   - " + cityPOIs.length + " gradova sa " + totalPOIs + " verificiranih POI-a");
+    console.log("   - Ruta: " + routeInfo.distance_km + "km, " + routeInfo.duration_hours + "h");
+    plans.plans.forEach((p: any) => {
+      console.log("   - " + p.type + ": " + p.cost_per_student + " EUR po uceniku");
+    });
+    console.log("=".repeat(60));
 
     return new Response(JSON.stringify(plans), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
