@@ -49,14 +49,12 @@ interface CityPOIs {
 // Geocode city using Nominatim (completely free, no API key needed)
 async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1&addressdetails=1`,
-      {
-        headers: {
-          'User-Agent': 'IDSS-Trip-Planner/1.0 (info@idss.ba)'
-        }
+    const url = "https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(cityName) + "&format=json&limit=1&addressdetails=1";
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'IDSS-Trip-Planner/1.0 (info@idss.ba)'
       }
-    );
+    });
     
     if (!response.ok) return null;
     
@@ -70,7 +68,7 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
     }
     return null;
   } catch (error) {
-    console.error(`Geocoding error for ${cityName}:`, error);
+    console.error("Geocoding error for " + cityName + ":", error);
     return null;
   }
 }
@@ -78,28 +76,27 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
 // Fetch POIs using Overpass API (completely free, no API key needed)
 async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 15): Promise<POI[]> {
   try {
-    // Build Overpass query based on POI type
     let query = '';
     const radius = 3000; // 3km radius
     
     switch (poiType) {
       case 'museums':
-        query = `[out:json][timeout:10];(node["tourism"="museum"](around:${radius},${lat},${lng});way["tourism"="museum"](around:${radius},${lat},${lng}););out body ${limit};`;
+        query = '[out:json][timeout:10];(node["tourism"="museum"](around:' + radius + ',' + lat + ',' + lng + ');way["tourism"="museum"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
         break;
       case 'monuments':
-        query = `[out:json][timeout:10];(node["historic"](around:${radius},${lat},${lng});node["tourism"="attraction"](around:${radius},${lat},${lng});node["memorial"](around:${radius},${lat},${lng}););out body ${limit};`;
+        query = '[out:json][timeout:10];(node["historic"](around:' + radius + ',' + lat + ',' + lng + ');node["tourism"="attraction"](around:' + radius + ',' + lat + ',' + lng + ');node["memorial"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
         break;
       case 'restaurants':
-        query = `[out:json][timeout:10];(node["amenity"="restaurant"](around:${radius},${lat},${lng});node["amenity"="cafe"](around:${radius},${lat},${lng});node["amenity"="fast_food"](around:${radius},${lat},${lng}););out body ${limit};`;
+        query = '[out:json][timeout:10];(node["amenity"="restaurant"](around:' + radius + ',' + lat + ',' + lng + ');node["amenity"="cafe"](around:' + radius + ',' + lat + ',' + lng + ');node["amenity"="fast_food"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
         break;
       case 'hotels':
-        query = `[out:json][timeout:10];(node["tourism"="hotel"](around:${radius},${lat},${lng});node["tourism"="hostel"](around:${radius},${lat},${lng});node["tourism"="guest_house"](around:${radius},${lat},${lng}););out body ${limit};`;
+        query = '[out:json][timeout:10];(node["tourism"="hotel"](around:' + radius + ',' + lat + ',' + lng + ');node["tourism"="hostel"](around:' + radius + ',' + lat + ',' + lng + ');node["tourism"="guest_house"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
         break;
       case 'parks':
-        query = `[out:json][timeout:10];(node["leisure"="park"](around:${radius},${lat},${lng});way["leisure"="park"](around:${radius},${lat},${lng}););out body ${limit};`;
+        query = '[out:json][timeout:10];(node["leisure"="park"](around:' + radius + ',' + lat + ',' + lng + ');way["leisure"="park"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
         break;
       case 'educational':
-        query = `[out:json][timeout:10];(node["tourism"="gallery"](around:${radius},${lat},${lng});node["amenity"="theatre"](around:${radius},${lat},${lng});node["amenity"="library"](around:${radius},${lat},${lng});node["historic"="castle"](around:${radius},${lat},${lng});node["historic"="monument"](around:${radius},${lat},${lng}););out body ${limit};`;
+        query = '[out:json][timeout:10];(node["tourism"="gallery"](around:' + radius + ',' + lat + ',' + lng + ');node["amenity"="theatre"](around:' + radius + ',' + lat + ',' + lng + ');node["amenity"="library"](around:' + radius + ',' + lat + ',' + lng + ');node["historic"="castle"](around:' + radius + ',' + lat + ',' + lng + ');node["historic"="monument"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
         break;
       default:
         return [];
@@ -110,11 +107,11 @@ async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limi
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: `data=${encodeURIComponent(query)}`
+      body: 'data=' + encodeURIComponent(query)
     });
     
     if (!response.ok) {
-      console.log(`Overpass API response status: ${response.status} for ${poiType}`);
+      console.log("Overpass API response status: " + response.status + " for " + poiType);
       return [];
     }
     
@@ -129,38 +126,36 @@ async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limi
         kind: poiType,
         lat: item.lat || (item.center ? item.center.lat : lat),
         lng: item.lon || (item.center ? item.center.lon : lng),
-        address: item.tags['addr:street'] ? `${item.tags['addr:street']} ${item.tags['addr:housenumber'] || ''}, ${item.tags['addr:city'] || ''}`.trim() : undefined,
+        address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
         website: item.tags.website || item.tags.url,
         phone: item.tags.phone || item.tags['contact:phone'],
         openingHours: item.tags.opening_hours
       }));
   } catch (error) {
-    console.error(`Overpass API error for ${poiType}:`, error);
+    console.error("Overpass API error for " + poiType + ":", error);
     return [];
   }
 }
 
 // Fetch all POIs for a city using Overpass API
 async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
-  console.log(`Fetching POIs for ${cityName} using Overpass API...`);
+  console.log("Fetching POIs for " + cityName + " using Overpass API...");
   
-  // First, geocode the city
   let geoData = await geocodeCity(cityName);
   
   if (!geoData) {
-    console.log(`Could not geocode ${cityName}, trying fallback...`);
+    console.log("Could not geocode " + cityName + ", trying fallback...");
     const fallbackCoords = getFallbackCoordinates(cityName);
     if (fallbackCoords) {
       geoData = { ...fallbackCoords, displayName: cityName };
     } else {
-      console.log(`No fallback coordinates for ${cityName}`);
+      console.log("No fallback coordinates for " + cityName);
       return null;
     }
   }
   
-  console.log(`Geocoded ${cityName}: ${geoData.lat}, ${geoData.lng}`);
+  console.log("Geocoded " + cityName + ": " + geoData.lat + ", " + geoData.lng);
   
-  // Fetch different categories of POIs in parallel using Overpass API
   const [museums, monuments, restaurants, hotels, parks, educational] = await Promise.all([
     fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 12),
     fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 15),
@@ -170,7 +165,7 @@ async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
     fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 12)
   ]);
   
-  console.log(`✓ Found for ${cityName}: ${museums.length} museums, ${monuments.length} monuments, ${restaurants.length} restaurants, ${hotels.length} hotels, ${parks.length} parks, ${educational.length} educational sites`);
+  console.log("Found for " + cityName + ": " + museums.length + " museums, " + monuments.length + " monuments, " + restaurants.length + " restaurants, " + hotels.length + " hotels, " + parks.length + " parks, " + educational.length + " educational sites");
   
   return {
     city: cityName,
@@ -192,10 +187,9 @@ async function calculateRouteDistance(coordinates: Array<{lat: number; lng: numb
   }
   
   try {
-    const coordString = coordinates.map(c => `${c.lng},${c.lat}`).join(';');
-    const response = await fetch(
-      `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=false`
-    );
+    const coordString = coordinates.map(c => c.lng + ',' + c.lat).join(';');
+    const url = "https://router.project-osrm.org/route/v1/driving/" + coordString + "?overview=false";
+    const response = await fetch(url);
     
     if (!response.ok) {
       console.log('OSRM error, using estimation');
@@ -223,26 +217,26 @@ function estimateDistance(coordinates: Array<{lat: number; lng: number}>): {dist
   let totalDistance = 0;
   
   for (let i = 0; i < coordinates.length - 1; i++) {
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = (coordinates[i + 1].lat - coordinates[i].lat) * Math.PI / 180;
     const dLon = (coordinates[i + 1].lng - coordinates[i].lng) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
               Math.cos(coordinates[i].lat * Math.PI / 180) * Math.cos(coordinates[i + 1].lat * Math.PI / 180) *
               Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    totalDistance += R * c * 1.3; // 1.3 factor for road distance
+    totalDistance += R * c * 1.3;
   }
   
   return {
     distance_km: Math.round(totalDistance),
-    duration_hours: Math.round(totalDistance / 70 * 10) / 10 // Average 70 km/h
+    duration_hours: Math.round(totalDistance / 70 * 10) / 10
   };
 }
 
 // Get fallback coordinates for common cities
 function getFallbackCoordinates(cityName: string): { lat: number; lng: number } | null {
   const normalizedName = cityName.toLowerCase()
-    .replace(/,.*$/, '') // Remove country suffix
+    .replace(/,.*$/, '')
     .replace(/\s+/g, ' ')
     .trim();
     
@@ -250,11 +244,11 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'sarajevo': { lat: 43.8563, lng: 18.4131 },
     'beograd': { lat: 44.7866, lng: 20.4489 },
     'belgrade': { lat: 44.7866, lng: 20.4489 },
-    'budimpešta': { lat: 47.4979, lng: 19.0402 },
+    'budimpesta': { lat: 47.4979, lng: 19.0402 },
     'budapest': { lat: 47.4979, lng: 19.0402 },
     'zagreb': { lat: 45.8150, lng: 15.9819 },
     'ljubljana': { lat: 46.0569, lng: 14.5058 },
-    'beč': { lat: 48.2082, lng: 16.3738 },
+    'bec': { lat: 48.2082, lng: 16.3738 },
     'vienna': { lat: 48.2082, lng: 16.3738 },
     'wien': { lat: 48.2082, lng: 16.3738 },
     'prag': { lat: 50.0755, lng: 14.4378 },
@@ -274,7 +268,7 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'mostar': { lat: 43.3438, lng: 17.8078 },
     'dubrovnik': { lat: 42.6507, lng: 18.0944 },
     'split': { lat: 43.5081, lng: 16.4402 },
-    'münchen': { lat: 48.1351, lng: 11.5820 },
+    'munchen': { lat: 48.1351, lng: 11.5820 },
     'munich': { lat: 48.1351, lng: 11.5820 },
     'berlin': { lat: 52.5200, lng: 13.4050 },
     'pariz': { lat: 48.8566, lng: 2.3522 },
@@ -290,8 +284,7 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'tirana': { lat: 41.3275, lng: 19.8187 },
     'bratislava': { lat: 48.1486, lng: 17.1077 },
     'krakow': { lat: 50.0647, lng: 19.9450 },
-    'kraków': { lat: 50.0647, lng: 19.9450 },
-    'varšava': { lat: 52.2297, lng: 21.0122 },
+    'varsava': { lat: 52.2297, lng: 21.0122 },
     'warsaw': { lat: 52.2297, lng: 21.0122 },
     'warszawa': { lat: 52.2297, lng: 21.0122 },
     'banja luka': { lat: 44.7722, lng: 17.1910 },
@@ -305,12 +298,10 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'visoko': { lat: 43.9889, lng: 18.1781 },
   };
   
-  // Try exact match first
   if (cityCoords[normalizedName]) {
     return cityCoords[normalizedName];
   }
   
-  // Try partial match
   for (const [key, coords] of Object.entries(cityCoords)) {
     if (normalizedName.includes(key) || key.includes(normalizedName)) {
       return coords;
@@ -322,19 +313,18 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
 
 // Find rest stops along route using Overpass API
 async function findRestStops(fromCoords: {lat: number; lng: number}, toCoords: {lat: number; lng: number}): Promise<POI[]> {
-  // Calculate midpoint
   const midLat = (fromCoords.lat + toCoords.lat) / 2;
   const midLng = (fromCoords.lng + toCoords.lng) / 2;
   
   try {
-    const query = `[out:json][timeout:10];(node["amenity"="fuel"](around:15000,${midLat},${midLng});node["highway"="services"](around:15000,${midLat},${midLng});node["highway"="rest_area"](around:15000,${midLat},${midLng}););out body 5;`;
+    const query = '[out:json][timeout:10];(node["amenity"="fuel"](around:15000,' + midLat + ',' + midLng + ');node["highway"="services"](around:15000,' + midLat + ',' + midLng + ');node["highway"="rest_area"](around:15000,' + midLat + ',' + midLng + '););out body 5;';
     
     const response = await fetch('https://overpass-api.de/api/interpreter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: `data=${encodeURIComponent(query)}`
+      body: 'data=' + encodeURIComponent(query)
     });
     
     if (!response.ok) return [];
@@ -345,7 +335,7 @@ async function findRestStops(fromCoords: {lat: number; lng: number}, toCoords: {
     return data.elements
       .filter((item: any) => item.tags)
       .map((item: any) => ({
-        name: item.tags.name || 'Odmorište',
+        name: item.tags.name || 'Odmoriste',
         kind: 'rest_stop',
         lat: item.lat,
         lng: item.lon,
@@ -368,23 +358,20 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("=".repeat(60));
+    console.log("============================================================");
     console.log("IDSS TRIP PLANNER - Generating verified trip plans");
-    console.log("=".repeat(60));
+    console.log("============================================================");
     console.log("Request:", JSON.stringify(tripData, null, 2));
 
-    // Calculate trip duration
     const startDate = new Date(tripData.departureDate);
     const endDate = new Date(tripData.returnDate);
     const tripDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    // Build full route
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
-    const fullRoute = allCities.join(' → ');
+    const fullRoute = allCities.join(' -> ');
 
-    console.log("\n📍 Step 1: Fetching real POI data from Overpass/Nominatim APIs...");
+    console.log("\nStep 1: Fetching real POI data from Overpass/Nominatim APIs...");
 
-    // Fetch POIs for all cities in parallel
     const uniqueCities = [...new Set([tripData.departureCity, ...tripData.destinations])];
     const cityPOIsPromises = uniqueCities.map(city => fetchCityPOIs(city));
     const cityPOIsResults = await Promise.all(cityPOIsPromises);
@@ -395,9 +382,8 @@ serve(async (req) => {
       c.hotels.length + c.parks.length + c.educational.length, 0
     );
     
-    console.log(`✓ Step 2: Fetched POIs for ${cityPOIs.length}/${uniqueCities.length} cities (${totalPOIs} total POIs)`);
+    console.log("Step 2: Fetched POIs for " + cityPOIs.length + "/" + uniqueCities.length + " cities (" + totalPOIs + " total POIs)");
 
-    // Calculate route coordinates and distances
     const routeCoordinates = cityPOIs.map((city, index) => ({
       city: city.city,
       lat: city.lat,
@@ -405,7 +391,6 @@ serve(async (req) => {
       order: index + 1
     }));
 
-    // Add return to departure city
     if (cityPOIs.length > 0) {
       const departure = cityPOIs[0];
       routeCoordinates.push({
@@ -416,11 +401,9 @@ serve(async (req) => {
       });
     }
 
-    // Calculate total route distance
     const routeInfo = await calculateRouteDistance(routeCoordinates.map(c => ({ lat: c.lat, lng: c.lng })));
     console.log("Step 3: Route calculated - " + routeInfo.distance_km + "km, " + routeInfo.duration_hours + "h");
 
-    // Find rest stops between major segments
     const restStops: POI[] = [];
     for (let i = 0; i < Math.min(routeCoordinates.length - 1, 3); i++) {
       const stops = await findRestStops(routeCoordinates[i], routeCoordinates[i + 1]);
@@ -428,37 +411,34 @@ serve(async (req) => {
     }
     console.log("Found " + restStops.length + " rest stops along route");
 
-    // Build comprehensive POI data for AI prompt
+    // Build POI data for AI prompt
     const poisByCity = cityPOIs.map(city => {
       const formatPOIs = (pois: POI[], label: string) => {
-        if (pois.length === 0) return `**${label}:** Nema pronađenih lokacija u bazi`;
-        return `**${label} (${pois.length}):**\n${pois.slice(0, 8).map((p, i) => 
-          `${i + 1}. ${p.name} (${p.lat.toFixed(5)}, ${p.lng.toFixed(5)})${p.address ? ` - ${p.address}` : ''}${p.phone ? ` Tel: ${p.phone}` : ''}`
-        ).join('\n')}`;
+        if (pois.length === 0) return "**" + label + ":** Nema pronadjenih lokacija u bazi";
+        const poiList = pois.slice(0, 8).map((p, i) => {
+          let line = (i + 1) + ". " + p.name + " (" + p.lat.toFixed(5) + ", " + p.lng.toFixed(5) + ")";
+          if (p.address) line += " - " + p.address;
+          if (p.phone) line += " Tel: " + p.phone;
+          return line;
+        }).join('\n');
+        return "**" + label + " (" + pois.length + "):**\n" + poiList;
       };
       
-      return `
-### ${city.city.toUpperCase()} (GPS: ${city.lat.toFixed(4)}, ${city.lng.toFixed(4)})
-
-${formatPOIs(city.museums, 'MUZEJI')}
-
-${formatPOIs(city.monuments, 'SPOMENICI I HISTORIJSKE LOKACIJE')}
-
-${formatPOIs(city.restaurants, 'RESTORANI I KAFIĆI')}
-
-${formatPOIs(city.hotels, 'HOTELI I SMJEŠTAJ')}
-
-${formatPOIs(city.parks, 'PARKOVI')}
-
-${formatPOIs(city.educational, 'KULTURNE I EDUKATIVNE LOKACIJE')}
-`;
+      return "\n### " + city.city.toUpperCase() + " (GPS: " + city.lat.toFixed(4) + ", " + city.lng.toFixed(4) + ")\n\n" +
+        formatPOIs(city.museums, 'MUZEJI') + "\n\n" +
+        formatPOIs(city.monuments, 'SPOMENICI I HISTORIJSKE LOKACIJE') + "\n\n" +
+        formatPOIs(city.restaurants, 'RESTORANI I KAFICI') + "\n\n" +
+        formatPOIs(city.hotels, 'HOTELI I SMJESTAJ') + "\n\n" +
+        formatPOIs(city.parks, 'PARKOVI') + "\n\n" +
+        formatPOIs(city.educational, 'KULTURNE I EDUKATIVNE LOKACIJE');
     }).join('\n');
 
-    const restStopsInfo = restStops.length > 0 
-      ? `\n**ODMORIŠTA NA RUTI:**\n${restStops.map((s, i) => `${i + 1}. ${s.name} (${s.lat.toFixed(5)}, ${s.lng.toFixed(5)})`).join('\n')}`
-      : '\n**ODMORIŠTA:** Koristite standardna odmorišta na autoputu svaka 2 sata vožnje';
+    let restStopsInfo = '\n**ODMORISTA:** Koristite standardna odmorista na autoputu svaka 2 sata voznje';
+    if (restStops.length > 0) {
+      const stopsList = restStops.map((s, i) => (i + 1) + ". " + s.name + " (" + s.lat.toFixed(5) + ", " + s.lng.toFixed(5) + ")").join('\n');
+      restStopsInfo = '\n**ODMORISTA NA RUTI:**\n' + stopsList;
+    }
 
-    // Meeting point - IDSS School
     const meetingPoint = {
       name: "Internationale Deutsche Schule Sarajevo",
       address: "Buka 13, 71000 Sarajevo",
@@ -467,144 +447,89 @@ ${formatPOIs(city.educational, 'KULTURNE I EDUKATIVNE LOKACIJE')}
       phone: "+38733560520"
     };
 
-    const systemPrompt = `Ti si PREMIUM stručni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS).
+    const chaperonesToShow = tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : Math.ceil(tripData.studentCount / 15) + ' pratitelja';
 
-# KRITIČNO - SIGURNOST DJECE JE APSOLUTNI PRIORITET!
-Svaki detalj MORA biti TAČAN, PROVJEREN i SIGURAN za djecu.
+    const systemPrompt = "Ti si PREMIUM strucni planer skolskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS).\n\n" +
+      "# KRITICNO - SIGURNOST DJECE JE APSOLUTNI PRIORITET!\n" +
+      "Svaki detalj MORA biti TACAN, PROVJEREN i SIGURAN za djecu.\n\n" +
+      "# VERIFICIRANI PODACI IZ OPENSTREETMAP BAZE:\n" + poisByCity + "\n" + restStopsInfo + "\n\n" +
+      "# KALKULIRANI PODACI O RUTI (OSRM API):\n" +
+      "- Ukupna udaljenost: " + routeInfo.distance_km + " km\n" +
+      "- Procijenjeno vrijeme voznje: " + routeInfo.duration_hours + " sati\n" +
+      "- Ruta: " + fullRoute + "\n\n" +
+      "# MJESTO OKUPLJANJA I POLASKA:\n" +
+      "- " + meetingPoint.name + "\n" +
+      "- Adresa: " + meetingPoint.address + "\n" +
+      "- Koordinate: " + meetingPoint.lat + ", " + meetingPoint.lng + "\n" +
+      "- Telefon: " + meetingPoint.phone + "\n\n" +
+      "# OBAVEZNA PRAVILA ZA PLAN:\n\n" +
+      "1. **GENERIRAJ TACNO 3 VARIJANTE PLANA:**\n" +
+      '   - "Budget" (Ekonomicna): Hosteli, jednostavni obroci, besplatne atrakcije\n' +
+      '   - "Balanced" (Uravnotezena): 3* hoteli, lokalni restorani, glavne atrakcije\n' +
+      '   - "Premium" (VIP): 4-5* hoteli, kvalitetna hrana, sve atrakcije\n\n' +
+      "2. **SIGURNOSNI ZAHTJEVI (OBAVEZNO):**\n" +
+      "   - GPS koordinate za SVAKU lokaciju (iz gornje baze)\n" +
+      "   - Pauze svakih 2h za mladju djecu (do 10 god), 3h za stariju\n" +
+      "   - Odgovorna osoba za svaku aktivnost\n" +
+      "   - Alternativni plan za kisne dane\n\n" +
+      "3. **SMJESTAJ I OBROCI:**\n" +
+      "   - Koristi hotele/restorane IZ GORNJE LISTE ili poznate medjunarodne lance\n" +
+      "   - Sobe: djecaci i djevojcice odvojeno, pratitelji u susjednim sobama\n\n" +
+      "4. **VREMENSKA ORGANIZACIJA:**\n" +
+      "   - Realisticna vremena (guzve, pauze, prelasci)\n" +
+      "   - Budjenje najranije 06:30, spavanje najkasnije 22:00 za mladje\n" +
+      "   - Slobodno vrijeme za kupovinu/odmor\n\n" +
+      "5. **CIJENE (EUR, 2025/2026):**\n" +
+      "   - Realisticne procjene po kategorijama\n" +
+      "   - Ukljuciti: transport, smjestaj, obroke, ulaznice, osiguranje\n" +
+      (tripData.specialNeeds ? "\n## SPECIJALNE POTREBE (OBAVEZNO UKLJUCITI):\n" + tripData.specialNeeds : '') +
+      (tripData.medicalInfo ? "\n## MEDICINSKE INFORMACIJE:\n" + tripData.medicalInfo : '') +
+      "\n\n# FORMAT ODGOVORA:\n" +
+      "Odgovori ISKLJUCIVO validnim JSON objektom. NIKAKO markdown formatiranje, samo cisti JSON.\n\n" +
+      '{\n  "plans": [\n    {\n      "id": 1,\n      "type": "Budget",\n      "route": "' + fullRoute + '",\n' +
+      '      "reliability": 90,\n      "days": ' + tripDays + ',\n      "distance_km": ' + routeInfo.distance_km + ',\n' +
+      '      "travel_hours": ' + routeInfo.duration_hours + ',\n      "cost_per_student": 150,\n' +
+      '      "costs": {\n        "transport": 50,\n        "accommodation": 40,\n        "meals": 30,\n' +
+      '        "entry_fees": 15,\n        "insurance": 10,\n        "contingency": 5,\n        "total": 150\n      },\n' +
+      '      "why_this_fits": "kratko obrazlozenje",\n      "accommodation_info": "naziv hotela, adresa, kontakt",\n' +
+      '      "meeting_point": {\n        "name": "' + meetingPoint.name + '",\n        "address": "' + meetingPoint.address + '",\n' +
+      '        "lat": ' + meetingPoint.lat + ',\n        "lng": ' + meetingPoint.lng + ',\n        "time": "07:00"\n      },\n' +
+      '      "itinerary": [\n        {\n          "day": 1,\n          "date": "YYYY-MM-DD",\n          "title": "Naslov dana",\n' +
+      '          "summary": "Kratak opis",\n          "activities": [\n            {\n' +
+      '              "time": "HH:MM-HH:MM",\n              "description": "Opis aktivnosti",\n' +
+      '              "type": "meeting",\n              "location": "Naziv lokacije",\n' +
+      '              "lat": 43.86,\n              "lng": 18.40,\n              "notes": "Dodatne napomene"\n            }\n          ]\n        }\n      ],\n' +
+      '      "packing_list": ["stavka1", "stavka2"],\n      "rules": ["pravilo1", "pravilo2"]\n    }\n  ]\n}';
 
-# VERIFICIRANI PODACI IZ OPENSTREETMAP BAZE:
-${poisByCity}
-${restStopsInfo}
+    const userPrompt = "Generiraj 3 DETALJNE opcije plana putovanja:\n\n" +
+      "## PODACI O EKSKURZIJI:\n" +
+      "- **Skola:** Internationale Deutsche Schule Sarajevo\n" +
+      "- **Polaziste:** " + tripData.departureCity + "\n" +
+      "- **Destinacije:** " + tripData.destinations.join(', ') + "\n" +
+      "- **Razred:** " + tripData.gradeLevel + "\n" +
+      "- **Broj ucenika:** " + tripData.studentCount + "\n" +
+      "- **Pratitelji:** " + chaperonesToShow + "\n" +
+      "- **Prevoz:** " + tripData.transport + "\n" +
+      "- **Period:** " + tripData.departureDate + " do " + tripData.returnDate + " (" + tripDays + " dana)\n" +
+      "- **Plan obroka:** " + (tripData.mealPlan || 'polupansion') + "\n" +
+      "- **Smjestaj:** " + (tripData.accommodationType || 'hotel') + "\n" +
+      "- **Budzet po uceniku:** " + (tripData.budget || 300) + " EUR\n" +
+      (tripData.educationalFocus ? "- **Edukativni fokus:** " + tripData.educationalFocus + "\n" : '') +
+      (tripData.specialNeeds ? "- **Posebne napomene:** " + tripData.specialNeeds + "\n" : '') +
+      "\n## KRITICNI ZAHTJEVI:\n" +
+      "1. Koristi SAMO lokacije iz OpenStreetMap baze iznad\n" +
+      "2. Svaka lokacija MORA imati GPS koordinate\n" +
+      "3. Vremena moraju biti REALISTICNA\n" +
+      "4. Cijene u EUR za 2025/2026\n\n" +
+      "Odgovori SAMO cistim JSON objektom, bez markdown oznaka.";
 
-# KALKULIRANI PODACI O RUTI (OSRM API):
-- Ukupna udaljenost: ${routeInfo.distance_km} km
-- Procijenjeno vrijeme vožnje: ${routeInfo.duration_hours} sati
-- Ruta: ${fullRoute}
-
-# MJESTO OKUPLJANJA I POLASKA:
-- ${meetingPoint.name}
-- Adresa: ${meetingPoint.address}
-- Koordinate: ${meetingPoint.lat}, ${meetingPoint.lng}
-- Telefon: ${meetingPoint.phone}
-
-# OBAVEZNA PRAVILA ZA PLAN:
-
-1. **GENERIRAJ TAČNO 3 VARIJANTE PLANA:**
-   - "Budget" (Ekonomična): Hosteli, jednostavni obroci, besplatne atrakcije
-   - "Balanced" (Uravnotežena): 3* hoteli, lokalni restorani, glavne atrakcije
-   - "Premium" (VIP): 4-5* hoteli, kvalitetna hrana, sve atrakcije
-
-2. **SIGURNOSNI ZAHTJEVI (OBAVEZNO):**
-   - GPS koordinate za SVAKU lokaciju (iz gornje baze)
-   - Pauze svakih 2h za mlađu djecu (do 10 god), 3h za stariju
-   - Odgovorna osoba za svaku aktivnost
-   - Alternativni plan za kišne dane
-
-3. **SMJEŠTAJ I OBROCI:**
-   - Koristi hotele/restorane IZ GORNJE LISTE ili poznate međunarodne lance
-   - Sobe: dječaci i djevojčice odvojeno, pratitelji u susjednim sobama
-
-4. **VREMENSKA ORGANIZACIJA:**
-   - Realistična vremena (gužve, pauze, prelasci)
-   - Buđenje najranije 06:30, spavanje najkasnije 22:00 za mlađe
-   - Slobodno vrijeme za kupovinu/odmor
-
-5. **CIJENE (EUR, 2025/2026):**
-   - Realistične procjene po kategorijama
-   - Uključiti: transport, smještaj, obroke, ulaznice, osiguranje
-
-${tripData.specialNeeds ? `\n## SPECIJALNE POTREBE (OBAVEZNO UKLJUČITI):\n${tripData.specialNeeds}` : ''}
-${tripData.medicalInfo ? `\n## MEDICINSKE INFORMACIJE:\n${tripData.medicalInfo}` : ''}
-
-# FORMAT ODGOVORA:
-Odgovori ISKLJUČIVO validnim JSON objektom. NIKAKO markdown formatiranje, samo čisti JSON.
-
-{
-  "plans": [
-    {
-      "id": 1,
-      "type": "Budget",
-      "route": "${fullRoute}",
-      "reliability": 90-95,
-      "days": ${tripDays},
-      "distance_km": ${routeInfo.distance_km},
-      "travel_hours": ${routeInfo.duration_hours},
-      "cost_per_student": broj_u_eurima,
-      "costs": {
-        "transport": broj,
-        "accommodation": broj,
-        "meals": broj,
-        "entry_fees": broj,
-        "insurance": broj,
-        "contingency": broj,
-        "total": broj
-      },
-      "why_this_fits": "kratko obrazloženje",
-      "accommodation_info": "naziv hotela, adresa, kontakt",
-      "meeting_point": {
-        "name": "${meetingPoint.name}",
-        "address": "${meetingPoint.address}",
-        "lat": ${meetingPoint.lat},
-        "lng": ${meetingPoint.lng},
-        "time": "07:00"
-      },
-      "itinerary": [
-        {
-          "day": 1,
-          "date": "YYYY-MM-DD",
-          "title": "Naslov dana",
-          "summary": "Kratak opis",
-          "activities": [
-            {
-              "time": "HH:MM-HH:MM",
-              "description": "Opis aktivnosti",
-              "type": "meeting|travel|meal|visit|accommodation|free_time",
-              "location": "Naziv lokacije",
-              "lat": broj,
-              "lng": broj,
-              "notes": "Dodatne napomene"
-            }
-          ]
-        }
-      ],
-      "packing_list": ["stavka1", "stavka2"],
-      "rules": ["pravilo1", "pravilo2"]
-    }
-  ]
-}`;
-
-    const userPrompt = `Generiraj 3 DETALJNE opcije plana putovanja:
-
-## PODACI O EKSKURZIJI:
-- **Škola:** Internationale Deutsche Schule Sarajevo
-- **Polazište:** ${tripData.departureCity}
-- **Destinacije:** ${tripData.destinations.join(', ')}
-- **Razred:** ${tripData.gradeLevel}
-- **Broj učenika:** ${tripData.studentCount}
-- **Pratitelji:** ${tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : Math.ceil(tripData.studentCount / 15) + ' pratitelja'}
-- **Prevoz:** ${tripData.transport}
-- **Period:** ${tripData.departureDate} do ${tripData.returnDate} (${tripDays} dana)
-- **Plan obroka:** ${tripData.mealPlan || 'polupansion'}
-- **Smještaj:** ${tripData.accommodationType || 'hotel'}
-- **Budžet po učeniku:** ${tripData.budget || 300} EUR
-${tripData.educationalFocus ? `- **Edukativni fokus:** ${tripData.educationalFocus}` : ''}
-${tripData.specialNeeds ? `- **Posebne napomene:** ${tripData.specialNeeds}` : ''}
-
-## KRITIČNI ZAHTJEVI:
-1. Koristi SAMO lokacije iz OpenStreetMap baze iznad
-2. Svaka lokacija MORA imati GPS koordinate
-3. Vremena moraju biti REALISTIČNA
-4. Cijene u EUR za 2025/2026
-
-Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
-
-    console.log("\n🤖 Step 4: Calling AI Gateway for itinerary generation...");
+    console.log("\nStep 4: Calling AI Gateway for itinerary generation...");
     const startTime = Date.now();
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": "Bearer " + LOVABLE_API_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -625,7 +550,7 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
       console.error("AI Gateway error:", response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Previše zahtjeva. Molimo pokušajte ponovo za nekoliko minuta." }), {
+        return new Response(JSON.stringify({ error: "Previse zahtjeva. Molimo pokusajte ponovo za nekoliko minuta." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -647,9 +572,8 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
       throw new Error("Prazan odgovor od AI servisa");
     }
 
-    console.log("\n📋 Step 5: Parsing and validating AI response...");
+    console.log("\nStep 5: Parsing and validating AI response...");
 
-    // Parse the JSON from the response
     let plans;
     try {
       let jsonString = content.trim();
@@ -676,10 +600,9 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
     } catch (parseError) {
       console.error("JSON parse error:", parseError);
       console.error("Raw content:", content.substring(0, 500));
-      throw new Error("Greška pri parsiranju odgovora. Molimo pokušajte ponovo.");
+      throw new Error("Greska pri parsiranju odgovora. Molimo pokusajte ponovo.");
     }
 
-    // Validate the response structure
     if (!plans.plans || !Array.isArray(plans.plans)) {
       console.error("Invalid plans structure");
       throw new Error("Neispravan format planova.");
@@ -689,10 +612,8 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
       console.warn("Only " + plans.plans.length + " plans generated, expected 3");
     }
 
-    // Ensure route_coordinates exists with our verified data
     plans.route_coordinates = routeCoordinates;
 
-    // Add verification metadata
     plans.verification = {
       data_source: "OpenStreetMap (Overpass API) + Nominatim + OSRM",
       last_verified: new Date().toISOString(),
@@ -713,7 +634,6 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
       }))
     };
 
-    // Ensure educational_resources exists
     if (!plans.educational_resources) {
       plans.educational_resources = cityPOIs.map(city => ({
         city: city.city,
@@ -726,7 +646,7 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
       }));
     }
 
-    console.log("=".repeat(60));
+    console.log("============================================================");
     console.log("USPJESNO GENERIRANO:");
     console.log("   - " + plans.plans.length + " varijanti plana");
     console.log("   - " + cityPOIs.length + " gradova sa " + totalPOIs + " verificiranih POI-a");
@@ -734,7 +654,7 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
     plans.plans.forEach((p: any) => {
       console.log("   - " + p.type + ": " + p.cost_per_student + " EUR po uceniku");
     });
-    console.log("=".repeat(60));
+    console.log("============================================================");
 
     return new Response(JSON.stringify(plans), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -743,7 +663,7 @@ Odgovori SAMO čistim JSON objektom, bez ```json oznaka.`;
   } catch (error) {
     console.error("Error in generate-trip-plans:", error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Došlo je do neočekivane greške" 
+      error: error instanceof Error ? error.message : "Doslo je do neocekivane greske" 
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
