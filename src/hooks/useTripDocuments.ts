@@ -3,9 +3,10 @@ import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-interface Student {
+export interface Student {
+  id?: string;
   name: string;
-  class?: string;
+  gender?: "M" | "F";
   parentName?: string;
   parentPhone?: string;
   medicalNotes?: string;
@@ -303,6 +304,8 @@ export const useTripDocuments = () => {
       const margin = 15;
       let yPos = margin;
 
+      const hasStudentData = data.students && data.students.length > 0;
+
       // Header
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
@@ -327,13 +330,15 @@ export const useTripDocuments = () => {
       yPos += 10;
 
       // Table Header
-      const colWidths = [10, 55, 40, 45, 30];
-      const headers = ["Br.", "Ime i prezime ucenika", "Kontakt roditelja", "Napomene", "Potpis"];
+      const colWidths = hasStudentData ? [10, 50, 12, 40, 35, 33] : [10, 55, 40, 45, 30];
+      const headers = hasStudentData 
+        ? ["Br.", "Ime i prezime", "Spol", "Roditelj", "Telefon", "Napomene"]
+        : ["Br.", "Ime i prezime ucenika", "Kontakt roditelja", "Napomene", "Potpis"];
       
       doc.setFillColor(200, 100, 50);
       doc.rect(margin, yPos, pageWidth - 2 * margin, 8, "F");
       
-      doc.setFontSize(9);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
       
@@ -345,16 +350,16 @@ export const useTripDocuments = () => {
       doc.setTextColor(0, 0, 0);
       yPos += 8;
 
-      // Table Rows (empty for manual filling)
+      // Table Rows
       doc.setFont("helvetica", "normal");
-      const rowHeight = 12;
-      const totalStudents = data.studentCount || 25;
+      const rowHeight = 10;
+      const totalRows = hasStudentData ? data.students!.length : (data.studentCount || 25);
       
-      for (let i = 1; i <= totalStudents; i++) {
+      for (let i = 0; i < totalRows; i++) {
         yPos = checkNewPage(doc, yPos, margin, rowHeight + 5);
         
         // Row background alternating
-        if (i % 2 === 0) {
+        if (i % 2 === 1) {
           doc.setFillColor(245, 245, 245);
           doc.rect(margin, yPos, pageWidth - 2 * margin, rowHeight, "F");
         }
@@ -370,9 +375,37 @@ export const useTripDocuments = () => {
           xPos += width;
         });
         
+        // Row content
+        doc.setFontSize(8);
+        xPos = margin + 2;
+        
         // Row number
-        doc.setFontSize(9);
-        doc.text(String(i) + ".", margin + 3, yPos + 7);
+        doc.text(String(i + 1) + ".", xPos, yPos + 6);
+        xPos += colWidths[0];
+        
+        if (hasStudentData && data.students![i]) {
+          const student = data.students![i];
+          // Name
+          doc.setFont("helvetica", "bold");
+          doc.text(student.name.substring(0, 25), xPos, yPos + 6);
+          doc.setFont("helvetica", "normal");
+          xPos += colWidths[1];
+          // Gender
+          doc.text(student.gender === "F" ? "Z" : "M", xPos + 3, yPos + 6);
+          xPos += colWidths[2];
+          // Parent name
+          doc.text((student.parentName || "").substring(0, 20), xPos, yPos + 6);
+          xPos += colWidths[3];
+          // Phone
+          doc.text((student.parentPhone || "").substring(0, 15), xPos, yPos + 6);
+          xPos += colWidths[4];
+          // Notes
+          if (student.medicalNotes) {
+            doc.setTextColor(200, 100, 50);
+            doc.text(student.medicalNotes.substring(0, 18), xPos, yPos + 6);
+            doc.setTextColor(0, 0, 0);
+          }
+        }
         
         yPos += rowHeight;
       }
@@ -387,11 +420,23 @@ export const useTripDocuments = () => {
       yPos += 7;
 
       doc.setFont("helvetica", "normal");
-      doc.text("Ukupan broj ucenika: ___________", margin, yPos);
-      doc.text("Broj djevojcica: ___________", pageWidth / 2, yPos);
-      yPos += 6;
-      doc.text("Broj djecaka: ___________", margin, yPos);
-      doc.text("Ucenici sa posebnim potrebama: ___________", pageWidth / 2, yPos);
+      if (hasStudentData) {
+        const maleCount = data.students!.filter(s => s.gender === "M").length;
+        const femaleCount = data.students!.filter(s => s.gender === "F").length;
+        const specialNeeds = data.students!.filter(s => s.medicalNotes).length;
+        
+        doc.text("Ukupan broj ucenika: " + data.students!.length, margin, yPos);
+        doc.text("Broj djevojcica: " + femaleCount, pageWidth / 2, yPos);
+        yPos += 6;
+        doc.text("Broj djecaka: " + maleCount, margin, yPos);
+        doc.text("Ucenici sa posebnim potrebama: " + specialNeeds, pageWidth / 2, yPos);
+      } else {
+        doc.text("Ukupan broj ucenika: ___________", margin, yPos);
+        doc.text("Broj djevojcica: ___________", pageWidth / 2, yPos);
+        yPos += 6;
+        doc.text("Broj djecaka: ___________", margin, yPos);
+        doc.text("Ucenici sa posebnim potrebama: ___________", pageWidth / 2, yPos);
+      }
       yPos += 12;
 
       // Verification section

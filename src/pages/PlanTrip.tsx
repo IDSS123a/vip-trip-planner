@@ -18,6 +18,7 @@ import { usePdfExport } from "@/hooks/usePdfExport";
 import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { tripValidationSchema, type ValidatedTripFormData } from "@/lib/tripValidation";
+import type { Student } from "@/components/trip/StudentListInput";
 
 interface TripPlansData {
   plans: any[];
@@ -34,6 +35,7 @@ const PlanTrip = () => {
   const [shareId, setShareId] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
+  const [students, setStudents] = useState<Student[]>([]);
   
   const { toast } = useToast();
   const { saveTrip, updateTrip, makePublic, isSaving } = useTripStorage();
@@ -427,6 +429,8 @@ const PlanTrip = () => {
                 returnDate={watchedValues.returnDate ? format(watchedValues.returnDate, "yyyy-MM-dd") : undefined}
                 gradeLevel={watchedValues.gradeLevel}
                 studentCount={parseInt(watchedValues.studentCount) || 20}
+                students={students}
+                onStudentsChange={setStudents}
               />
               
               <div className="flex gap-4 pt-4">

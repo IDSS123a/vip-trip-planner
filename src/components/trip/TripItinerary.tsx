@@ -32,6 +32,7 @@ import {
   FolderOpen
 } from "lucide-react";
 import TripRouteMap from "./TripRouteMap";
+import StudentListInput, { type Student } from "./StudentListInput";
 import { useTripDocuments } from "@/hooks/useTripDocuments";
 
 interface Activity {
@@ -104,6 +105,8 @@ interface TripItineraryProps {
   returnDate?: string;
   gradeLevel?: string;
   studentCount?: number;
+  students?: Student[];
+  onStudentsChange?: (students: Student[]) => void;
 }
 
 const getActivityIcon = (type: Activity["type"]) => {
@@ -134,7 +137,9 @@ const TripItinerary = ({
   departureDate,
   returnDate,
   gradeLevel,
-  studentCount
+  studentCount,
+  students = [],
+  onStudentsChange
 }: TripItineraryProps) => {
   const { 
     generateParentPermission, 
@@ -170,6 +175,7 @@ const TripItinerary = ({
       studentCount: studentCount || 20,
       chaperones,
       plan: plansData.plans[0],
+      students: students.length > 0 ? students : undefined,
     });
   };
 
@@ -285,6 +291,16 @@ const TripItinerary = ({
           </p>
         </CardContent>
       </Card>
+
+      {/* Student List Input */}
+      {onStudentsChange && (
+        <StudentListInput
+          students={students}
+          onStudentsChange={onStudentsChange}
+          expectedCount={studentCount || 20}
+          gradeLevel={gradeLevel}
+        />
+      )}
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
