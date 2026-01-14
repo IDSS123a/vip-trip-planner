@@ -420,6 +420,13 @@ const PlanTrip = () => {
                 isLoading={isLoading}
                 error={error}
                 chaperones={chaperones}
+                tripName={watchedValues.tripName || `${watchedValues.departureCity} → ${destinations.join(" → ")}`}
+                departureCity={watchedValues.departureCity}
+                destinations={destinations}
+                departureDate={watchedValues.tripDate ? format(watchedValues.tripDate, "yyyy-MM-dd") : undefined}
+                returnDate={watchedValues.returnDate ? format(watchedValues.returnDate, "yyyy-MM-dd") : undefined}
+                gradeLevel={watchedValues.gradeLevel}
+                studentCount={parseInt(watchedValues.studentCount) || 20}
               />
               
               <div className="flex gap-4 pt-4">

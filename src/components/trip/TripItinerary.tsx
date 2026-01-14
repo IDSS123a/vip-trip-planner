@@ -26,9 +26,13 @@ import {
   Camera,
   Sparkles,
   Train,
-  ShieldCheck
+  ShieldCheck,
+  ClipboardList,
+  UserCheck,
+  FolderOpen
 } from "lucide-react";
 import TripRouteMap from "./TripRouteMap";
+import { useTripDocuments } from "@/hooks/useTripDocuments";
 
 interface Activity {
   time: string;
@@ -93,6 +97,13 @@ interface TripItineraryProps {
   isLoading: boolean;
   error: string | null;
   chaperones: string[];
+  tripName?: string;
+  departureCity?: string;
+  destinations?: string[];
+  departureDate?: string;
+  returnDate?: string;
+  gradeLevel?: string;
+  studentCount?: number;
 }
 
 const getActivityIcon = (type: Activity["type"]) => {
@@ -112,7 +123,71 @@ const getReliabilityColor = (reliability: number) => {
   return "text-red-500";
 };
 
-const TripItinerary = ({ plansData, isLoading, error, chaperones }: TripItineraryProps) => {
+const TripItinerary = ({ 
+  plansData, 
+  isLoading, 
+  error, 
+  chaperones,
+  tripName,
+  departureCity,
+  destinations,
+  departureDate,
+  returnDate,
+  gradeLevel,
+  studentCount
+}: TripItineraryProps) => {
+  const { 
+    generateParentPermission, 
+    generateStudentList, 
+    generateFullDocumentation, 
+    isGenerating 
+  } = useTripDocuments();
+
+  const handleGenerateParentPermission = () => {
+    if (!plansData?.plans?.[0]) return;
+    generateParentPermission({
+      tripName: tripName || plansData.plans[0].route,
+      departureCity: departureCity || "Sarajevo",
+      destinations: destinations || [],
+      departureDate,
+      returnDate,
+      gradeLevel,
+      studentCount: studentCount || 20,
+      chaperones,
+      plan: plansData.plans[0],
+    });
+  };
+
+  const handleGenerateStudentList = () => {
+    if (!plansData?.plans?.[0]) return;
+    generateStudentList({
+      tripName: tripName || plansData.plans[0].route,
+      departureCity: departureCity || "Sarajevo",
+      destinations: destinations || [],
+      departureDate,
+      returnDate,
+      gradeLevel,
+      studentCount: studentCount || 20,
+      chaperones,
+      plan: plansData.plans[0],
+    });
+  };
+
+  const handleGenerateFullDocumentation = () => {
+    if (!plansData?.plans?.[0]) return;
+    generateFullDocumentation({
+      tripName: tripName || plansData.plans[0].route,
+      departureCity: departureCity || "Sarajevo",
+      destinations: destinations || [],
+      departureDate,
+      returnDate,
+      gradeLevel,
+      studentCount: studentCount || 20,
+      chaperones,
+      plan: plansData.plans[0],
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -167,6 +242,50 @@ const TripItinerary = ({ plansData, isLoading, error, chaperones }: TripItinerar
 
   return (
     <div className="space-y-6">
+      {/* PDF Documentation Buttons */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <FolderOpen className="h-5 w-5 text-primary" />
+            Generiranje PDF Dokumentacije
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={handleGenerateParentPermission}
+              disabled={isGenerating}
+              className="gap-2"
+              variant="default"
+            >
+              <UserCheck className="h-4 w-4" />
+              {isGenerating ? "Generiranje..." : "Saglasnost Roditelja"}
+            </Button>
+            <Button 
+              onClick={handleGenerateStudentList}
+              disabled={isGenerating}
+              className="gap-2"
+              variant="outline"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Lista Učenika
+            </Button>
+            <Button 
+              onClick={handleGenerateFullDocumentation}
+              disabled={isGenerating}
+              className="gap-2"
+              variant="outline"
+            >
+              <FolderOpen className="h-4 w-4" />
+              Kompletna Dokumentacija
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Generirajte sve potrebne dokumente za ekskurziju: saglasnosti roditelja, liste učenika i kompletnu dokumentaciju sa itinerarom.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
         <Button className="gap-2">
@@ -177,7 +296,7 @@ const TripItinerary = ({ plansData, isLoading, error, chaperones }: TripItinerar
           <FileText className="h-4 w-4" />
           Generiši Predložak (Offline)
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => window.print()}>
           <Printer className="h-4 w-4" />
           Print
         </Button>
