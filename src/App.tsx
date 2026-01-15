@@ -11,6 +11,13 @@ import Contact from "./pages/Contact";
 import SharedTrip from "./pages/SharedTrip";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import SafetyGuidelines from "./pages/SafetyGuidelines";
+import FAQ from "./pages/FAQ";
+import TeacherGuide from "./pages/TeacherGuide";
+import ParentPortal from "./pages/ParentPortal";
+import EmergencyProcedures from "./pages/EmergencyProcedures";
+import Accessibility from "./pages/Accessibility";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +35,13 @@ const App = () => (
           <Route path="/destinations" element={<Destinations />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/trip/:shareId" element={<SharedTrip />} />
+          <Route path="/safety-guidelines" element={<SafetyGuidelines />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/teacher-guide" element={<TeacherGuide />} />
+          <Route path="/parent-portal" element={<ParentPortal />} />
+          <Route path="/emergency-procedures" element={<EmergencyProcedures />} />
+          <Route path="/accessibility" element={<Accessibility />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

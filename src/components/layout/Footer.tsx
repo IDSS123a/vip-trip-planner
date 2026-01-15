@@ -25,15 +25,21 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">Quick Links</h4>
+            <h4 className="text-sm font-semibold text-foreground">Brzi Linkovi</h4>
             <ul className="space-y-2">
-              {["Plan a Trip", "My Trips", "Destinations", "Safety Guidelines", "FAQ"].map((item) => (
-                <li key={item}>
+              {[
+                { name: "Planiraj Ekskurziju", href: "/plan-trip" },
+                { name: "Moje Ekskurzije", href: "/my-trips" },
+                { name: "Destinacije", href: "/destinations" },
+                { name: "Sigurnosne Smjernice", href: "/safety-guidelines" },
+                { name: "FAQ", href: "/faq" },
+              ].map((item) => (
+                <li key={item.name}>
                   <Link
-                    to={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
+                    to={item.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
-                    {item}
+                    {item.name}
                   </Link>
                 </li>
               ))}
@@ -42,15 +48,21 @@ const Footer = () => {
 
           {/* Resources */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">Resources</h4>
+            <h4 className="text-sm font-semibold text-foreground">Resursi</h4>
             <ul className="space-y-2">
-              {["Teacher Guide", "Parent Portal", "Emergency Procedures", "Accessibility", "Privacy Policy"].map((item) => (
-                <li key={item}>
+              {[
+                { name: "Vodič za Nastavnike", href: "/teacher-guide" },
+                { name: "Portal za Roditelje", href: "/parent-portal" },
+                { name: "Hitni Postupci", href: "/emergency-procedures" },
+                { name: "Pristupačnost", href: "/accessibility" },
+                { name: "Politika Privatnosti", href: "/privacy-policy" },
+              ].map((item) => (
+                <li key={item.name}>
                   <Link
-                    to={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
+                    to={item.href}
                     className="text-sm text-muted-foreground hover:text-primary transition-colors"
                   >
-                    {item}
+                    {item.name}
                   </Link>
                 </li>
               ))}
