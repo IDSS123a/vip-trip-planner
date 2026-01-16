@@ -343,6 +343,17 @@ const Auth = () => {
                         </FormItem>
                       )}
                     />
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="px-0 text-muted-foreground hover:text-primary"
+                        onClick={() => setShowReset(true)}
+                      >
+                        Forgot Password?
+                      </Button>
+                    </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
