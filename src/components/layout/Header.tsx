@@ -68,14 +68,14 @@ const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => (
-            <Link key={item.name} to={item.href}>
-              <Button
-                variant={location.pathname === item.href ? "default" : "ghost"}
-                size="sm"
-              >
-                {item.name}
-              </Button>
-            </Link>
+            <Button
+              key={item.name}
+              variant={location.pathname === item.href ? "default" : "ghost"}
+              size="sm"
+              asChild
+            >
+              <Link to={item.href}>{item.name}</Link>
+            </Button>
           ))}
         </nav>
 
@@ -129,16 +129,12 @@ const Header = () => {
             </DropdownMenu>
           ) : (
             <>
-              <Link to="/auth">
-                <Button variant="outline" size="sm">
-                  Prijava
-                </Button>
-              </Link>
-              <Link to="/auth">
-                <Button size="sm">
-                  Registracija
-                </Button>
-              </Link>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">Prijava</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/auth">Registracija</Link>
+              </Button>
             </>
           )}
         </div>
@@ -196,16 +192,12 @@ const Header = () => {
                   </>
                 ) : (
                   <>
-                    <Link to="/auth" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full">
-                        Prijava
-                      </Button>
-                    </Link>
-                    <Link to="/auth" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full">
-                        Registracija
-                      </Button>
-                    </Link>
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>Prijava</Link>
+                    </Button>
+                    <Button className="w-full" asChild>
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>Registracija</Link>
+                    </Button>
                   </>
                 )}
               </div>

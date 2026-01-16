@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, User, Loader2, GraduationCap } from "lucide-react";
+import { Mail, Lock, User, Loader2, GraduationCap, ArrowLeft } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -27,12 +27,18 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const resetSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
 type LoginFormData = z.infer<typeof loginSchema>;
 type SignupFormData = z.infer<typeof signupSchema>;
+type ResetFormData = z.infer<typeof resetSchema>;
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [showReset, setShowReset] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -44,6 +50,11 @@ const Auth = () => {
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
+  });
+
+  const resetForm = useForm<ResetFormData>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { email: "" },
   });
 
   // Check if user is already logged in
@@ -155,6 +166,38 @@ const Auth = () => {
     }
   };
 
+  const handlePasswordReset = async (data: ResetFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Reset Failed",
+          description: error.message,
+        });
+        return;
+      }
+
+      toast({
+        title: "Check Your Email",
+        description: "If an account exists with this email, you'll receive a password reset link.",
+      });
+      setShowReset(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
@@ -182,6 +225,50 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
+
+  // Password Reset View
+  if (showReset) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="border-border">
+            <CardHeader>
+              <Button variant="ghost" size="sm" onClick={() => setShowReset(false)} className="w-fit mb-2">
+                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Login
+              </Button>
+              <CardTitle>Reset Password</CardTitle>
+              <CardDescription>Enter your email to receive a reset link</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...resetForm}>
+                <form onSubmit={resetForm.handleSubmit(handlePasswordReset)} className="space-y-4">
+                  <FormField
+                    control={resetForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input {...field} type="email" placeholder="you@example.com" className="pl-10" disabled={isLoading} />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : "Send Reset Link"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
