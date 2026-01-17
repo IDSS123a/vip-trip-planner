@@ -11,6 +11,7 @@ import Contact from "./pages/Contact";
 import SharedTrip from "./pages/SharedTrip";
 import Auth from "./pages/Auth";
 import UpdatePassword from "./pages/UpdatePassword";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 import SafetyGuidelines from "./pages/SafetyGuidelines";
 import FAQ from "./pages/FAQ";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/update-password" element={<UpdatePassword />} />
+          <Route path="/install" element={<Install />} />
           <Route path="/plan-trip" element={<PlanTrip />} />
           <Route path="/my-trips" element={<MyTrips />} />
           <Route path="/destinations" element={<Destinations />} />
