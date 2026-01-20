@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// VAPID public key - in production, generate your own
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+// VAPID public key for Web Push notifications
+const VAPID_PUBLIC_KEY = 'BJ_5QpxrzlQPFZg4VIv_1GS6pgyyutoQnshEUCafrbFfisG96Mbfm1daJmt9Q6havpa4zIwrAEf06MCp-jvHuwo';
 
 interface PushNotificationStatus {
   isSupported: boolean;

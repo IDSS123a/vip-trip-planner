@@ -6,9 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// VAPID keys - in production, use environment variables
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || '';
+// VAPID keys for Web Push notifications
+const VAPID_PUBLIC_KEY = 'BJ_5QpxrzlQPFZg4VIv_1GS6pgyyutoQnshEUCafrbFfisG96Mbfm1daJmt9Q6havpa4zIwrAEf06MCp-jvHuwo';
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 
 interface PushNotificationRequest {
   userId?: string;
