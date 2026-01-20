@@ -20,6 +20,7 @@ import ParentPortal from "./pages/ParentPortal";
 import EmergencyProcedures from "./pages/EmergencyProcedures";
 import Accessibility from "./pages/Accessibility";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/emergency-procedures" element={<EmergencyProcedures />} />
           <Route path="/accessibility" element={<Accessibility />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

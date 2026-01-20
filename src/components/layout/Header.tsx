@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Menu, MapPin, LogOut, User, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { OfflineSyncStatus } from "@/components/offline/OfflineSyncStatus";
 
 const navItems = [
   { name: "Početna", href: "/" },
@@ -80,6 +81,7 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+          <OfflineSyncStatus />
           {isLoading ? (
             <div className="h-8 w-20 animate-pulse bg-muted rounded" />
           ) : isAuthenticated ? (
@@ -118,6 +120,12 @@ const Header = () => {
                   <Link to="/plan-trip" className="cursor-pointer">
                     <MapPin className="mr-2 h-4 w-4" />
                     Nova Ekskurzija
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Postavke
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
