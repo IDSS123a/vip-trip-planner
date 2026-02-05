@@ -77,7 +77,7 @@ const PlanTrip = () => {
     setActiveTab("itinerary");
 
     try {
-      console.log("Generating trip plans with data:", data);
+      // Debug log removed for production
 
       const { data: responseData, error: functionError } = await supabase.functions.invoke('generate-trip-plans', {
         body: {
@@ -104,7 +104,6 @@ const PlanTrip = () => {
         throw new Error(responseData.error);
       }
 
-      console.log("Received plans data:", responseData);
       setPlansData(responseData);
 
       toast({
