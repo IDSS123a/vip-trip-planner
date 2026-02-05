@@ -37,7 +37,6 @@ const Contact = () => {
   });
 
   const onSubmit = (data: ContactFormData) => {
-    console.log(data);
     toast({
       title: "Message Sent!",
       description: "We'll get back to you within 24 hours.",
