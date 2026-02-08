@@ -17,6 +17,8 @@ interface TripRouteMapProps {
   destinationLat?: number;
   destinationLng?: number;
   routeCoordinates?: RouteCoordinate[];
+  /** All destinations in order — used for multi-stop preview when routeCoordinates are not yet available */
+  allDestinations?: string[];
 }
 
 // Extensive city coordinates database
@@ -24,17 +26,23 @@ const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   'sarajevo': { lat: 43.8563, lng: 18.4131 },
   'budapest': { lat: 47.4979, lng: 19.0402 },
   'budimpešta': { lat: 47.4979, lng: 19.0402 },
+  'budimpesta': { lat: 47.4979, lng: 19.0402 },
   'zagreb': { lat: 45.8150, lng: 15.9819 },
   'belgrade': { lat: 44.7866, lng: 20.4489 },
   'beograd': { lat: 44.7866, lng: 20.4489 },
   'vienna': { lat: 48.2082, lng: 16.3738 },
   'beč': { lat: 48.2082, lng: 16.3738 },
+  'bec': { lat: 48.2082, lng: 16.3738 },
+  'wien': { lat: 48.2082, lng: 16.3738 },
   'prague': { lat: 50.0755, lng: 14.4378 },
   'prag': { lat: 50.0755, lng: 14.4378 },
+  'praha': { lat: 50.0755, lng: 14.4378 },
   'munich': { lat: 48.1351, lng: 11.5820 },
   'münchen': { lat: 48.1351, lng: 11.5820 },
+  'munchen': { lat: 48.1351, lng: 11.5820 },
   'rome': { lat: 41.9028, lng: 12.4964 },
   'rim': { lat: 41.9028, lng: 12.4964 },
+  'roma': { lat: 41.9028, lng: 12.4964 },
   'paris': { lat: 48.8566, lng: 2.3522 },
   'pariz': { lat: 48.8566, lng: 2.3522 },
   'berlin': { lat: 52.5200, lng: 13.4050 },
@@ -52,8 +60,10 @@ const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   'atena': { lat: 37.9838, lng: 23.7275 },
   'venice': { lat: 45.4408, lng: 12.3155 },
   'venecija': { lat: 45.4408, lng: 12.3155 },
+  'venezia': { lat: 45.4408, lng: 12.3155 },
   'florence': { lat: 43.7696, lng: 11.2558 },
   'firenca': { lat: 43.7696, lng: 11.2558 },
+  'firenze': { lat: 43.7696, lng: 11.2558 },
   'bologna': { lat: 44.4949, lng: 11.3426 },
   'padova': { lat: 45.4064, lng: 11.8768 },
   'amsterdam': { lat: 52.3676, lng: 4.9041 },
@@ -64,6 +74,8 @@ const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   'krakiv': { lat: 50.0647, lng: 19.9450 },
   'warsaw': { lat: 52.2297, lng: 21.0122 },
   'varšava': { lat: 52.2297, lng: 21.0122 },
+  'varsava': { lat: 52.2297, lng: 21.0122 },
+  'warszawa': { lat: 52.2297, lng: 21.0122 },
   'bratislava': { lat: 48.1486, lng: 17.1077 },
   'salzburg': { lat: 47.8095, lng: 13.0550 },
   'innsbruck': { lat: 47.2692, lng: 11.4041 },
@@ -76,12 +88,57 @@ const cityCoordinates: Record<string, { lat: number; lng: number }> = {
   'verona': { lat: 45.4384, lng: 10.9916 },
   'trieste': { lat: 45.6495, lng: 13.7768 },
   'trst': { lat: 45.6495, lng: 13.7768 },
+  'trebinje': { lat: 42.7119, lng: 18.3464 },
+  'neum': { lat: 42.9231, lng: 17.6156 },
+  'jajce': { lat: 44.3392, lng: 17.2700 },
+  'travnik': { lat: 44.2264, lng: 17.6653 },
+  'konjic': { lat: 43.6519, lng: 17.9619 },
+  'visoko': { lat: 43.9889, lng: 18.1781 },
 };
 
 const getCoordinates = (city: string): { lat: number; lng: number } | null => {
-  const normalizedCity = city.toLowerCase().trim();
-  return cityCoordinates[normalizedCity] || null;
+  const normalizedCity = city.toLowerCase().replace(/,.*$/, '').replace(/\s+/g, ' ').trim();
+  if (cityCoordinates[normalizedCity]) return cityCoordinates[normalizedCity];
+  // Partial match
+  for (const [key, coords] of Object.entries(cityCoordinates)) {
+    if (normalizedCity.includes(key) || key.includes(normalizedCity)) return coords;
+  }
+  return null;
 };
+
+/**
+ * Build route points from departure + allDestinations + return to departure.
+ * Used when routeCoordinates from the edge function are not yet available.
+ */
+function buildPreviewRoute(
+  departureCity: string,
+  allDestinations: string[],
+  departureLat?: number,
+  departureLng?: number
+): RouteCoordinate[] {
+  const points: RouteCoordinate[] = [];
+  
+  // Departure
+  const depCoords = (departureLat && departureLng)
+    ? { lat: departureLat, lng: departureLng }
+    : getCoordinates(departureCity) || { lat: 43.8563, lng: 18.4131 };
+  points.push({ city: departureCity, lat: depCoords.lat, lng: depCoords.lng, order: 1 });
+  
+  // Each destination in order
+  allDestinations.forEach((dest, i) => {
+    const coords = getCoordinates(dest);
+    if (coords) {
+      points.push({ city: dest, lat: coords.lat, lng: coords.lng, order: i + 2 });
+    }
+  });
+  
+  // Return to departure
+  if (points.length > 1) {
+    points.push({ city: departureCity + ' (povratak)', lat: depCoords.lat, lng: depCoords.lng, order: points.length + 1 });
+  }
+  
+  return points;
+}
 
 const TripRouteMap = ({ 
   departureCity, 
@@ -90,7 +147,8 @@ const TripRouteMap = ({
   departureLng,
   destinationLat,
   destinationLng,
-  routeCoordinates
+  routeCoordinates,
+  allDestinations
 }: TripRouteMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
@@ -108,25 +166,25 @@ const TripRouteMap = ({
     let allPoints: { city: string; lat: number; lng: number; order: number }[] = [];
 
     if (routeCoordinates && routeCoordinates.length > 0) {
-      // Use provided route coordinates
-      allPoints = routeCoordinates.sort((a, b) => a.order - b.order);
+      // Use provided route coordinates from edge function (most accurate)
+      allPoints = [...routeCoordinates].sort((a, b) => a.order - b.order);
+    } else if (allDestinations && allDestinations.length > 0) {
+      // Build preview route from form data (departure → destinations → return)
+      allPoints = buildPreviewRoute(departureCity, allDestinations, departureLat, departureLng);
     } else {
-      // Fallback to departure/destination
-      let depCoords = departureLat && departureLng 
+      // Simple two-point fallback
+      const depCoords = (departureLat && departureLng)
         ? { lat: departureLat, lng: departureLng }
-        : getCoordinates(departureCity);
+        : getCoordinates(departureCity) || { lat: 43.8563, lng: 18.4131 };
       
-      let destCoords = destinationLat && destinationLng
+      const destCoords = (destinationLat && destinationLng)
         ? { lat: destinationLat, lng: destinationLng }
         : getCoordinates(destinationCity);
 
-      if (!depCoords) depCoords = { lat: 43.8563, lng: 18.4131 };
-      if (!destCoords) destCoords = { lat: 47.4979, lng: 19.0402 };
-
-      allPoints = [
-        { city: departureCity || 'Sarajevo', lat: depCoords.lat, lng: depCoords.lng, order: 1 },
-        { city: destinationCity || 'Budapest', lat: destCoords.lat, lng: destCoords.lng, order: 2 }
-      ];
+      allPoints.push({ city: departureCity || 'Sarajevo', lat: depCoords.lat, lng: depCoords.lng, order: 1 });
+      if (destCoords) {
+        allPoints.push({ city: destinationCity, lat: destCoords.lat, lng: destCoords.lng, order: 2 });
+      }
     }
 
     if (allPoints.length === 0) return;
@@ -149,11 +207,11 @@ const TripRouteMap = ({
 
     // Create markers and polyline points
     const polylinePoints: [number, number][] = [];
+    const totalStops = allPoints.length;
 
     allPoints.forEach((point, index) => {
       const isFirst = index === 0;
-      const isLast = index === allPoints.length - 1;
-      const isIntermediate = !isFirst && !isLast;
+      const isLast = index === totalStops - 1;
 
       // Custom icon based on position
       let icon: L.DivIcon;
@@ -215,7 +273,7 @@ const TripRouteMap = ({
         mapInstance.current = null;
       }
     };
-  }, [departureCity, destinationCity, departureLat, departureLng, destinationLat, destinationLng, routeCoordinates]);
+  }, [departureCity, destinationCity, departureLat, departureLng, destinationLat, destinationLng, routeCoordinates, allDestinations]);
 
   return (
     <div className="relative w-full h-[400px] rounded-lg overflow-hidden border border-border">

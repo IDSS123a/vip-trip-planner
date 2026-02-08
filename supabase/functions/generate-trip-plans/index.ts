@@ -46,7 +46,10 @@ interface CityPOIs {
   educational: POI[];
 }
 
-// Geocode city using Nominatim (completely free, no API key needed)
+// =====================================================================
+// GEOCODING & POI FETCHING
+// =====================================================================
+
 async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
     const url = "https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(cityName) + "&format=json&limit=1&addressdetails=1";
@@ -65,7 +68,6 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
   }
 }
 
-// Fetch POIs using Overpass API (completely free, no API key needed)
 async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 15): Promise<POI[]> {
   try {
     let query = '';
@@ -119,12 +121,19 @@ async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limi
 }
 
 async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
+  // Try geocoding first
   let geoData = await geocodeCity(cityName);
+  if (!geoData) {
+    // Try with retry once after 500ms (rate limiting)
+    await new Promise(r => setTimeout(r, 500));
+    geoData = await geocodeCity(cityName);
+  }
   if (!geoData) {
     const fallbackCoords = getFallbackCoordinates(cityName);
     if (fallbackCoords) {
       geoData = { ...fallbackCoords, displayName: cityName };
     } else {
+      console.error("No coordinates found for city: " + cityName + " — city will be skipped from POI fetch but kept in route");
       return null;
     }
   }
@@ -174,6 +183,10 @@ function estimateDistance(coordinates: Array<{lat: number; lng: number}>): {dist
   return { distance_km: Math.round(totalDistance), duration_hours: Math.round(totalDistance / 70 * 10) / 10 };
 }
 
+// =====================================================================
+// FALLBACK COORDINATES DATABASE
+// =====================================================================
+
 function getFallbackCoordinates(cityName: string): { lat: number; lng: number } | null {
   const normalizedName = cityName.toLowerCase().replace(/,.*$/, '').replace(/\s+/g, ' ').trim();
   const cityCoords: Record<string, { lat: number; lng: number }> = {
@@ -181,6 +194,7 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'belgrade': { lat: 44.7866, lng: 20.4489 }, 'budimpesta': { lat: 47.4979, lng: 19.0402 },
     'budapest': { lat: 47.4979, lng: 19.0402 }, 'zagreb': { lat: 45.8150, lng: 15.9819 },
     'ljubljana': { lat: 46.0569, lng: 14.5058 }, 'bec': { lat: 48.2082, lng: 16.3738 },
+    'beč': { lat: 48.2082, lng: 16.3738 },
     'vienna': { lat: 48.2082, lng: 16.3738 }, 'wien': { lat: 48.2082, lng: 16.3738 },
     'prag': { lat: 50.0755, lng: 14.4378 }, 'prague': { lat: 50.0755, lng: 14.4378 },
     'praha': { lat: 50.0755, lng: 14.4378 }, 'rim': { lat: 41.9028, lng: 12.4964 },
@@ -191,6 +205,7 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'florence': { lat: 43.7696, lng: 11.2558 }, 'firenze': { lat: 43.7696, lng: 11.2558 },
     'mostar': { lat: 43.3438, lng: 17.8078 }, 'dubrovnik': { lat: 42.6507, lng: 18.0944 },
     'split': { lat: 43.5081, lng: 16.4402 }, 'munchen': { lat: 48.1351, lng: 11.5820 },
+    'münchen': { lat: 48.1351, lng: 11.5820 },
     'munich': { lat: 48.1351, lng: 11.5820 }, 'berlin': { lat: 52.5200, lng: 13.4050 },
     'pariz': { lat: 48.8566, lng: 2.3522 }, 'paris': { lat: 48.8566, lng: 2.3522 },
     'amsterdam': { lat: 52.3676, lng: 4.9041 }, 'barcelona': { lat: 41.3851, lng: 2.1734 },
@@ -205,6 +220,12 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
     'neum': { lat: 42.9231, lng: 17.6156 }, 'jajce': { lat: 44.3392, lng: 17.2700 },
     'travnik': { lat: 44.2264, lng: 17.6653 }, 'konjic': { lat: 43.6519, lng: 17.9619 },
     'visoko': { lat: 43.9889, lng: 18.1781 },
+    'salzburg': { lat: 47.8095, lng: 13.0550 }, 'innsbruck': { lat: 47.2692, lng: 11.4041 },
+    'graz': { lat: 47.0707, lng: 15.4395 },
+    'milan': { lat: 45.4642, lng: 9.1900 }, 'milano': { lat: 45.4642, lng: 9.1900 },
+    'napoli': { lat: 40.8518, lng: 14.2681 }, 'naples': { lat: 40.8518, lng: 14.2681 },
+    'pisa': { lat: 43.7228, lng: 10.4017 }, 'verona': { lat: 45.4384, lng: 10.9916 },
+    'trieste': { lat: 45.6495, lng: 13.7768 }, 'trst': { lat: 45.6495, lng: 13.7768 },
   };
   if (cityCoords[normalizedName]) return cityCoords[normalizedName];
   for (const [key, coords] of Object.entries(cityCoords)) {
@@ -240,8 +261,90 @@ async function findRestStops(fromCoords: {lat: number; lng: number}, toCoords: {
 }
 
 // =====================================================================
-// FALLBACK PLAN GENERATOR - Creates detailed plans from real POI data
-// Used when AI Gateway is unavailable (402, 429, or other errors)
+// BUILD ROUTE COORDINATES - NEVER DROPS CITIES
+// =====================================================================
+
+/**
+ * Build route coordinates that ALWAYS include every user-specified city.
+ * Even if geocoding and POI fetch failed for a city, we use fallback coords
+ * or interpolate between known neighbors.
+ */
+function buildRouteCoordinates(
+  departureCity: string,
+  destinations: string[],
+  cityPOIs: CityPOIs[]
+): Array<{ city: string; lat: number; lng: number; order: number }> {
+  const allCityNames = [departureCity, ...destinations];
+  const coords: Array<{ city: string; lat: number; lng: number; order: number }> = [];
+  
+  // Build a lookup from cityPOIs
+  const poiLookup = new Map<string, CityPOIs>();
+  for (const cp of cityPOIs) {
+    poiLookup.set(cp.city.toLowerCase().trim(), cp);
+  }
+  
+  for (let i = 0; i < allCityNames.length; i++) {
+    const cityName = allCityNames[i];
+    const key = cityName.toLowerCase().trim();
+    const poiData = poiLookup.get(key);
+    
+    if (poiData) {
+      coords.push({ city: cityName, lat: poiData.lat, lng: poiData.lng, order: i + 1 });
+    } else {
+      // City wasn't in POI results — try fallback coordinates
+      const fallback = getFallbackCoordinates(cityName);
+      if (fallback) {
+        coords.push({ city: cityName, lat: fallback.lat, lng: fallback.lng, order: i + 1 });
+      } else {
+        // Last resort: interpolate between neighbors
+        const prevCoord = coords.length > 0 ? coords[coords.length - 1] : null;
+        const nextKnown = findNextKnownCoords(allCityNames, i + 1, poiLookup);
+        if (prevCoord && nextKnown) {
+          const interpLat = (prevCoord.lat + nextKnown.lat) / 2;
+          const interpLng = (prevCoord.lng + nextKnown.lng) / 2;
+          coords.push({ city: cityName, lat: interpLat, lng: interpLng, order: i + 1 });
+          console.log("Interpolated coordinates for " + cityName + ": " + interpLat + ", " + interpLng);
+        } else if (prevCoord) {
+          // Offset slightly from previous
+          coords.push({ city: cityName, lat: prevCoord.lat + 0.5, lng: prevCoord.lng + 0.5, order: i + 1 });
+        } else {
+          // Default to Sarajevo region
+          coords.push({ city: cityName, lat: 43.8563, lng: 18.4131, order: i + 1 });
+        }
+      }
+    }
+  }
+  
+  // Add return to departure
+  if (coords.length > 0) {
+    coords.push({
+      city: departureCity + ' (povratak)',
+      lat: coords[0].lat,
+      lng: coords[0].lng,
+      order: coords.length + 1
+    });
+  }
+  
+  return coords;
+}
+
+function findNextKnownCoords(
+  cityNames: string[],
+  startIdx: number,
+  poiLookup: Map<string, CityPOIs>
+): { lat: number; lng: number } | null {
+  for (let i = startIdx; i < cityNames.length; i++) {
+    const key = cityNames[i].toLowerCase().trim();
+    const data = poiLookup.get(key);
+    if (data) return { lat: data.lat, lng: data.lng };
+    const fb = getFallbackCoordinates(cityNames[i]);
+    if (fb) return fb;
+  }
+  return null;
+}
+
+// =====================================================================
+// FALLBACK PLAN GENERATOR
 // =====================================================================
 
 function generateFallbackPlans(
@@ -259,17 +362,14 @@ function generateFallbackPlans(
     lat: 43.8612, lng: 18.4028, phone: "+38733560520"
   };
 
-  const budgetPerStudent = tripData.budget || 300;
   const studentCount = tripData.studentCount || 14;
 
-  // Cost multipliers for each tier
   const tiers = [
     { id: 1, type: "Budget" as const, label: "Ekonomična", mult: 0.6, accomType: "Hostel / 2* hotel", mealType: "Jednostavni obroci", reliability: 85 },
     { id: 2, type: "Balanced" as const, label: "Uravnotežena", mult: 1.0, accomType: "3* hotel", mealType: "Lokalni restorani", reliability: 90 },
     { id: 3, type: "Premium" as const, label: "VIP", mult: 1.5, accomType: "4-5* hotel", mealType: "Kvalitetni restorani", reliability: 95 },
   ];
 
-  // Calculate base costs
   const baseTransport = tripData.transport === 'bus' 
     ? Math.round(routeInfo.distance_km * 1.2) 
     : Math.round(routeInfo.distance_km * 0.15 * studentCount);
@@ -288,12 +388,10 @@ function generateFallbackPlans(
     const totalCost = subtotal + contingency;
     const costPerStudent = Math.round(totalCost / studentCount);
 
-    // Build itinerary day by day
     const itinerary = buildDetailedItinerary(
       tripData, cityPOIs, routeInfo, restStops, tripDays, tier, meetingPoint
     );
 
-    // Pick accommodation info from POIs
     const accomCity = cityPOIs.length > 1 ? cityPOIs[1] : cityPOIs[0];
     const hotelOptions = accomCity ? accomCity.hotels.slice(0, 3) : [];
     const accomInfo = hotelOptions.length > 0
@@ -351,18 +449,10 @@ function buildDetailedItinerary(
   meetingPoint: { name: string; address: string; lat: number; lng: number }
 ): any[] {
   const startDate = new Date(tripData.departureDate);
-  const destinations = tripData.destinations;
   const itinerary: any[] = [];
 
-  // Determine which cities to visit on which days
-  // Day 1 = travel from departure to first destination
-  // Middle days = explore destinations
-  // Last day = return
   const destinationCities = cityPOIs.filter(c => 
     c.city.toLowerCase() !== tripData.departureCity.toLowerCase()
-  );
-  const departureData = cityPOIs.find(c => 
-    c.city.toLowerCase() === tripData.departureCity.toLowerCase()
   );
 
   for (let day = 1; day <= tripDays; day++) {
@@ -373,14 +463,14 @@ function buildDetailedItinerary(
     const activities: any[] = [];
 
     if (day === 1) {
-      // TRAVEL DAY - Departure
+      // ============ DAY 1: DEPARTURE ============
       const firstDest = destinationCities[0] || cityPOIs[0];
-      const travelHours = Math.min(routeInfo.duration_hours / 2, 8);
+      const travelHours = Math.min(routeInfo.duration_hours / Math.max(destinationCities.length, 1), 8);
       
       activities.push({
         time: "06:30-07:00",
         description: "Okupljanje učenika i roditelja. Provjera prisutnosti, podjela identifikacijskih kartica.",
-        type: "meeting" as const,
+        type: "meeting",
         location: meetingPoint.name + ", " + meetingPoint.address,
         lat: meetingPoint.lat,
         lng: meetingPoint.lng,
@@ -390,7 +480,7 @@ function buildDetailedItinerary(
       activities.push({
         time: "07:00-07:15",
         description: "Ukrcavanje u autobus. Sigurnosne upute i raspored sjedenja.",
-        type: "travel" as const,
+        type: "travel",
         location: meetingPoint.name,
         lat: meetingPoint.lat,
         lng: meetingPoint.lng,
@@ -399,19 +489,18 @@ function buildDetailedItinerary(
 
       activities.push({
         time: "07:15",
-        description: "Polazak prema " + (firstDest?.city || destinations[0]) + ". Procijenjeno vrijeme vožnje: " + travelHours.toFixed(1) + "h.",
-        type: "travel" as const,
+        description: "Polazak prema " + (firstDest?.city || tripData.destinations[0]) + ". Procijenjeno vrijeme vožnje: " + travelHours.toFixed(1) + "h.",
+        type: "travel",
         location: tripData.departureCity,
         notes: "Pauza svakih 2 sata vožnje"
       });
 
-      // Add rest stop
-      const restStopTime = "09:15-09:45";
+      // Rest stop
       if (restStops.length > 0) {
         activities.push({
-          time: restStopTime,
+          time: "09:15-09:45",
           description: "Pauza na odmorištu: " + restStops[0].name + ". Toalet, osvježenje.",
-          type: "free_time" as const,
+          type: "free_time",
           location: restStops[0].name,
           lat: restStops[0].lat,
           lng: restStops[0].lng,
@@ -419,47 +508,48 @@ function buildDetailedItinerary(
         });
       } else {
         activities.push({
-          time: restStopTime,
+          time: "09:15-09:45",
           description: "Pauza na autoputu. Toalet, osvježenje.",
-          type: "free_time" as const,
+          type: "free_time",
           location: "Odmorište na autoputu",
           notes: "Pauza od 30 minuta"
         });
       }
 
       // Arrival
-      const arrivalHour = 7 + Math.ceil(travelHours) + 1; // +1 for stops
-      const arrivalTime = String(Math.min(arrivalHour, 14)).padStart(2, '0') + ":00";
+      const arrivalHour = 7 + Math.ceil(travelHours) + 1;
+      const arrH = Math.min(arrivalHour, 14);
+      const arrivalTime = String(arrH).padStart(2, '0') + ":00";
       
       activities.push({
-        time: arrivalTime + "-" + String(Math.min(arrivalHour, 14)).padStart(2, '0') + ":30",
-        description: "Dolazak u " + (firstDest?.city || destinations[0]) + ". Smještaj u " + (tier.id === 1 ? "hostel" : tier.id === 2 ? "hotel" : "premium hotel") + ".",
-        type: "accommodation" as const,
-        location: firstDest?.city || destinations[0],
+        time: arrivalTime + "-" + String(arrH).padStart(2, '0') + ":30",
+        description: "Dolazak u " + (firstDest?.city || tripData.destinations[0]) + ". Smještaj u " + (tier.id === 1 ? "hostel" : tier.id === 2 ? "hotel" : "premium hotel") + ".",
+        type: "accommodation",
+        location: firstDest?.city || tripData.destinations[0],
         lat: firstDest?.lat,
         lng: firstDest?.lng,
         notes: "Raspodjela soba: dječaci i djevojčice odvojeno, pratitelji u susjednim sobama"
       });
 
       // Lunch
-      const lunchTime = String(Math.min(arrivalHour + 1, 14)).padStart(2, '0') + ":00";
+      const lunchH = Math.min(arrivalHour + 1, 14);
       const lunchRestaurant = firstDest?.restaurants?.[tier.id - 1] || firstDest?.restaurants?.[0];
       activities.push({
-        time: lunchTime + "-" + String(Math.min(arrivalHour + 2, 15)).padStart(2, '0') + ":00",
+        time: String(lunchH).padStart(2, '0') + ":00-" + String(Math.min(lunchH + 1, 15)).padStart(2, '0') + ":00",
         description: "Ručak" + (lunchRestaurant ? " u restoranu " + lunchRestaurant.name : " u lokalnom restoranu") + ".",
-        type: "meal" as const,
+        type: "meal",
         location: lunchRestaurant?.name || "Lokalni restoran",
         lat: lunchRestaurant?.lat || firstDest?.lat,
         lng: lunchRestaurant?.lng || firstDest?.lng
       });
 
-      // Afternoon activity - first visit
+      // Afternoon visit
       const firstMuseum = firstDest?.museums?.[0] || firstDest?.monuments?.[0];
       if (firstMuseum) {
         activities.push({
           time: "15:30-17:30",
           description: "Posjeta: " + firstMuseum.name + ". " + (firstMuseum.openingHours ? "Radno vrijeme: " + firstMuseum.openingHours : "Vođena tura za grupu."),
-          type: "activity" as const,
+          type: "activity",
           location: firstMuseum.name,
           lat: firstMuseum.lat,
           lng: firstMuseum.lng,
@@ -472,7 +562,7 @@ function buildDetailedItinerary(
       activities.push({
         time: "18:30-19:30",
         description: "Večera" + (dinnerRestaurant ? " u restoranu " + dinnerRestaurant.name : " u hotelu/restoranu") + ".",
-        type: "meal" as const,
+        type: "meal",
         location: dinnerRestaurant?.name || "Hotel/Restoran",
         lat: dinnerRestaurant?.lat,
         lng: dinnerRestaurant?.lng
@@ -482,8 +572,8 @@ function buildDetailedItinerary(
       activities.push({
         time: "19:30-21:00",
         description: "Slobodno vrijeme. Šetnja centrom grada" + (firstDest?.parks?.[0] ? ", park " + firstDest.parks[0].name : "") + ".",
-        type: "free_time" as const,
-        location: (firstDest?.city || destinations[0]) + " centar",
+        type: "free_time",
+        location: (firstDest?.city || tripData.destinations[0]) + " centar",
         lat: firstDest?.lat,
         lng: firstDest?.lng,
         notes: "Učenici se kreću u grupama od min. 3 osobe. Povratak u hotel do 21:00."
@@ -492,20 +582,20 @@ function buildDetailedItinerary(
       itinerary.push({
         day,
         date: dateStr,
-        title: "Putovanje i dolazak u " + (firstDest?.city || destinations[0]),
-        summary: "Polazak iz " + tripData.departureCity + ", dolazak u " + (firstDest?.city || destinations[0]) + " i prva razgledanja.",
+        title: "Putovanje i dolazak u " + (firstDest?.city || tripData.destinations[0]),
+        summary: "Polazak iz " + tripData.departureCity + ", dolazak u " + (firstDest?.city || tripData.destinations[0]) + " i prva razgledanja.",
         activities
       });
 
     } else if (day === tripDays) {
-      // LAST DAY - Return
+      // ============ LAST DAY: RETURN ============
       const lastDest = destinationCities[destinationCities.length - 1] || cityPOIs[cityPOIs.length - 1];
 
       activities.push({
         time: "07:00-08:00",
         description: "Buđenje i doručak u " + (tier.id === 1 ? "hostelu" : "hotelu") + ".",
-        type: "meal" as const,
-        location: (lastDest?.city || "Hotel"),
+        type: "meal",
+        location: lastDest?.city || "Hotel",
         lat: lastDest?.lat,
         lng: lastDest?.lng
       });
@@ -513,31 +603,29 @@ function buildDetailedItinerary(
       activities.push({
         time: "08:00-09:00",
         description: "Pakovanje i odjava iz smještaja (check-out). Kontrola soba.",
-        type: "accommodation" as const,
+        type: "accommodation",
         location: lastDest?.city || "Hotel",
         lat: lastDest?.lat,
         lng: lastDest?.lng,
         notes: "Provjeriti da ništa nije zaboravljeno"
       });
 
-      // Optional morning activity
       const morningMonument = lastDest?.monuments?.[2] || lastDest?.educational?.[1];
       if (morningMonument && tripDays > 2) {
         activities.push({
           time: "09:00-10:30",
           description: "Kratka posjeta: " + morningMonument.name + " — posljednji utisci iz grada.",
-          type: "activity" as const,
+          type: "activity",
           location: morningMonument.name,
           lat: morningMonument.lat,
           lng: morningMonument.lng
         });
       }
 
-      // Shopping time
       activities.push({
         time: tripDays > 2 ? "10:30-11:30" : "09:00-10:00",
         description: "Slobodno vrijeme za kupovinu suvenira i fotografisanje.",
-        type: "free_time" as const,
+        type: "free_time",
         location: (lastDest?.city || "") + " centar",
         lat: lastDest?.lat,
         lng: lastDest?.lng,
@@ -545,34 +633,33 @@ function buildDetailedItinerary(
       });
 
       const departureHour = tripDays > 2 ? 12 : 10;
+      const returnTravelHours = routeInfo.duration_hours / Math.max(destinationCities.length, 1);
       activities.push({
         time: String(departureHour).padStart(2, '0') + ":00",
-        description: "Polazak nazad prema " + tripData.departureCity + ". Procijenjeno vrijeme: " + (routeInfo.duration_hours / 2).toFixed(1) + "h.",
-        type: "travel" as const,
+        description: "Polazak nazad prema " + tripData.departureCity + ". Procijenjeno vrijeme: " + returnTravelHours.toFixed(1) + "h.",
+        type: "travel",
         location: lastDest?.city || "",
         lat: lastDest?.lat,
         lng: lastDest?.lng,
         notes: "Pauze na svakih 2 sata vožnje"
       });
 
-      // Rest stop on return
       if (restStops.length > 1) {
         activities.push({
           time: String(departureHour + 2).padStart(2, '0') + ":00-" + String(departureHour + 2).padStart(2, '0') + ":30",
           description: "Pauza na odmorištu: " + restStops[restStops.length - 1].name,
-          type: "free_time" as const,
+          type: "free_time",
           location: restStops[restStops.length - 1].name,
           lat: restStops[restStops.length - 1].lat,
           lng: restStops[restStops.length - 1].lng
         });
       }
 
-      // Arrival home
-      const homeArrival = departureHour + Math.ceil(routeInfo.duration_hours / 2) + 1;
+      const homeArrival = departureHour + Math.ceil(returnTravelHours) + 1;
       activities.push({
-        time: String(Math.min(homeArrival, 20)).padStart(2, '0') + ":00",
+        time: String(Math.min(homeArrival, 22)).padStart(2, '0') + ":00",
         description: "Dolazak u " + tripData.departureCity + ". Roditelji preuzimaju učenike na mjestu polaska.",
-        type: "travel" as const,
+        type: "travel",
         location: meetingPoint.name + ", " + meetingPoint.address,
         lat: meetingPoint.lat,
         lng: meetingPoint.lng,
@@ -588,29 +675,37 @@ function buildDetailedItinerary(
       });
 
     } else {
-      // EXPLORATION DAYS
-      const cityIndex = Math.min(Math.floor((day - 1) * destinationCities.length / Math.max(tripDays - 1, 1)), destinationCities.length - 1);
-      const currentCity = destinationCities[cityIndex] || cityPOIs[0];
-      const isTransitDay = day > 1 && cityIndex > 0 && 
-        cityIndex !== Math.min(Math.floor((day - 2) * destinationCities.length / Math.max(tripDays - 1, 1)), destinationCities.length - 1);
+      // ============ EXPLORATION DAYS ============
+      // Distribute destinations across middle days
+      const middleDays = tripDays - 2; // Excluding day 1 (travel) and last day (return)
+      const dayInMiddle = day - 2; // 0-indexed middle day
+      const cityIndex = middleDays > 0 
+        ? Math.min(Math.floor(dayInMiddle * destinationCities.length / middleDays), destinationCities.length - 1)
+        : 0;
+      const currentCity = destinationCities[Math.max(cityIndex, 0)] || cityPOIs[0];
+      
+      // Check if we're transitioning to a new city
+      const prevCityIndex = middleDays > 0 && dayInMiddle > 0
+        ? Math.min(Math.floor((dayInMiddle - 1) * destinationCities.length / middleDays), destinationCities.length - 1)
+        : 0;
+      const isTransitDay = cityIndex !== prevCityIndex && day > 2;
 
       // Breakfast
       activities.push({
         time: "07:00-08:00",
         description: "Doručak u " + (tier.id === 1 ? "hostelu" : "hotelu") + ".",
-        type: "meal" as const,
+        type: "meal",
         location: currentCity.city,
         lat: currentCity.lat,
         lng: currentCity.lng
       });
 
       if (isTransitDay) {
-        // Transit to next city
-        const prevCity = destinationCities[cityIndex - 1];
+        const prevCity = destinationCities[prevCityIndex];
         activities.push({
           time: "08:30-10:30",
           description: "Putovanje iz " + (prevCity?.city || "") + " u " + currentCity.city + ".",
-          type: "travel" as const,
+          type: "travel",
           location: currentCity.city,
           lat: currentCity.lat,
           lng: currentCity.lng
@@ -618,24 +713,26 @@ function buildDetailedItinerary(
         activities.push({
           time: "10:30-11:00",
           description: "Check-in u " + (tier.id === 1 ? "hostel" : "hotel") + " u " + currentCity.city + ".",
-          type: "accommodation" as const,
+          type: "accommodation",
           location: currentCity.city,
           lat: currentCity.lat,
           lng: currentCity.lng
         });
       }
 
-      // Morning activities - Museums and cultural sites
+      // Morning activities
       const morningStartTime = isTransitDay ? "11:00" : "08:30";
-      const morningMuseum = currentCity.museums[day % currentCity.museums.length] || currentCity.museums[0];
-      const morningMonument = currentCity.monuments[day % Math.max(currentCity.monuments.length, 1)] || currentCity.monuments[0];
+      const museumIdx = day % Math.max(currentCity.museums.length, 1);
+      const morningMuseum = currentCity.museums[museumIdx] || currentCity.museums[0];
+      const monumentIdx = day % Math.max(currentCity.monuments.length, 1);
+      const morningMonument = currentCity.monuments[monumentIdx] || currentCity.monuments[0];
 
       if (morningMuseum) {
         activities.push({
           time: morningStartTime + "-" + (isTransitDay ? "12:30" : "10:30"),
           description: "Posjeta muzeju: " + morningMuseum.name + ". Vođena tura s edukativnim programom." + 
             (morningMuseum.openingHours ? " Radno vrijeme: " + morningMuseum.openingHours : ""),
-          type: "activity" as const,
+          type: "activity",
           location: morningMuseum.name,
           lat: morningMuseum.lat,
           lng: morningMuseum.lng,
@@ -647,7 +744,7 @@ function buildDetailedItinerary(
         activities.push({
           time: "10:45-12:00",
           description: "Razgledanje: " + morningMonument.name + ". Historijski značaj i foto pauza.",
-          type: "activity" as const,
+          type: "activity",
           location: morningMonument.name,
           lat: morningMonument.lat,
           lng: morningMonument.lng,
@@ -661,21 +758,22 @@ function buildDetailedItinerary(
       activities.push({
         time: "12:30-13:30",
         description: "Ručak" + (lunchSpot ? " — " + lunchSpot.name : " u lokalnom restoranu") + ".",
-        type: "meal" as const,
+        type: "meal",
         location: lunchSpot?.name || "Lokalni restoran",
         lat: lunchSpot?.lat || currentCity.lat,
         lng: lunchSpot?.lng || currentCity.lng,
         notes: lunchSpot?.phone ? "Tel: " + lunchSpot.phone : undefined
       });
 
-      // Afternoon activities
-      const eduSite = currentCity.educational[day % Math.max(currentCity.educational.length, 1)] || currentCity.educational[0];
+      // Afternoon educational
+      const eduIdx = day % Math.max(currentCity.educational.length, 1);
+      const eduSite = currentCity.educational[eduIdx] || currentCity.educational[0];
       if (eduSite) {
         activities.push({
           time: "14:00-15:30",
           description: "Edukativna posjeta: " + eduSite.name + "." + 
             (tripData.educationalFocus ? " Fokus: " + tripData.educationalFocus + "." : " Kulturno-historijski program."),
-          type: "activity" as const,
+          type: "activity",
           location: eduSite.name,
           lat: eduSite.lat,
           lng: eduSite.lng,
@@ -683,14 +781,15 @@ function buildDetailedItinerary(
         });
       }
 
-      // Afternoon monument/gallery
-      const afternoonPOI = currentCity.monuments[(day + 1) % Math.max(currentCity.monuments.length, 1)] || 
+      // Afternoon monument
+      const afternoonIdx = (day + 1) % Math.max(currentCity.monuments.length, 1);
+      const afternoonPOI = currentCity.monuments[afternoonIdx] || 
         currentCity.educational[(day + 1) % Math.max(currentCity.educational.length, 1)];
       if (afternoonPOI) {
         activities.push({
           time: "15:45-17:00",
           description: "Posjeta: " + afternoonPOI.name + ". Grupno fotografisanje i bilješke za školski projekt.",
-          type: "activity" as const,
+          type: "activity",
           location: afternoonPOI.name,
           lat: afternoonPOI.lat,
           lng: afternoonPOI.lng
@@ -698,11 +797,12 @@ function buildDetailedItinerary(
       }
 
       // Park/free time
-      const park = currentCity.parks[day % Math.max(currentCity.parks.length, 1)] || currentCity.parks[0];
+      const parkIdx = day % Math.max(currentCity.parks.length, 1);
+      const park = currentCity.parks[parkIdx] || currentCity.parks[0];
       activities.push({
         time: "17:00-18:00",
         description: "Slobodno vrijeme" + (park ? " — šetnja parkom " + park.name : " — šetnja i razgledanje centra grada") + ".",
-        type: "free_time" as const,
+        type: "free_time",
         location: park?.name || currentCity.city + " centar",
         lat: park?.lat || currentCity.lat,
         lng: park?.lng || currentCity.lng,
@@ -715,7 +815,7 @@ function buildDetailedItinerary(
       activities.push({
         time: "18:30-19:30",
         description: "Večera" + (dinnerSpot ? " — " + dinnerSpot.name : " u hotelu/restoranu") + ".",
-        type: "meal" as const,
+        type: "meal",
         location: dinnerSpot?.name || "Hotel/Restoran",
         lat: dinnerSpot?.lat || currentCity.lat,
         lng: dinnerSpot?.lng || currentCity.lng
@@ -727,7 +827,7 @@ function buildDetailedItinerary(
         description: "Večernji program: " + (tier.id >= 2 
           ? "organizirana šetnja centrom uz vodiča" 
           : "slobodna šetnja u grupama uz pratitelje") + ".",
-        type: "free_time" as const,
+        type: "free_time",
         location: currentCity.city + " centar",
         lat: currentCity.lat,
         lng: currentCity.lng,
@@ -782,11 +882,25 @@ serve(async (req) => {
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
     const fullRoute = allCities.join(' → ');
 
+    // =====================================================================
+    // Step 1: Fetch POIs for all cities (with retry and fallback)
+    // =====================================================================
     console.log("Step 1: Fetching real POI data from Overpass/Nominatim APIs...");
 
     const uniqueCities = [...new Set([tripData.departureCity, ...tripData.destinations])];
-    const cityPOIsResults = await Promise.all(uniqueCities.map(city => fetchCityPOIs(city)));
-    const cityPOIs = cityPOIsResults.filter((result): result is CityPOIs => result !== null);
+    
+    // Fetch cities sequentially with small delay to avoid rate limiting
+    const cityPOIs: CityPOIs[] = [];
+    for (const city of uniqueCities) {
+      const result = await fetchCityPOIs(city);
+      if (result) {
+        cityPOIs.push(result);
+      }
+      // Small delay between requests to respect rate limits
+      if (uniqueCities.length > 2) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
 
     const totalPOIs = cityPOIs.reduce((sum, c) =>
       sum + c.museums.length + c.monuments.length + c.restaurants.length +
@@ -794,20 +908,25 @@ serve(async (req) => {
     );
     console.log("Step 2: Fetched POIs for " + cityPOIs.length + "/" + uniqueCities.length + " cities (" + totalPOIs + " total POIs)");
 
-    const routeCoordinates = cityPOIs.map((city, index) => ({
-      city: city.city, lat: city.lat, lng: city.lng, order: index + 1
-    }));
-    if (cityPOIs.length > 0) {
-      routeCoordinates.push({
-        city: tripData.departureCity + ' (povratak)',
-        lat: cityPOIs[0].lat, lng: cityPOIs[0].lng,
-        order: routeCoordinates.length + 1
-      });
-    }
+    // =====================================================================
+    // Step 2: Build route coordinates — NEVER drops any user-specified city
+    // =====================================================================
+    const routeCoordinates = buildRouteCoordinates(
+      tripData.departureCity, 
+      tripData.destinations, 
+      cityPOIs
+    );
+    console.log("Step 2b: Route coordinates built for " + routeCoordinates.length + " points (including return)");
 
+    // =====================================================================
+    // Step 3: Calculate route distance
+    // =====================================================================
     const routeInfo = await calculateRouteDistance(routeCoordinates.map(c => ({ lat: c.lat, lng: c.lng })));
     console.log("Step 3: Route calculated - " + routeInfo.distance_km + "km, " + routeInfo.duration_hours + "h");
 
+    // =====================================================================
+    // Step 3b: Find rest stops along route
+    // =====================================================================
     const restStops: POI[] = [];
     for (let i = 0; i < Math.min(routeCoordinates.length - 1, 3); i++) {
       const stops = await findRestStops(routeCoordinates[i], routeCoordinates[i + 1]);
@@ -825,7 +944,6 @@ serve(async (req) => {
       try {
         console.log("Step 4a: Attempting AI Gateway for itinerary generation...");
         
-        // Build POI data for AI prompt
         const poisByCity = cityPOIs.map(city => {
           const formatPOIs = (pois: POI[], label: string) => {
             if (pois.length === 0) return "**" + label + ":** Nema pronadjenih lokacija";
@@ -876,7 +994,6 @@ serve(async (req) => {
           (tripData.educationalFocus ? "\nFokus: " + tripData.educationalFocus : "") +
           "\n\nGeneriraj 3 DETALJNE varijante. Samo čisti JSON.";
 
-        // Timeout AI call after 25 seconds to leave room for fallback
         const aiAbortController = new AbortController();
         const aiTimeout = setTimeout(() => aiAbortController.abort(), 25000);
         
@@ -971,7 +1088,7 @@ serve(async (req) => {
       }));
     }
 
-    // Ensure all 3 plans have proper costs structure for the UI
+    // Ensure all 3 plans have proper structure for the UI
     plans.plans = plans.plans.map((p: any) => ({
       ...p,
       costs: {
@@ -1002,6 +1119,7 @@ serve(async (req) => {
     console.log("USPJESNO GENERIRANO" + (usedFallback ? " (FALLBACK ENGINE)" : " (AI GATEWAY)") + ":");
     console.log("   - " + plans.plans.length + " varijanti plana");
     console.log("   - " + cityPOIs.length + " gradova sa " + totalPOIs + " verificiranih POI-a");
+    console.log("   - " + routeCoordinates.length + " tačaka na ruti (sve destinacije uključene)");
     console.log("   - Ruta: " + routeInfo.distance_km + "km, " + routeInfo.duration_hours + "h");
     plans.plans.forEach((p: any) => {
       console.log("   - " + p.type + ": " + p.cost_per_student + " EUR po uceniku, " + (p.itinerary?.length || 0) + " dana itinerera");
@@ -1023,7 +1141,6 @@ serve(async (req) => {
   }
 });
 
-// Normalize activity type to match UI expectations
 function normalizeActivityType(type: string): string {
   const validTypes = ['travel', 'meal', 'activity', 'accommodation', 'free_time'];
   if (validTypes.includes(type)) return type;
