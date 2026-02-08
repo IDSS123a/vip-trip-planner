@@ -336,6 +336,7 @@ const PlanTrip = () => {
                     <TripRouteMap 
                       departureCity={watchedValues.departureCity || "Sarajevo"}
                       destinationCity={destinations[destinations.length - 1] || ""}
+                      allDestinations={destinations}
                     />
                   </CardContent>
                 </Card>
@@ -359,6 +360,7 @@ const PlanTrip = () => {
                     departureCity={watchedValues.departureCity || "Sarajevo"}
                     destinationCity={destinations[destinations.length - 1] || "Budapest"}
                     routeCoordinates={plansData?.route_coordinates}
+                    allDestinations={destinations}
                   />
                 </CardContent>
               </Card>
