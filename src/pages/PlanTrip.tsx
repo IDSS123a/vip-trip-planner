@@ -269,7 +269,6 @@ const PlanTrip = () => {
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <TripPlannerForm form={form} />
                       
-                      {/* Generate Buttons */}
                       <div className="flex flex-wrap gap-4 pt-6 border-t border-border">
                         <Button 
                           type="submit" 
@@ -285,6 +284,13 @@ const PlanTrip = () => {
                           variant="outline" 
                           size="lg"
                           className="gap-2"
+                          onClick={() => {
+                            const data = form.getValues();
+                            try {
+                              localStorage.setItem('idss-offline-template', JSON.stringify(data));
+                              toast({ title: "Predložak spremljen!", description: "Podaci su spremljeni za offline korištenje." });
+                            } catch { toast({ variant: "destructive", title: "Greška", description: "Nije moguće spremiti predložak." }); }
+                          }}
                         >
                           <FileText className="h-4 w-4" />
                           Generate Templates (Offline)
@@ -294,6 +300,25 @@ const PlanTrip = () => {
                           variant="outline" 
                           size="lg"
                           className="gap-2"
+                          onClick={() => {
+                            try {
+                              const saved = localStorage.getItem('idss-offline-template');
+                              if (!saved) { toast({ variant: "destructive", title: "Nema podataka", description: "Nema spremljenih predložaka u pregledniku." }); return; }
+                              const data = JSON.parse(saved);
+                              if (data.tripName) form.setValue('tripName', data.tripName);
+                              if (data.departureCity) form.setValue('departureCity', data.departureCity);
+                              if (data.destinations) form.setValue('destinations', data.destinations);
+                              if (data.gradeLevel) form.setValue('gradeLevel', data.gradeLevel);
+                              if (data.studentCount) form.setValue('studentCount', data.studentCount);
+                              if (data.chaperones) form.setValue('chaperones', data.chaperones);
+                              if (data.transport) form.setValue('transport', data.transport);
+                              if (data.educationalFocus) form.setValue('educationalFocus', data.educationalFocus);
+                              if (data.specialNeeds) form.setValue('specialNeeds', data.specialNeeds);
+                              if (data.budgetPerStudent) form.setValue('budgetPerStudent', data.budgetPerStudent);
+                              if (data.plansData) setPlansData(data.plansData);
+                              toast({ title: "Podaci učitani!", description: "Spremljeni podaci su uspješno učitani." });
+                            } catch { toast({ variant: "destructive", title: "Greška", description: "Nije moguće učitati podatke." }); }
+                          }}
                         >
                           <Download className="h-4 w-4" />
                           Load Browser Saves
@@ -301,7 +326,31 @@ const PlanTrip = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-3">
-                        <Button type="button" variant="outline" className="gap-2">
+                        <Button type="button" variant="outline" className="gap-2" onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = '.json';
+                          input.onchange = (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              try {
+                                const data = JSON.parse(ev.target?.result as string);
+                                if (data.tripName) form.setValue('tripName', data.tripName);
+                                if (data.departureCity) form.setValue('departureCity', data.departureCity);
+                                if (data.destinations) form.setValue('destinations', data.destinations);
+                                if (data.gradeLevel) form.setValue('gradeLevel', data.gradeLevel);
+                                if (data.studentCount) form.setValue('studentCount', data.studentCount);
+                                if (data.chaperones) form.setValue('chaperones', data.chaperones);
+                                if (data.plansData) setPlansData(data.plansData);
+                                toast({ title: "Učitano!", description: "Podaci su učitani iz datoteke." });
+                              } catch { toast({ variant: "destructive", title: "Greška", description: "Neispravna datoteka." }); }
+                            };
+                            reader.readAsText(file);
+                          };
+                          input.click();
+                        }}>
                           <Download className="h-4 w-4" />
                           Load from File
                         </Button>
@@ -432,6 +481,17 @@ const PlanTrip = () => {
                 studentCount={parseInt(watchedValues.studentCount) || 20}
                 students={students}
                 onStudentsChange={setStudents}
+                onSave={(planIdx) => {
+                  setSelectedPlanIndex(planIdx);
+                  handleSaveTrip();
+                }}
+                onExportPdf={(planIdx) => {
+                  setSelectedPlanIndex(planIdx);
+                  handleExportPdf();
+                }}
+                onSwitchToMap={() => setActiveTab("map")}
+                selectedPlanIndex={selectedPlanIndex}
+                onSelectPlan={setSelectedPlanIndex}
               />
               
               <div className="flex gap-4 pt-4">

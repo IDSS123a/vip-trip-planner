@@ -250,6 +250,14 @@ const SharedTrip = () => {
             isLoading={false}
             error={null}
             chaperones={trip.chaperones || []}
+            tripName={trip.name}
+            departureCity={trip.departureCity}
+            destinations={trip.destinations}
+            departureDate={trip.departureDate}
+            returnDate={trip.returnDate}
+            gradeLevel={trip.gradeLevel}
+            studentCount={trip.studentCount}
+            onExportPdf={(planIdx) => handleExportPdf(planIdx)}
           />
 
           {/* Back button */}

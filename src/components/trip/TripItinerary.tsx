@@ -107,6 +107,11 @@ interface TripItineraryProps {
   studentCount?: number;
   students?: Student[];
   onStudentsChange?: (students: Student[]) => void;
+  onSave?: (planIndex: number) => void;
+  onExportPdf?: (planIndex: number) => void;
+  onSwitchToMap?: () => void;
+  selectedPlanIndex?: number;
+  onSelectPlan?: (index: number) => void;
 }
 
 const getActivityIcon = (type: Activity["type"]) => {
@@ -139,7 +144,12 @@ const TripItinerary = ({
   gradeLevel,
   studentCount,
   students = [],
-  onStudentsChange
+  onStudentsChange,
+  onSave,
+  onExportPdf,
+  onSwitchToMap,
+  selectedPlanIndex = 0,
+  onSelectPlan
 }: TripItineraryProps) => {
   const { 
     generateParentPermission, 
@@ -304,11 +314,28 @@ const TripItinerary = ({
 
       {/* Action Buttons */}
       <div className="flex flex-wrap gap-3">
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => {
+          if (!plansData?.plans) return;
+          const htmlContent = document.querySelector('[data-trip-content]')?.innerHTML || document.querySelector('.space-y-6')?.innerHTML || '';
+          const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${tripName || 'Plan Putovanja'}</title><style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:left}</style></head><body><h1>${tripName || 'Plan Putovanja'}</h1>${htmlContent}</body></html>`], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${(tripName || 'plan-putovanja').replace(/\s+/g, '-')}.html`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}>
           <Download className="h-4 w-4" />
           Generiši i Snimi (html)
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => {
+          if (!plansData) return;
+          try {
+            const formData = { tripName, departureCity, destinations, departureDate, returnDate, gradeLevel, studentCount, chaperones, plansData };
+            localStorage.setItem('idss-offline-template', JSON.stringify(formData));
+            alert('Predložak spremljen za offline korištenje!');
+          } catch (e) { alert('Greška pri spremanju predloška.'); }
+        }}>
           <FileText className="h-4 w-4" />
           Generiši Predložak (Offline)
         </Button>
@@ -316,7 +343,7 @@ const TripItinerary = ({
           <Printer className="h-4 w-4" />
           Print
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => onExportPdf?.(selectedPlanIndex)} disabled={!plansData}>
           <Download className="h-4 w-4" />
           Download PDF
         </Button>
@@ -362,10 +389,14 @@ const TripItinerary = ({
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="default">Snimi</Button>
-                    <Button size="sm" variant="outline">Export</Button>
-                    <Button size="sm" variant="outline">Share to Map</Button>
-                    <Button size="sm" variant="outline">Aktiviraj GPS</Button>
+                    <Button size="sm" variant="default" onClick={() => onSave?.(plan.id - 1)}>Snimi</Button>
+                    <Button size="sm" variant="outline" onClick={() => onExportPdf?.(plan.id - 1)}>Export</Button>
+                    <Button size="sm" variant="outline" onClick={() => onSwitchToMap?.()}>Share to Map</Button>
+                    <Button size="sm" variant="outline" onClick={() => {
+                      if (!route_coordinates || route_coordinates.length < 2) return;
+                      const waypoints = route_coordinates.map(c => `${c.lat},${c.lng}`).join('/');
+                      window.open(`https://www.google.com/maps/dir/${waypoints}`, '_blank');
+                    }}>Aktiviraj GPS</Button>
                   </div>
                 </div>
               </CardHeader>
