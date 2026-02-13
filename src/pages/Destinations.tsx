@@ -342,7 +342,9 @@ const Destinations = () => {
                     <span className="text-lg font-bold text-primary">
                       ${destination.price}<span className="text-sm font-normal text-muted-foreground">/student</span>
                     </span>
-                    <Button size="sm">
+                    <Button size="sm" onClick={() => {
+                      window.open(`https://www.google.com/search?q=${encodeURIComponent(destination.name + ' field trip')}`, '_blank');
+                    }}>
                       View Details
                       <ExternalLink className="ml-1 h-3 w-3" />
                     </Button>
