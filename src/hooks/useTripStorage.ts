@@ -37,8 +37,8 @@ export const useTripStorage = () => {
       const { data: session } = await supabase.auth.getSession();
       const userId = session?.session?.user?.id || null;
 
-      const { data, error } = await supabase
-        .from("trips")
+      const { data, error } = await (supabase
+        .from("trips" as any)
         .insert({
           user_id: userId,
           name: tripData.name || `Trip ${new Date().toLocaleDateString()}`,
@@ -57,7 +57,7 @@ export const useTripStorage = () => {
           is_public: tripData.isPublic || false,
         })
         .select()
-        .single();
+        .single() as any);
 
       if (error) throw error;
 
@@ -118,10 +118,10 @@ export const useTripStorage = () => {
       if (updates.selectedPlanId) updateData.selected_plan_id = updates.selectedPlanId;
       if (typeof updates.isPublic === "boolean") updateData.is_public = updates.isPublic;
 
-      const { error } = await supabase
-        .from("trips")
+      const { error } = await (supabase
+        .from("trips" as any)
         .update(updateData)
-        .eq("id", tripId);
+        .eq("id", tripId) as any);
 
       if (error) throw error;
 
@@ -147,11 +147,11 @@ export const useTripStorage = () => {
   const loadTripByShareId = async (shareId: string): Promise<SavedTrip | null> => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("trips")
+      const { data, error } = await (supabase
+        .from("trips" as any)
         .select("*")
         .eq("share_id", shareId)
-        .maybeSingle();
+        .maybeSingle() as any);
 
       if (error) throw error;
       if (!data) return null;
@@ -186,12 +186,12 @@ export const useTripStorage = () => {
 
   const makePublic = async (tripId: string): Promise<string | null> => {
     try {
-      const { data, error } = await supabase
-        .from("trips")
+      const { data, error } = await (supabase
+        .from("trips" as any)
         .update({ is_public: true })
         .eq("id", tripId)
         .select("share_id")
-        .single();
+        .single() as any);
 
       if (error) throw error;
 

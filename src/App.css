@@ -40,3 +40,94 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Professional Print Styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  #root {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
+  /* Hide non-essential UI */
+  header, footer, nav,
+  [class*="TabsList"],
+  button,
+  [class*="ShareTripDialog"],
+  .leaflet-container,
+  [class*="StudentListInput"] {
+    display: none !important;
+  }
+
+  /* Show content areas */
+  [class*="TabsContent"] {
+    display: block !important;
+    opacity: 1 !important;
+  }
+
+  /* Card styling for print */
+  [class*="card"],
+  [class*="Card"] {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 8pt;
+  }
+
+  /* Ensure text wraps properly */
+  * {
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Badge styling */
+  [class*="badge"],
+  [class*="Badge"] {
+    border: 1px solid #999 !important;
+    padding: 1pt 6pt !important;
+  }
+
+  /* Progress bar print */
+  [class*="progress"],
+  [class*="Progress"] {
+    border: 1px solid #ccc !important;
+  }
+
+  /* Table styling */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 4pt 8pt;
+    text-align: left;
+  }
+
+  /* Page break helpers */
+  h2, h3 {
+    page-break-after: avoid;
+  }
+
+  /* Separator */
+  [class*="separator"],
+  [class*="Separator"] {
+    border-top: 1px solid #ddd !important;
+  }
+}
