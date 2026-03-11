@@ -68,7 +68,7 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
   }
 }
 
-async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 15): Promise<POI[]> {
+async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 8): Promise<POI[]> {
   try {
     let query = '';
     const radius = 5000; // Increased radius for better coverage
