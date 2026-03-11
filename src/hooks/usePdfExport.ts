@@ -339,7 +339,70 @@ export const usePdfExport = () => {
         y += 4;
       });
 
-      // ── FOOTER on all pages ──
+      // ── PACKING LIST ──
+      const packingList = (data.plan as any).packing_list;
+      if (packingList && Array.isArray(packingList) && packingList.length > 0) {
+        drawLine(y);
+        y += SECTION_GAP;
+        ensureSpace(15);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Lista za Pakovanje", MARGIN_LEFT, y);
+        y += 8;
+
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        packingList.forEach((item: string) => {
+          ensureSpace(6);
+          doc.text("☐  " + item, MARGIN_LEFT + 3, y);
+          y += 5;
+        });
+        y += 4;
+      }
+
+      // ── RULES ──
+      const rules = (data.plan as any).rules;
+      if (rules && Array.isArray(rules) && rules.length > 0) {
+        drawLine(y);
+        y += SECTION_GAP;
+        ensureSpace(15);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Pravila Ponašanja na Ekskurziji", MARGIN_LEFT, y);
+        y += 8;
+
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        rules.forEach((rule: string, i: number) => {
+          ensureSpace(6);
+          doc.text((i + 1) + ". " + rule, MARGIN_LEFT + 3, y);
+          y += 5;
+        });
+        y += 4;
+      }
+
+      // ── EMERGENCY CONTACTS ──
+      const emergency = (data.plan as any).emergency_contacts;
+      if (emergency) {
+        drawLine(y);
+        y += SECTION_GAP;
+        ensureSpace(30);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(200, 50, 50);
+        doc.text("HITNI KONTAKTI", MARGIN_LEFT, y);
+        doc.setTextColor(0, 0, 0);
+        y += 8;
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        if (emergency.school) { doc.text("Škola: " + emergency.school, MARGIN_LEFT + 3, y); y += 5; }
+        if (emergency.local_emergency) { doc.text("Hitna pomoć: " + emergency.local_emergency, MARGIN_LEFT + 3, y); y += 5; }
+        if (emergency.embassy_info) { doc.text("Ambasada: " + emergency.embassy_info, MARGIN_LEFT + 3, y); y += 5; }
+        if (emergency.medical_info) { doc.text("Medicinske napomene: " + emergency.medical_info, MARGIN_LEFT + 3, y); y += 5; }
+        y += 4;
+      }
+
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
