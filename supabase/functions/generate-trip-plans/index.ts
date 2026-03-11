@@ -136,12 +136,12 @@ async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
     }
   }
   const [museums, monuments, restaurants, hotels, parks, educational] = await Promise.all([
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 15),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 18),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 25),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 12),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 10),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 15)
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 8),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 10),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 10),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 6),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 5),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 8)
   ]);
   return { city: cityName, lat: geoData.lat, lng: geoData.lng, museums, monuments, restaurants, hotels, parks, educational };
 }
