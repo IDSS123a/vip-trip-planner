@@ -179,18 +179,20 @@ export const usePdfExport = () => {
       doc.text("Troškovi po učeniku (EUR)", MARGIN_LEFT, y);
       y += 8;
 
-      const costRows = [
-        ["Transport", data.plan.costs.transport],
-        ["Smještaj", data.plan.costs.accommodation],
-        ["Obroci", data.plan.costs.meals],
+      const costRows: Array<[string, number, string?]> = [
+        ["Transport", data.plan.costs.transport, (data.plan.costs as any).transport_detail],
+        ["Smještaj", data.plan.costs.accommodation, (data.plan.costs as any).accommodation_detail],
+        ["Obroci", data.plan.costs.meals, (data.plan.costs as any).meals_detail],
         ["Ulaznice", data.plan.costs.entry_fees],
         ["Aktivnosti", data.plan.costs.activity_fees],
         ["Lokalni prijevoz", data.plan.costs.local_transport],
         ["Rezerva (5%)", data.plan.costs.contingency],
-      ] as const;
+      ];
 
-      const colLabelWidth = 70;
-      const colValueX = MARGIN_LEFT + colLabelWidth;
+      const colLabelWidth = 55;
+      const colAmountWidth = 25;
+      const colDetailX = MARGIN_LEFT + colLabelWidth + colAmountWidth + 2;
+      const colAmountX = MARGIN_LEFT + colLabelWidth;
 
       // Table header
       doc.setFillColor(245, 245, 245);
@@ -198,18 +200,27 @@ export const usePdfExport = () => {
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.text("Stavka", MARGIN_LEFT + 2, y);
-      doc.text("Iznos (EUR)", colValueX, y);
+      doc.text("Iznos (EUR)", colAmountX, y);
+      doc.text("Detalji", colDetailX, y);
       y += 7;
 
       doc.setFont("helvetica", "normal");
-      costRows.forEach(([label, value], i) => {
+      costRows.forEach(([label, value, detail], i) => {
         ensureSpace(7);
         if (i % 2 === 0) {
           doc.setFillColor(252, 252, 252);
           doc.rect(MARGIN_LEFT, y - 4, contentWidth, 6, "F");
         }
+        doc.setFontSize(9);
         doc.text(String(label), MARGIN_LEFT + 2, y);
-        doc.text(String(value), colValueX, y);
+        doc.text(String(value), colAmountX, y);
+        if (detail) {
+          doc.setFontSize(7);
+          doc.setTextColor(100, 100, 100);
+          const detailLines = doc.splitTextToSize(detail, contentWidth - colLabelWidth - colAmountWidth - 5);
+          doc.text(detailLines[0] || '', colDetailX, y);
+          doc.setTextColor(0, 0, 0);
+        }
         y += 6;
       });
 
@@ -221,7 +232,8 @@ export const usePdfExport = () => {
       doc.setFontSize(10);
       doc.setTextColor(255, 255, 255);
       doc.text("UKUPNO", MARGIN_LEFT + 2, y);
-      doc.text(`${data.plan.costs.total} EUR`, colValueX, y);
+      doc.text(`${data.plan.costs.total} EUR`, colAmountX, y);
+      doc.text(`${data.plan.cost_per_student} EUR / učenik`, colDetailX, y);
       doc.setTextColor(0, 0, 0);
       y += 12;
 
