@@ -68,7 +68,7 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
   }
 }
 
-async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 15): Promise<POI[]> {
+async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 8): Promise<POI[]> {
   try {
     let query = '';
     const radius = 5000; // Increased radius for better coverage
@@ -136,12 +136,12 @@ async function fetchCityPOIs(cityName: string): Promise<CityPOIs | null> {
     }
   }
   const [museums, monuments, restaurants, hotels, parks, educational] = await Promise.all([
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 15),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 18),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 25),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 12),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 10),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 15)
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 8),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 10),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 10),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 6),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 5),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 8)
   ]);
   return { city: cityName, lat: geoData.lat, lng: geoData.lng, museums, monuments, restaurants, hotels, parks, educational };
 }
@@ -1257,7 +1257,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
           "\n\nGeneriraj 3 IZUZETNO DETALJNE varijante s bogatim opisima, stvarnim imenima lokacija i realističnim cijenama. Samo čisti JSON.";
 
         const aiAbortController = new AbortController();
-        const aiTimeout = setTimeout(() => aiAbortController.abort(), 90000);
+        const aiTimeout = setTimeout(() => aiAbortController.abort(), 30000);
         
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -1266,7 +1266,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-pro",
+            model: "google/gemini-2.5-flash",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
