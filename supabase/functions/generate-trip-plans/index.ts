@@ -516,7 +516,15 @@ function generateFallbackPlans(
         time: "07:00"
       },
       chaperones: tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : Math.ceil(tripData.studentCount / 15) + ' pratitelja',
-      itinerary
+      itinerary,
+      packing_list: generatePackingList(tripDays, tier.type, tripData),
+      rules: generateTripRules(tripData.gradeLevel, tier.type),
+      emergency_contacts: {
+        school: "+387 33 560 520",
+        embassy_info: "Ambasada/konzulat BiH u destinacijskoj zemlji",
+        local_emergency: "112 (EU standard)",
+        medical_info: tripData.medicalInfo || "Nema posebnih medicinskih napomena"
+      }
     };
   });
 
@@ -1034,6 +1042,79 @@ function pad(n: number): string {
 }
 
 // =====================================================================
+// PACKING LIST & RULES GENERATORS
+// =====================================================================
+
+function generatePackingList(tripDays: number, tier: string, tripData: TripRequest): string[] {
+  const baseItems = [
+    "Osobna iskaznica ili pasoš (original + kopija)",
+    "Zdravstvena iskaznica (EHIC kartica za EU)",
+    "Potpisana saglasnost roditelja",
+    "Kopija putnog rasporeda",
+    "Mobilni telefon + punjač",
+    "Mala ruksak/torba za dnevne izlete",
+    "Boca za vodu (min. 0.5L)",
+    "Lijekovi (ako su potrebni) s uputstvima",
+    "Novac za troškove — preporučeno: " + (tier === 'Budget' ? '20-30' : tier === 'Balanced' ? '40-60' : '60-100') + " EUR džeparac",
+    "Sredstvo za sunčanje i kapa/šešir",
+    "Kišobran ili lagana jakna za kišu",
+    "Udobna obuća za hodanje",
+  ];
+
+  if (tripDays > 1) {
+    baseItems.push(
+      "Odjeća za " + tripDays + " dana (uključujući rezervnu)",
+      "Pidžama i toaletne potrepštine",
+      "Ručnik (ako hostel/hotel ne osigurava)",
+      "Plastična vrećica za prljavu odjeću",
+    );
+  }
+
+  if (tripData.transport === 'bus') {
+    baseItems.push("Jastuk za vrat i deka za vožnju (opcionalno)");
+    baseItems.push("Sredstvo protiv mučnine (ako je potrebno)");
+  }
+
+  baseItems.push(
+    "Bilježnica i olovka za bilješke",
+    "Fotoaparat ili mobitel za fotografije",
+  );
+
+  return baseItems;
+}
+
+function generateTripRules(gradeLevel: string, tier: string): string[] {
+  const gradeNum = parseInt(gradeLevel, 10);
+  const isYounger = !isNaN(gradeNum) && gradeNum <= 6;
+  
+  const rules = [
+    "Učenici se UVIJEK kreću u grupama od najmanje 3 osobe",
+    "Obavezno nositi identifikacijsku karticu/narukvicu tokom cijelog putovanja",
+    "Mobilni telefoni na tihi način tokom posjeta muzejima i kulturnim institucijama",
+    "Zabranjeno napuštanje grupe bez dozvole pratitelja",
+    "Obavezno vezivanje sigurnosnog pojasa u autobusu",
+    "Tačka okupljanja se dogovara na početku svakog dana",
+    "U slučaju odvajanja od grupe — ostati na mjestu i kontaktirati pratitelja",
+    "Poštovanje lokalnih pravila, kulture i običaja u svim destinacijama",
+    "Zabranjeno konzumiranje alkohola i duhana",
+    "Fotografisanje samo uz poštovanje privatnosti drugih osoba",
+  ];
+
+  if (isYounger) {
+    rules.push("Noćni mir od 21:00 — učenici moraju biti u sobama");
+    rules.push("Obavezan nadzor pratitelja tokom svih aktivnosti");
+  } else {
+    rules.push("Noćni mir od 22:00 — učenici moraju biti u sobama");
+    rules.push("Večernje slobodno vrijeme u grupama od min. 4 osobe uz dozvolu pratitelja");
+  }
+
+  rules.push("Hitni kontakt škole: +387 33 560 520");
+  rules.push("Europski broj za hitne slučajeve: 112");
+
+  return rules;
+}
+
+// =====================================================================
 // MAIN SERVER
 // =====================================================================
 
@@ -1050,8 +1131,25 @@ serve(async (req) => {
     console.log("IDSS TRIP PLANNER v2.0 - Generating world-class trip plans");
     console.log("============================================================");
 
+    // Validate input
+    if (!tripData.departureCity || !tripData.destinations || tripData.destinations.length === 0) {
+      return new Response(JSON.stringify({ error: "Polazište i najmanje jedna destinacija su obavezni." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!tripData.departureDate || !tripData.returnDate) {
+      return new Response(JSON.stringify({ error: "Datum polaska i povratka su obavezni." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const startDate = new Date(tripData.departureDate);
     const endDate = new Date(tripData.returnDate);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return new Response(JSON.stringify({ error: "Neispravni datumi." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const tripDays = Math.max(Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1);
 
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
@@ -1159,7 +1257,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
           "\n\nGeneriraj 3 IZUZETNO DETALJNE varijante s bogatim opisima, stvarnim imenima lokacija i realističnim cijenama. Samo čisti JSON.";
 
         const aiAbortController = new AbortController();
-        const aiTimeout = setTimeout(() => aiAbortController.abort(), 25000);
+        const aiTimeout = setTimeout(() => aiAbortController.abort(), 90000);
         
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -1168,7 +1266,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
+            model: "google/gemini-2.5-pro",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
