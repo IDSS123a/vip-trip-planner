@@ -516,7 +516,15 @@ function generateFallbackPlans(
         time: "07:00"
       },
       chaperones: tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : Math.ceil(tripData.studentCount / 15) + ' pratitelja',
-      itinerary
+      itinerary,
+      packing_list: generatePackingList(tripDays, tier.type, tripData),
+      rules: generateTripRules(tripData.gradeLevel, tier.type),
+      emergency_contacts: {
+        school: "+387 33 560 520",
+        embassy_info: "Ambasada/konzulat BiH u destinacijskoj zemlji",
+        local_emergency: "112 (EU standard)",
+        medical_info: tripData.medicalInfo || "Nema posebnih medicinskih napomena"
+      }
     };
   });
 
