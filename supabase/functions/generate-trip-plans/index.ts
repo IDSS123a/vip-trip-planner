@@ -1159,7 +1159,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
           "\n\nGeneriraj 3 IZUZETNO DETALJNE varijante s bogatim opisima, stvarnim imenima lokacija i realističnim cijenama. Samo čisti JSON.";
 
         const aiAbortController = new AbortController();
-        const aiTimeout = setTimeout(() => aiAbortController.abort(), 25000);
+        const aiTimeout = setTimeout(() => aiAbortController.abort(), 90000);
         
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
