@@ -1257,7 +1257,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
           "\n\nGeneriraj 3 IZUZETNO DETALJNE varijante s bogatim opisima, stvarnim imenima lokacija i realističnim cijenama. Samo čisti JSON.";
 
         const aiAbortController = new AbortController();
-        const aiTimeout = setTimeout(() => aiAbortController.abort(), 90000);
+        const aiTimeout = setTimeout(() => aiAbortController.abort(), 30000);
         
         const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
@@ -1266,7 +1266,7 @@ Odgovori ISKLJUČIVO validnim JSON objektom bez markdown oznaka:
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-pro",
+            model: "google/gemini-2.5-flash",
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
