@@ -1050,8 +1050,25 @@ serve(async (req) => {
     console.log("IDSS TRIP PLANNER v2.0 - Generating world-class trip plans");
     console.log("============================================================");
 
+    // Validate input
+    if (!tripData.departureCity || !tripData.destinations || tripData.destinations.length === 0) {
+      return new Response(JSON.stringify({ error: "Polazište i najmanje jedna destinacija su obavezni." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!tripData.departureDate || !tripData.returnDate) {
+      return new Response(JSON.stringify({ error: "Datum polaska i povratka su obavezni." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const startDate = new Date(tripData.departureDate);
     const endDate = new Date(tripData.returnDate);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return new Response(JSON.stringify({ error: "Neispravni datumi." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const tripDays = Math.max(Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1, 1);
 
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
