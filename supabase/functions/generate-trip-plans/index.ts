@@ -56,7 +56,7 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
   }
 }
 
-async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 12): Promise<POI[]> {
+async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 6): Promise<POI[]> {
   try {
     let query = '';
     const radius = 7000;
@@ -129,12 +129,12 @@ async function fetchCityContext(cityName: string): Promise<CityContext | null> {
   }
 
   const [museums, monuments, restaurants, hotels, parks, educational] = await Promise.all([
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 12),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 12),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 12),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 10),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 8),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 8)
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 6),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 6),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 6),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 5),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 4),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 4)
   ]);
   return { city: cityName, lat: geoData.lat, lng: geoData.lng, museums, monuments, restaurants, hotels, parks, educational };
 }
@@ -416,7 +416,7 @@ Generiši JSON odgovor. NE dodavaj markdown oznake, samo čisti JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
