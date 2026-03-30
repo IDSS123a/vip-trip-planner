@@ -9,7 +9,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescripti
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarIcon, Plus, X, AlertTriangle, Info, Users } from "lucide-react";
+import { CalendarIcon, Plus, X, AlertTriangle, Info, Users, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
 import { 
@@ -133,6 +133,15 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
   const removeDestination = (index: number) => {
     const current = form.getValues("destinations") || [];
     form.setValue("destinations", current.filter((_, i) => i !== index));
+    form.trigger("destinations");
+  };
+
+  const moveDestination = (index: number, direction: 'up' | 'down') => {
+    const current = [...(form.getValues("destinations") || [])];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= current.length) return;
+    [current[index], current[newIndex]] = [current[newIndex], current[index]];
+    form.setValue("destinations", current);
     form.trigger("destinations");
   };
 
@@ -270,9 +279,29 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                 </div>
                 <div className="flex flex-wrap gap-2 min-h-[32px]">
                   {destinations.map((dest, index) => (
-                    <Badge key={index} variant="secondary" className="gap-1 pr-1">
+                    <Badge key={index} variant="secondary" className="gap-1 pr-1 items-center">
                       <span className="text-xs text-muted-foreground mr-1">{index + 1}.</span>
                       {dest}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => moveDestination(index, 'up')}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-4 w-4 p-0 hover:bg-transparent"
+                        onClick={() => moveDestination(index, 'down')}
+                        disabled={index === destinations.length - 1}
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -286,7 +315,7 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                   ))}
                 </div>
                 <FormDescription>
-                  Dodajte destinacije u redoslijedu posjete (maks. 10)
+                  Dodajte destinacije u redoslijedu posjete — koristite strelice za promjenu redoslijeda (maks. 10)
                 </FormDescription>
               </div>
               <FormMessage />
