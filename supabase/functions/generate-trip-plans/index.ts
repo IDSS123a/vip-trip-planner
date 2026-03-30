@@ -35,14 +35,14 @@ interface POI {
 }
 
 // =====================================================================
-// GEOCODING & POI FETCHING (Overpass for context)
+// GEOCODING
 // =====================================================================
 
 async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
   try {
     const url = "https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(cityName) + "&format=json&limit=1&addressdetails=1";
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'IDSS-Trip-Planner/5.0 (info@idss.ba)' }
+      headers: { 'User-Agent': 'IDSS-Trip-Planner/6.0 (info@idss.ba)' }
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -54,128 +54,6 @@ async function geocodeCity(cityName: string): Promise<{ lat: number; lng: number
     console.error("Geocoding error for " + cityName + ":", error);
     return null;
   }
-}
-
-async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 6): Promise<POI[]> {
-  try {
-    let query = '';
-    const radius = 7000;
-    switch (poiType) {
-      case 'museums':
-        query = '[out:json][timeout:10];(node["tourism"="museum"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
-        break;
-      case 'monuments':
-        query = '[out:json][timeout:10];(node["historic"](around:' + radius + ',' + lat + ',' + lng + ');node["tourism"="attraction"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
-        break;
-      case 'restaurants':
-        query = '[out:json][timeout:10];(node["amenity"="restaurant"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
-        break;
-      case 'hotels':
-        query = '[out:json][timeout:10];(node["tourism"="hotel"](around:' + radius + ',' + lat + ',' + lng + ');node["tourism"="hostel"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
-        break;
-      case 'parks':
-        query = '[out:json][timeout:10];(node["leisure"="park"](around:' + radius + ',' + lat + ',' + lng + ');node["tourism"="zoo"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
-        break;
-      case 'educational':
-        query = '[out:json][timeout:10];(node["tourism"="gallery"](around:' + radius + ',' + lat + ',' + lng + ');node["amenity"="theatre"](around:' + radius + ',' + lat + ',' + lng + '););out body ' + limit + ';';
-        break;
-      default:
-        return [];
-    }
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'data=' + encodeURIComponent(query)
-    });
-    if (!response.ok) return [];
-    const data = await response.json();
-    if (!data.elements || !Array.isArray(data.elements)) return [];
-    return data.elements
-      .filter((item: any) => item.tags && item.tags.name)
-      .map((item: any) => ({
-        name: item.tags.name,
-        kind: poiType,
-        lat: item.lat || lat,
-        lng: item.lon || lng,
-        address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
-        website: item.tags.website || item.tags.url,
-        phone: item.tags.phone || item.tags['contact:phone'],
-        openingHours: item.tags.opening_hours
-      }));
-  } catch (error) {
-    console.error("Overpass API error for " + poiType + ":", error);
-    return [];
-  }
-}
-
-interface CityContext {
-  city: string;
-  lat: number;
-  lng: number;
-  museums: POI[];
-  monuments: POI[];
-  restaurants: POI[];
-  hotels: POI[];
-  parks: POI[];
-  educational: POI[];
-}
-
-async function fetchCityContext(cityName: string): Promise<CityContext | null> {
-  let geoData = await geocodeCity(cityName);
-  if (!geoData) {
-    const fb = getFallbackCoordinates(cityName);
-    if (fb) geoData = { ...fb, displayName: cityName };
-    else return null;
-  }
-
-  const [museums, monuments, restaurants, hotels, parks, educational] = await Promise.all([
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 6),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'monuments', 6),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 6),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 5),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'parks', 4),
-    fetchPOIsOverpass(geoData.lat, geoData.lng, 'educational', 4)
-  ]);
-  return { city: cityName, lat: geoData.lat, lng: geoData.lng, museums, monuments, restaurants, hotels, parks, educational };
-}
-
-// =====================================================================
-// ROUTE CALCULATIONS
-// =====================================================================
-
-async function calculateRouteDistance(coordinates: Array<{lat: number; lng: number}>): Promise<{distance_km: number; duration_hours: number}> {
-  if (coordinates.length < 2) return { distance_km: 0, duration_hours: 0 };
-  try {
-    const coordString = coordinates.map(c => c.lng + ',' + c.lat).join(';');
-    const url = "https://router.project-osrm.org/route/v1/driving/" + coordString + "?overview=false";
-    const response = await fetch(url);
-    if (!response.ok) return estimateDistance(coordinates);
-    const data = await response.json();
-    if (data.routes && data.routes.length > 0) {
-      return {
-        distance_km: Math.round(data.routes[0].distance / 1000),
-        duration_hours: Math.round(data.routes[0].duration / 3600 * 10) / 10
-      };
-    }
-    return estimateDistance(coordinates);
-  } catch {
-    return estimateDistance(coordinates);
-  }
-}
-
-function estimateDistance(coordinates: Array<{lat: number; lng: number}>): {distance_km: number; duration_hours: number} {
-  let totalDistance = 0;
-  for (let i = 0; i < coordinates.length - 1; i++) {
-    const R = 6371;
-    const dLat = (coordinates[i + 1].lat - coordinates[i].lat) * Math.PI / 180;
-    const dLon = (coordinates[i + 1].lng - coordinates[i].lng) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(coordinates[i].lat * Math.PI / 180) * Math.cos(coordinates[i + 1].lat * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    totalDistance += R * c * 1.3;
-  }
-  return { distance_km: Math.round(totalDistance), duration_hours: Math.round(totalDistance / 70 * 10) / 10 };
 }
 
 function getFallbackCoordinates(cityName: string): { lat: number; lng: number } | null {
@@ -226,6 +104,131 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
   return null;
 }
 
+// =====================================================================
+// POI FETCHING — lightweight, parallel, with timeout
+// =====================================================================
+
+async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 4): Promise<POI[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+  try {
+    const radius = 5000;
+    let query = '';
+    switch (poiType) {
+      case 'museums':
+        query = `[out:json][timeout:5];node["tourism"="museum"](around:${radius},${lat},${lng});out body ${limit};`;
+        break;
+      case 'attractions':
+        query = `[out:json][timeout:5];(node["historic"](around:${radius},${lat},${lng});node["tourism"="attraction"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'restaurants':
+        query = `[out:json][timeout:5];node["amenity"="restaurant"](around:${radius},${lat},${lng});out body ${limit};`;
+        break;
+      case 'hotels':
+        query = `[out:json][timeout:5];(node["tourism"="hotel"](around:${radius},${lat},${lng});node["tourism"="hostel"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      case 'culture':
+        query = `[out:json][timeout:5];(node["tourism"="gallery"](around:${radius},${lat},${lng});node["amenity"="theatre"](around:${radius},${lat},${lng});node["tourism"="zoo"](around:${radius},${lat},${lng});node["leisure"="park"]["name"](around:${radius},${lat},${lng}););out body ${limit};`;
+        break;
+      default: return [];
+    }
+    const response = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!response.ok) return [];
+    const data = await response.json();
+    if (!data.elements || !Array.isArray(data.elements)) return [];
+    return data.elements
+      .filter((item: any) => item.tags && item.tags.name)
+      .map((item: any) => ({
+        name: item.tags.name,
+        kind: poiType,
+        lat: item.lat || lat,
+        lng: item.lon || lng,
+        address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
+        website: item.tags.website || item.tags.url,
+        phone: item.tags.phone || item.tags['contact:phone'],
+        openingHours: item.tags.opening_hours
+      }));
+  } catch {
+    clearTimeout(timeout);
+    return [];
+  }
+}
+
+interface CityContext {
+  city: string;
+  lat: number;
+  lng: number;
+  museums: POI[];
+  attractions: POI[];
+  restaurants: POI[];
+  hotels: POI[];
+  culture: POI[];
+}
+
+async function fetchCityContext(cityName: string): Promise<CityContext | null> {
+  let geoData = await geocodeCity(cityName);
+  if (!geoData) {
+    const fb = getFallbackCoordinates(cityName);
+    if (fb) geoData = { ...fb, displayName: cityName };
+    else return null;
+  }
+
+  // All POI types in parallel
+  const [museums, attractions, restaurants, hotels, culture] = await Promise.all([
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'museums', 4),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'attractions', 4),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'restaurants', 4),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'hotels', 4),
+    fetchPOIsOverpass(geoData.lat, geoData.lng, 'culture', 4)
+  ]);
+  return { city: cityName, lat: geoData.lat, lng: geoData.lng, museums, attractions, restaurants, hotels, culture };
+}
+
+// =====================================================================
+// ROUTE
+// =====================================================================
+
+async function calculateRouteDistance(coordinates: Array<{lat: number; lng: number}>): Promise<{distance_km: number; duration_hours: number}> {
+  if (coordinates.length < 2) return { distance_km: 0, duration_hours: 0 };
+  try {
+    const coordString = coordinates.map(c => c.lng + ',' + c.lat).join(';');
+    const url = "https://router.project-osrm.org/route/v1/driving/" + coordString + "?overview=false";
+    const response = await fetch(url);
+    if (!response.ok) return estimateDistance(coordinates);
+    const data = await response.json();
+    if (data.routes && data.routes.length > 0) {
+      return {
+        distance_km: Math.round(data.routes[0].distance / 1000),
+        duration_hours: Math.round(data.routes[0].duration / 3600 * 10) / 10
+      };
+    }
+    return estimateDistance(coordinates);
+  } catch {
+    return estimateDistance(coordinates);
+  }
+}
+
+function estimateDistance(coordinates: Array<{lat: number; lng: number}>): {distance_km: number; duration_hours: number} {
+  let totalDistance = 0;
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const R = 6371;
+    const dLat = (coordinates[i + 1].lat - coordinates[i].lat) * Math.PI / 180;
+    const dLon = (coordinates[i + 1].lng - coordinates[i].lng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(coordinates[i].lat * Math.PI / 180) * Math.cos(coordinates[i + 1].lat * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    totalDistance += R * c * 1.3;
+  }
+  return { distance_km: Math.round(totalDistance), duration_hours: Math.round(totalDistance / 70 * 10) / 10 };
+}
+
 function buildRouteCoordinates(
   departureCity: string, destinations: string[], cityContexts: CityContext[]
 ): Array<{ city: string; lat: number; lng: number; order: number }> {
@@ -251,7 +254,7 @@ function buildRouteCoordinates(
 }
 
 // =====================================================================
-// COST CALCULATIONS
+// COSTS
 // =====================================================================
 
 function calculateCosts(
@@ -306,107 +309,85 @@ function calculateCosts(
 }
 
 // =====================================================================
-// BUILD CONTEXT STRING FOR AI
+// AI GENERATION — one plan at a time for reliability
 // =====================================================================
 
-function buildCityContextString(contexts: CityContext[]): string {
+function buildPOIContext(contexts: CityContext[]): string {
   return contexts.map(c => {
-    const parts = [`\n=== ${c.city} (${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}) ===`];
-    if (c.museums.length > 0) parts.push("MUZEJI: " + c.museums.map(p => p.name + (p.address ? " [" + p.address + "]" : "") + (p.phone ? " tel:" + p.phone : "") + (p.openingHours ? " radno:" + p.openingHours : "")).join("; "));
-    if (c.monuments.length > 0) parts.push("ZNAMENITOSTI: " + c.monuments.map(p => p.name + (p.address ? " [" + p.address + "]" : "") + (p.phone ? " tel:" + p.phone : "")).join("; "));
-    if (c.restaurants.length > 0) parts.push("RESTORANI: " + c.restaurants.map(p => p.name + (p.address ? " [" + p.address + "]" : "") + (p.phone ? " tel:" + p.phone : "") + (p.openingHours ? " radno:" + p.openingHours : "")).join("; "));
-    if (c.hotels.length > 0) parts.push("HOTELI/HOSTELI: " + c.hotels.map(p => p.name + (p.address ? " [" + p.address + "]" : "") + (p.phone ? " tel:" + p.phone : "")).join("; "));
-    if (c.parks.length > 0) parts.push("PARKOVI/ZOO: " + c.parks.map(p => p.name + (p.address ? " [" + p.address + "]" : "")).join("; "));
-    if (c.educational.length > 0) parts.push("GALERIJE/KAZALIŠTA: " + c.educational.map(p => p.name + (p.address ? " [" + p.address + "]" : "")).join("; "));
-    return parts.join("\n");
-  }).join("\n");
+    const parts = [`[${c.city}]`];
+    const allPOIs = [
+      ...c.museums.map(p => `Muzej: ${p.name}${p.address ? ' @ '+p.address : ''}${p.phone ? ' tel:'+p.phone : ''}`),
+      ...c.attractions.map(p => `Znamenitost: ${p.name}${p.address ? ' @ '+p.address : ''}${p.phone ? ' tel:'+p.phone : ''}`),
+      ...c.restaurants.map(p => `Restoran: ${p.name}${p.address ? ' @ '+p.address : ''}${p.phone ? ' tel:'+p.phone : ''}`),
+      ...c.hotels.map(p => `Smještaj: ${p.name}${p.address ? ' @ '+p.address : ''}${p.phone ? ' tel:'+p.phone : ''}`),
+      ...c.culture.map(p => `Kultura: ${p.name}${p.address ? ' @ '+p.address : ''}${p.phone ? ' tel:'+p.phone : ''}`),
+    ];
+    parts.push(allPOIs.join('\n'));
+    return parts.join('\n');
+  }).join('\n\n');
 }
 
-// =====================================================================
-// AI-POWERED PLAN GENERATION
-// =====================================================================
-
-async function generateWithAI(
+async function generateSinglePlan(
   tripData: TripRequest,
   cityContexts: CityContext[],
   routeInfo: { distance_km: number; duration_hours: number },
   tripDays: number,
   fullRoute: string,
+  tier: 'Budget' | 'Balanced' | 'Premium',
   apiKey: string
 ): Promise<any | null> {
-  const cityContext = buildCityContextString(cityContexts);
+  const poiContext = buildPOIContext(cityContexts);
   const chaperoneNames = tripData.chaperones.length > 0 ? tripData.chaperones.join(', ') : Math.ceil(tripData.studentCount / 15) + ' pratitelja';
+  
+  const accomType = tier === 'Budget' ? 'hostel ili 2* hotel' : tier === 'Balanced' ? '3* hotel' : '4-5* hotel';
+  const mealType = tier === 'Budget' ? 'pristupačni restorani, fast food, pekare' : tier === 'Balanced' ? 'srednja klasa restorani, lokalna kuhinja' : 'vrhunski restorani, fine dining';
 
-  const systemPrompt = `Ti si profesionalni planer školskih ekskurzija s 20 godina iskustva. Generišeš ULTRA-DETALJNE planove puta za školske grupe.
+  const systemPrompt = `Ti si profesionalni planer školskih ekskurzija. Generišeš JEDAN ultra-detaljan ${tier} plan puta.
 
-KRITIČNA PRAVILA — OBAVEZNO:
-1. Za SVAKI obrok navedi KONKRETNO IME restorana, tačnu adresu, telefon i opis hrane (npr. "Ručak u restoranu Nokturno, Skalinska 4, Zagreb. Tel: +385 1 4813 394. Tradicionalna hrvatska kuhinja — domaća tjestenina, štrukli, grilovano meso. Terasa s pogledom.")
-2. Za SVAKI smještaj navedi KONKRETNO IME hotela/hostela, zvjezdice, adresu, telefon, web stranicu i cijenu po osobi (npr. "Check-in u Hostel Celica, Metelkova ulica 8, Ljubljana. Tel: +386 1 230 97 00. Web: hostelcelica.com. Bivši zatvor pretvoren u umjetnički hostel. ~22 EUR/noć/os.")
-3. Za SVAKU posjetu navedi KONKRETNO IME muzeja/galerije/znamenitosti, adresu, radno vrijeme, cijenu ulaznice i DETALJNI OPIS od minimum 3 rečenice o edukativnom značaju
-4. Za Budget tier koristi hostele, za Balanced 3* hotele, za Premium 4-5* hotele
-5. Svaki dan mora imati minimum 8 aktivnosti s preciznim vremenima (npr. "09:00 - 11:00")
-6. Na putu obavezno navedi gdje će učenici jesti brunch/ručak — konkretno ime restorana na ruti
-7. Koristi STVARNA imena koja postoje u datom gradu. Ne izmišljaj imena!
-8. Svaka aktivnost ima polje "description" koje MORA biti minimum 3 rečenice dugačko
+OBAVEZNA PRAVILA:
+- Svaki obrok: KONKRETNO ime restorana, adresa, telefon, opis hrane (min 2 rečenice)
+- Smještaj: KONKRETNO ime (${accomType}), adresa, telefon, cijena/noć, opis
+- Svaka posjeta: KONKRETNO ime lokacije, adresa, radno vrijeme, cijena ulaznice, edukativni opis (min 2 rečenice)
+- Svaki dan: minimum 6 aktivnosti s preciznim vremenima
+- Dan putovanja: gdje će djeca jesti na putu (konkretno ime restorana na ruti)
+- Koristi STVARNA, POZNATA imena. Dopuni podatke iz konteksta SVOJIM ZNANJEM o tim gradovima.
+- Restorani: ${mealType}
 
-KORISTI podatke iz konteksta ispod ali DOPUNI svojim znanjem o stvarnim lokacijama u tim gradovima.
-Ako u kontekstu nema dovoljno podataka za neki grad, koristi svoje znanje o poznatim hotelima, restoranima i znamenitostima tog grada.
-
-FORMAT ODGOVORA — striktni JSON:
+Odgovori SAMO čistim JSON-om (bez markdown oznaka):
 {
-  "plans": [
+  "type":"${tier}",
+  "label":"${tier === 'Budget' ? 'Ekonomična opcija' : tier === 'Balanced' ? 'Optimalni odnos cijene i kvaliteta' : 'Premium VIP iskustvo'}",
+  "accommodation_name":"...",
+  "accommodation_address":"...",
+  "accommodation_phone":"...",
+  "accommodation_price_per_night":"... EUR/os",
+  "why_this_fits":"2-3 rečenice",
+  "itinerary":[
     {
-      "id": 1, "type": "Budget", "label": "Ekonomična opcija",
-      "accommodation_name": "ime hostela/hotela za ovaj tier",
-      "accommodation_address": "adresa",
-      "accommodation_phone": "telefon",
-      "accommodation_price_per_night": "cijena EUR/os/noć",
-      "why_this_fits": "2-3 rečenice zašto je ova opcija dobra",
-      "itinerary": [
-        {
-          "day": 1, "date": "YYYY-MM-DD",
-          "title": "Naslov dana",
-          "summary": "Kratki pregled dana s imenima lokacija",
-          "activities": [
-            {
-              "time": "07:00 - 07:30",
-              "description": "DETALJAN opis aktivnosti, minimum 3 rečenice. Konkretna imena, adrese, telefoni.",
-              "type": "activity|travel|meal|accommodation|free_time",
-              "location": "Ime lokacije",
-              "lat": 45.81, "lng": 15.97,
-              "notes": "Dodatne napomene"
-            }
-          ]
-        }
+      "day":1,
+      "date":"YYYY-MM-DD",
+      "title":"Naslov dana",
+      "summary":"Kratak pregled",
+      "activities":[
+        {"time":"07:00 - 07:30","description":"Detaljan opis min 2 rečenice sa svim konkretnim informacijama.","type":"activity|travel|meal|accommodation|free_time","location":"Ime lokacije","lat":0.0,"lng":0.0,"notes":"..."}
       ]
-    },
-    { "id": 2, "type": "Balanced", ... },
-    { "id": 3, "type": "Premium", ... }
+    }
   ]
 }`;
 
-  const userPrompt = `Generiši 3 plana puta (Budget, Balanced, Premium) za školsku ekskurziju:
+  const userPrompt = `${tier} plan za školsku ekskurziju:
+Ruta: ${fullRoute} | Datumi: ${tripData.departureDate} do ${tripData.returnDate} (${tripDays} dana)
+${tripData.studentCount} učenika, ${tripData.gradeLevel}. razred | Pratitelji: ${chaperoneNames} | Prevoz: ${tripData.transport}
+Udaljenost: ~${routeInfo.distance_km}km, ~${routeInfo.duration_hours}h | Fokus: ${tripData.educationalFocus || "historija, kultura, nauka"}
+${tripData.specialNeeds ? 'Posebne potrebe: ' + tripData.specialNeeds : ''}
 
-DETALJI PUTOVANJA:
-- Polazište: ${tripData.departureCity}
-- Ruta: ${fullRoute}
-- Datumi: ${tripData.departureDate} do ${tripData.returnDate} (${tripDays} dana)
-- Učenici: ${tripData.studentCount} učenika, ${tripData.gradeLevel}. razred
-- Pratitelji: ${chaperoneNames}
-- Prevoz: ${tripData.transport}
-- Ukupna udaljenost: ~${routeInfo.distance_km} km, ~${routeInfo.duration_hours}h vožnje
-- Edukativni fokus: ${tripData.educationalFocus || "historija, kultura, geografija"}
-- Posebne potrebe: ${tripData.specialNeeds || "Nema"}
+LOKACIJE U GRADOVIMA (koristi + dopuni):
+${poiContext}
 
-KONTEKST — POZNATE LOKACIJE U GRADOVIMA (koristi ove + dopuni svojim znanjem):
-${cityContext}
+Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
 
-OBAVEZNO za svaki plan:
-1. Prvog dana: okupljanje, polazak, brunch na putu (KONKRETAN restoran na ruti!), dolazak, check-in (KONKRETNO ime hotela/hostela!), prva šetnja, večera (KONKRETNO ime restorana!)
-2. Srednji dani: doručak, posjete muzejima/galerijama/znamenitostima (SVE S IMENIMA I ADRESAMA!), ručak (KONKRETAN restoran!), popodnevne aktivnosti, slobodno vrijeme, večera (KONKRETAN restoran!)
-3. Zadnji dan: doručak, check-out, eventualno jutarnje razgledanje, polazak, ručak na putu, dolazak
-
-Generiši JSON odgovor. NE dodavaj markdown oznake, samo čisti JSON.`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 50000);
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -416,43 +397,36 @@ Generiši JSON odgovor. NE dodavaj markdown oznake, samo čisti JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
         temperature: 0.3,
       }),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI Gateway error:", response.status, errText);
+      console.error(`AI error for ${tier}:`, response.status, errText);
       return null;
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-    if (!content) {
-      console.error("AI returned empty content");
-      return null;
-    }
+    if (!content) return null;
 
-    // Parse JSON from response (strip markdown fences if present)
     let jsonStr = content.trim();
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
     }
     
-    const parsed = JSON.parse(jsonStr);
-    if (!parsed.plans || !Array.isArray(parsed.plans) || parsed.plans.length === 0) {
-      console.error("AI returned invalid plan structure");
-      return null;
-    }
-
-    return parsed;
+    return JSON.parse(jsonStr);
   } catch (error) {
-    console.error("AI generation error:", error);
+    clearTimeout(timeout);
+    console.error(`AI generation error (${tier}):`, error);
     return null;
   }
 }
@@ -503,6 +477,18 @@ function generateTripRules(gradeLevel: string): string[] {
   ];
 }
 
+function normalizeActivityType(type: string): string {
+  const validTypes = ['travel', 'meal', 'activity', 'accommodation', 'free_time'];
+  if (validTypes.includes(type)) return type;
+  const mapping: Record<string, string> = {
+    'meeting': 'activity', 'transport': 'travel', 'sightseeing': 'activity',
+    'cultural': 'activity', 'educational': 'activity', 'shopping': 'free_time',
+    'rest': 'free_time', 'breakfast': 'meal', 'lunch': 'meal', 'dinner': 'meal',
+    'hotel': 'accommodation', 'checkin': 'accommodation', 'checkout': 'accommodation',
+  };
+  return mapping[type] || 'activity';
+}
+
 // =====================================================================
 // MAIN SERVER
 // =====================================================================
@@ -516,9 +502,7 @@ serve(async (req) => {
     const tripData: TripRequest = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    console.log("============================================================");
-    console.log("IDSS TRIP PLANNER v5.0 — AI-POWERED UNIVERSAL ENGINE");
-    console.log("============================================================");
+    console.log("=== IDSS TRIP PLANNER v6.0 — PARALLEL AI ENGINE ===");
 
     if (!tripData.departureCity || !tripData.destinations || tripData.destinations.length === 0) {
       return new Response(JSON.stringify({ error: "Polazište i najmanje jedna destinacija su obavezni." }), {
@@ -543,61 +527,52 @@ serve(async (req) => {
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
     const fullRoute = allCities.join(' → ');
 
-    // Step 1: Fetch POIs from Overpass as context for AI
-    console.log("Step 1: Fetching real POI data from Overpass as AI context...");
-    const uniqueCities = [...new Set([tripData.departureCity, ...tripData.destinations])];
-
-    const cityContexts: CityContext[] = [];
-    for (const city of uniqueCities) {
-      const result = await fetchCityContext(city);
-      if (result) cityContexts.push(result);
-      if (uniqueCities.length > 2) await new Promise(r => setTimeout(r, 200));
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "AI servis nije konfigurisan. Kontaktirajte administratora." }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
+    // Step 1: Fetch ALL city contexts IN PARALLEL
+    console.log("Step 1: Fetching POIs for all cities in parallel...");
+    const uniqueCities = [...new Set([tripData.departureCity, ...tripData.destinations])];
+    const cityContextResults = await Promise.all(uniqueCities.map(city => fetchCityContext(city)));
+    const cityContexts = cityContextResults.filter((c): c is CityContext => c !== null);
 
     const totalPOIs = cityContexts.reduce((sum, c) =>
-      sum + c.museums.length + c.monuments.length + c.restaurants.length +
-      c.hotels.length + c.parks.length + c.educational.length, 0
+      sum + c.museums.length + c.attractions.length + c.restaurants.length +
+      c.hotels.length + c.culture.length, 0
     );
-    console.log("Loaded " + totalPOIs + " POIs across " + cityContexts.length + " cities as AI context");
+    console.log(`Loaded ${totalPOIs} POIs across ${cityContexts.length} cities`);
 
-    // Step 2: Route coordinates
+    // Step 2: Route
     const routeCoordinates = buildRouteCoordinates(tripData.departureCity, tripData.destinations, cityContexts);
-
-    // Step 3: Distance
     const routeInfo = await calculateRouteDistance(routeCoordinates.map(c => ({ lat: c.lat, lng: c.lng })));
-    console.log("Route: " + routeInfo.distance_km + "km, " + routeInfo.duration_hours + "h");
+    console.log(`Route: ${routeInfo.distance_km}km, ${routeInfo.duration_hours}h`);
 
-    // Step 4: Generate with AI
-    let aiPlans: any = null;
-    if (LOVABLE_API_KEY) {
-      console.log("Step 4: Generating detailed plans with AI (Gemini 2.5 Flash)...");
-      aiPlans = await generateWithAI(tripData, cityContexts, routeInfo, tripDays, fullRoute, LOVABLE_API_KEY);
-      if (aiPlans) {
-        console.log("AI generation successful — " + aiPlans.plans.length + " plans generated");
-      } else {
-        console.log("AI generation failed — this should not happen in production");
-      }
-    } else {
-      console.error("LOVABLE_API_KEY not configured!");
-    }
+    // Step 3: Generate 3 plans IN PARALLEL with AI
+    console.log("Step 3: Generating 3 plans in PARALLEL...");
+    const tiers: Array<'Budget' | 'Balanced' | 'Premium'> = ['Budget', 'Balanced', 'Premium'];
+    const planResults = await Promise.all(
+      tiers.map(tier => generateSinglePlan(tripData, cityContexts, routeInfo, tripDays, fullRoute, tier, LOVABLE_API_KEY))
+    );
 
-    if (!aiPlans || !aiPlans.plans) {
+    const successfulPlans = planResults.filter(p => p !== null);
+    if (successfulPlans.length === 0) {
       return new Response(JSON.stringify({ error: "Generisanje planova nije uspjelo. Pokušajte ponovo." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Step 5: Enrich AI plans with costs, packing list, rules, coordinates
-    const tiers: Array<{ type: 'Budget' | 'Balanced' | 'Premium' }> = [
-      { type: 'Budget' }, { type: 'Balanced' }, { type: 'Premium' }
-    ];
+    console.log(`${successfulPlans.length}/3 plans generated successfully`);
 
-    const enrichedPlans = aiPlans.plans.map((plan: any, idx: number) => {
-      const tierType = tiers[idx]?.type || (plan.type as 'Budget' | 'Balanced' | 'Premium') || 'Balanced';
-      const costs = calculateCosts(tripData, routeInfo, tripDays, tierType);
+    // Step 4: Enrich plans
+    const enrichedPlans = successfulPlans.map((plan: any, idx: number) => {
+      const tierType = plan.type || tiers[idx] || 'Balanced';
+      const costs = calculateCosts(tripData, routeInfo, tripDays, tierType as 'Budget' | 'Balanced' | 'Premium');
 
       return {
-        id: plan.id || idx + 1,
+        id: idx + 1,
         type: tierType,
         route: fullRoute,
         reliability: tierType === 'Budget' ? 85 : tierType === 'Balanced' ? 90 : 95,
@@ -611,11 +586,7 @@ serve(async (req) => {
           local_transport: costs.local_transport, contingency: costs.contingency, total: costs.total,
           transport_detail: costs.transport_detail, accommodation_detail: costs.accommodation_detail, meals_detail: costs.meals_detail,
         },
-        why_this_fits: plan.why_this_fits || (tierType === 'Budget'
-          ? "Ekonomična opcija s hostelskim smještajem i pristupačnim restoranima."
-          : tierType === 'Balanced'
-            ? "Najbolji odnos cijene i kvaliteta — 3* hotel, kvalitetni restorani."
-            : "Premium VIP iskustvo — 4-5* hotel, vrhunski restorani."),
+        why_this_fits: plan.why_this_fits || "",
         accommodation_info: plan.accommodation_name
           ? plan.accommodation_name + (plan.accommodation_address ? ", " + plan.accommodation_address : "") + (plan.accommodation_phone ? ", Tel: " + plan.accommodation_phone : "")
           : undefined,
@@ -644,11 +615,11 @@ serve(async (req) => {
       };
     });
 
-    const result: any = {
+    const result = {
       plans: enrichedPlans,
       route_coordinates: routeCoordinates,
       verification: {
-        data_source: "AI (Gemini 2.5 Flash) + OpenStreetMap (Overpass API) + Nominatim + OSRM",
+        data_source: "AI (Gemini 2.5 Flash) + OpenStreetMap + OSRM",
         last_verified: new Date().toISOString(),
         route_verified: true,
         distance_km: routeInfo.distance_km,
@@ -657,29 +628,27 @@ serve(async (req) => {
         ai_generated: true,
         cities_data: cityContexts.map(c => ({
           city: c.city, lat: c.lat, lng: c.lng,
-          museums: c.museums.length, monuments: c.monuments.length,
+          museums: c.museums.length, attractions: c.attractions.length,
           restaurants: c.restaurants.length, hotels: c.hotels.length,
-          parks: c.parks.length, educational: c.educational.length
+          culture: c.culture.length
         }))
       },
       educational_resources: cityContexts.map(city => ({
         city: city.city,
         sites: [
-          ...city.museums.slice(0, 5).map(m => m.name),
-          ...city.monuments.slice(0, 5).map(m => m.name),
-          ...city.educational.slice(0, 4).map(e => e.name)
+          ...city.museums.slice(0, 3).map(m => m.name),
+          ...city.attractions.slice(0, 3).map(m => m.name),
+          ...city.culture.slice(0, 3).map(e => e.name)
         ].filter(Boolean),
         curriculum_links: tripData.educationalFocus ? [tripData.educationalFocus] : ["historija", "kultura", "geografija"]
       }))
     };
 
-    console.log("============================================================");
-    console.log("v5.0 AI-POWERED PLANS GENERATED");
+    console.log("=== v6.0 COMPLETE ===");
     enrichedPlans.forEach((p: any) => {
       const actCount = p.itinerary?.reduce((s: number, d: any) => s + (d.activities?.length || 0), 0) || 0;
-      console.log("  " + p.type + ": " + p.cost_per_student + " EUR/student, " + (p.itinerary?.length || 0) + " days, " + actCount + " activities");
+      console.log(`  ${p.type}: ${p.cost_per_student} EUR/student, ${p.itinerary?.length || 0} days, ${actCount} activities`);
     });
-    console.log("============================================================");
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -695,15 +664,3 @@ serve(async (req) => {
     });
   }
 });
-
-function normalizeActivityType(type: string): string {
-  const validTypes = ['travel', 'meal', 'activity', 'accommodation', 'free_time'];
-  if (validTypes.includes(type)) return type;
-  const mapping: Record<string, string> = {
-    'meeting': 'activity', 'transport': 'travel', 'sightseeing': 'activity',
-    'cultural': 'activity', 'educational': 'activity', 'shopping': 'free_time',
-    'rest': 'free_time', 'breakfast': 'meal', 'lunch': 'meal', 'dinner': 'meal',
-    'hotel': 'accommodation', 'checkin': 'accommodation', 'checkout': 'accommodation',
-  };
-  return mapping[type] || 'activity';
-}
