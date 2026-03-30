@@ -386,8 +386,11 @@ ${poiContext}
 
 Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
 
+  // Use faster model for Budget, standard for others
+  const model = tier === 'Budget' ? 'google/gemini-2.5-flash-lite' : 'google/gemini-2.5-flash';
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 50000);
+  const timeout = setTimeout(() => controller.abort(), 55000);
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
