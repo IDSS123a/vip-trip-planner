@@ -400,7 +400,7 @@ Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
