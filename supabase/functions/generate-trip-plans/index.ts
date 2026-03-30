@@ -342,7 +342,15 @@ async function generateSinglePlan(
   const accomType = tier === 'Budget' ? 'hostel ili 2* hotel' : tier === 'Balanced' ? '3* hotel' : '4-5* hotel';
   const mealType = tier === 'Budget' ? 'pristupačni restorani, fast food, pekare' : tier === 'Balanced' ? 'srednja klasa restorani, lokalna kuhinja' : 'vrhunski restorani, fine dining';
 
+  const numberedRoute = tripData.destinations.map((d, i) => `${i + 1}. ${d}`).join(', ');
+
   const systemPrompt = `Ti si profesionalni planer školskih ekskurzija. Generišeš JEDAN ultra-detaljan ${tier} plan puta.
+
+KRITIČNO — REDOSLIJED DESTINACIJA:
+Korisnik je EKSPLICITNO odredio redoslijed posjete destinacija. MORAŠ ga STROGO poštovati:
+${numberedRoute}
+Grupa PRVO ide na destinaciju br. 1, PA ONDA na br. 2, itd. Na povratku se vraća u polazište.
+NE SMIJEŠ mijenjati ovaj redoslijed ni pod kojim uvjetima!
 
 OBAVEZNA PRAVILA:
 - Svaki obrok: KONKRETNO ime restorana, adresa, telefon, opis hrane (min 2 rečenice)
@@ -376,14 +384,18 @@ Odgovori SAMO čistim JSON-om (bez markdown oznaka):
 }`;
 
   const userPrompt = `${tier} plan za školsku ekskurziju:
-Ruta: ${fullRoute} | Datumi: ${tripData.departureDate} do ${tripData.returnDate} (${tripDays} dana)
+STROGI REDOSLIJED POSJETE: ${tripData.departureCity} → ${tripData.destinations.join(' → ')} → ${tripData.departureCity} (povratak)
+Datumi: ${tripData.departureDate} do ${tripData.returnDate} (${tripDays} dana)
 ${tripData.studentCount} učenika, ${tripData.gradeLevel}. razred | Pratitelji: ${chaperoneNames} | Prevoz: ${tripData.transport}
 Udaljenost: ~${routeInfo.distance_km}km, ~${routeInfo.duration_hours}h | Fokus: ${tripData.educationalFocus || "historija, kultura, nauka"}
 ${tripData.specialNeeds ? 'Posebne potrebe: ' + tripData.specialNeeds : ''}
+${tripData.mealPlan ? 'Ishrana: ' + tripData.mealPlan : ''}
+${tripData.accommodationType ? 'Smještaj: ' + tripData.accommodationType : ''}
 
 LOKACIJE U GRADOVIMA (koristi + dopuni):
 ${poiContext}
 
+VAŽNO: Destinacije se posjećuju TAČNO ovim redoslijedom: ${tripData.destinations.join(', ')}. Ne mijenjaj redoslijed!
 Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
 
   // Use faster model for Budget, standard for others
