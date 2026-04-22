@@ -77,9 +77,9 @@ serve(async (req) => {
       .single();
 
     const school = schoolInfo || {
-      school_name: 'IDSS Field Trip Planner',
-      email: 'info@idss.edu.ba',
-      phone: '+387 33 665 900',
+      school_name: 'Internationale Deutsche Schule Sarajevo',
+      email: 'info@idss.ba',
+      phone: '+387 33 560 520',
     };
 
     // Generate email content based on template

@@ -80,10 +80,10 @@ export const useTripDocuments = () => {
 
   const schoolInfo = {
     name: "Internationale Deutsche Schule Sarajevo",
-    address: "Buka 13, 71000 Sarajevo",
+    address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
     phone: "+387 33 560 520",
     email: "info@idss.ba",
-    website: "www.idss.ba"
+    website: "www.idss.edu.ba"
   };
 
   // Helper to add page footer

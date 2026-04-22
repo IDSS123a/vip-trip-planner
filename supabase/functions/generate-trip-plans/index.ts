@@ -607,7 +607,7 @@ serve(async (req) => {
           : undefined,
         meeting_point: {
           name: "Internationale Deutsche Schule Sarajevo",
-          address: "Buka 13, 71000 Sarajevo",
+          address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
           lat: 43.8612, lng: 18.4028,
           time: "07:00"
         },
