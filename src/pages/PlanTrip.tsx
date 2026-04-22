@@ -47,7 +47,7 @@ const PlanTrip = () => {
       tripName: "",
       departureCity: "Sarajevo",
       destinations: [],
-      departureAddress: "IDSS, Buka 13, 71000 Sarajevo",
+      departureAddress: "IDSS, Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
       tripType: undefined,
       gradeLevel: "",
       studentCount: "",

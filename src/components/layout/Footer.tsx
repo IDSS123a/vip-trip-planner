@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { MapPin, Mail, Phone, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import idssLogo from "@/assets/idss-logo.png";
 
 const Footer = () => {
   return (
@@ -10,8 +11,8 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <MapPin className="h-6 w-6 text-primary-foreground" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-1.5">
+                <img src={idssLogo} alt="IDSS Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-foreground">IDSS Field Trip</span>
@@ -83,7 +84,11 @@ const Footer = () => {
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary mt-0.5" />
-                <span>Buka 13<br />71000 Sarajevo, BiH</span>
+                <span>Buka 13<br />71 000 Sarajevo<br />Bosna i Hercegovina</span>
+              </li>
+              <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="text-primary font-semibold">Web:</span>
+                <a href="https://www.idss.edu.ba" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">www.idss.edu.ba</a>
               </li>
             </ul>
           </div>

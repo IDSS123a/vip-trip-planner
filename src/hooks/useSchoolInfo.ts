@@ -16,10 +16,10 @@ interface SchoolInfo {
 const defaultSchoolInfo: SchoolInfo = {
   id: "default",
   schoolName: "Internationale Deutsche Schule Sarajevo",
-  address: "Buka 13, 71000 Sarajevo, Bosnia and Herzegovina",
+  address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
   phone: "+38733560520",
   email: "info@idss.ba",
-  website: "https://idss.edu.ba",
+  website: "https://www.idss.edu.ba",
   logoUrl: "https://idss.edu.ba/wp-content/uploads/2023/09/IDSS-Logo.png",
   headmasterName: null,
 };

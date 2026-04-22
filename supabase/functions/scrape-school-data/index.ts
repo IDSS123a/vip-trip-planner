@@ -117,10 +117,10 @@ serve(async (req) => {
 function parseSchoolInfo(markdown: string, html: string, metadata: any, url: string) {
   // Default IDSS data based on the school website
   let schoolInfo = {
-    schoolName: 'Internacionalna Demokratska Srednja Škola (IDSS)',
-    address: 'Dolačka 11, 71000 Sarajevo, Bosnia and Herzegovina',
-    phone: '+387 33 665 900',
-    email: 'info@idss.edu.ba',
+    schoolName: 'Internationale Deutsche Schule Sarajevo',
+    address: 'Buka 13, 71 000 Sarajevo, Bosna i Hercegovina',
+    phone: '+387 33 560 520',
+    email: 'info@idss.ba',
     website: url,
     logoUrl: 'https://idss.edu.ba/wp-content/uploads/2023/09/IDSS-Logo.png',
     headmasterName: 'Director',
