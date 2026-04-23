@@ -84,24 +84,28 @@ const resources = [
     title: "Predložak Dozvole Roditelja",
     description: "Standardni obrazac za suglasnost roditelja s svim potrebnim poljima.",
     action: "Generiraj u aplikaciji",
+    href: "/plan-trip",
   },
   {
     icon: Users,
     title: "Lista Učenika",
     description: "Obrazac za evidenciju učenika s kontaktima i medicinskim podacima.",
     action: "Generiraj u aplikaciji",
+    href: "/plan-trip",
   },
   {
     icon: Calendar,
     title: "Šablon Itinerera",
     description: "Detaljni vremenski plan s aktivnostima, obrocima i pauzama.",
     action: "Automatski generisan",
+    href: "/plan-trip",
   },
   {
     icon: Download,
     title: "Kompletna Dokumentacija",
     description: "Sve dokumente u jednom PDF-u za jednostavnu distribuciju.",
     action: "Preuzmite jednim klikom",
+    href: "/my-trips",
   },
 ];
 
@@ -196,26 +200,29 @@ const TeacherGuide = () => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           {resources.map((resource, index) => (
-            <Card key={index} className="border-border bg-card">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 flex-shrink-0">
-                    <resource.icon className="h-5 w-5 text-primary" />
+            <Link key={index} to={resource.href} className="block">
+              <Card className="border-border bg-card hover:border-primary/40 hover:shadow-md transition-all h-full">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 flex-shrink-0">
+                      <resource.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">
+                        {resource.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {resource.description}
+                      </p>
+                      <span className="text-xs text-primary font-medium inline-flex items-center gap-1">
+                        {resource.action}
+                        <ArrowRight className="h-3 w-3" />
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">
-                      {resource.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {resource.description}
-                    </p>
-                    <span className="text-xs text-primary font-medium">
-                      {resource.action}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 
