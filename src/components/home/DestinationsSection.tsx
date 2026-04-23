@@ -7,45 +7,45 @@ import { Star, MapPin, Clock, ArrowRight } from "lucide-react";
 const destinations = [
   {
     id: 1,
-    name: "Natural History Museum",
-    category: "Science",
+    name: "Sarajevo – Stari Grad",
+    category: "Historija",
     rating: 4.9,
     reviews: 328,
-    duration: "3-4 hours",
-    grades: "K-12",
+    duration: "3-4 sata",
+    grades: "1-9",
     image: "https://images.unsplash.com/photo-1544894079-e81a9eb1da8b?w=800&auto=format&fit=crop&q=60",
     featured: true,
   },
   {
     id: 2,
-    name: "Space & Aviation Center",
-    category: "STEM",
+    name: "Plitvička Jezera",
+    category: "Priroda",
     rating: 4.8,
     reviews: 256,
-    duration: "4-5 hours",
-    grades: "3-12",
+    duration: "Cjelodnevno",
+    grades: "5-9",
     image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&auto=format&fit=crop&q=60",
     featured: true,
   },
   {
     id: 3,
-    name: "Historical Village",
-    category: "History",
+    name: "Mostar – Stari Most",
+    category: "Kultura",
     rating: 4.7,
     reviews: 189,
-    duration: "2-3 hours",
-    grades: "2-8",
+    duration: "Cjelodnevno",
+    grades: "3-9",
     image: "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800&auto=format&fit=crop&q=60",
     featured: false,
   },
   {
     id: 4,
-    name: "Botanical Gardens",
-    category: "Nature",
+    name: "München – Deutsches Museum",
+    category: "Nauka",
     rating: 4.8,
     reviews: 412,
-    duration: "2-4 hours",
-    grades: "K-12",
+    duration: "Višednevno",
+    grades: "9",
     image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&auto=format&fit=crop&q=60",
     featured: false,
   },
@@ -59,15 +59,15 @@ const DestinationsSection = () => {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Popular <span className="text-primary">Destinations</span>
+              Popularne <span className="text-primary">Destinacije</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl">
-              Explore educator-approved venues with detailed curriculum connections and logistical information.
+              Pregledajte destinacije usklađene s IDSS Pravilnikom o organizaciji ekskurzija.
             </p>
           </div>
           <Link to="/destinations">
             <Button variant="outline" className="group">
-              View All Destinations
+              Sve Destinacije
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
@@ -91,7 +91,7 @@ const DestinationsSection = () => {
                     {destination.category}
                   </Badge>
                   {destination.featured && (
-                    <Badge className="bg-primary text-primary-foreground">Featured</Badge>
+                    <Badge className="bg-primary text-primary-foreground">Preporučeno</Badge>
                   )}
                 </div>
               </div>
@@ -111,7 +111,7 @@ const DestinationsSection = () => {
                     <Clock className="h-4 w-4" />
                     {destination.duration}
                   </div>
-                  <span>Grades {destination.grades}</span>
+                  <span>Razredi {destination.grades}</span>
                 </div>
               </CardContent>
             </Card>
