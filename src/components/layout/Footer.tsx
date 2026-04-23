@@ -16,8 +16,8 @@ const Footer = () => {
                 <img src={idssLogo} alt="IDSS Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-foreground">IDSS Field Trip</span>
-                <span className="text-xs text-muted-foreground">Planer Ekskurzija</span>
+                <span className="text-lg font-bold text-foreground">IDSS Ekskurzije</span>
+                <span className="text-xs text-muted-foreground">Planer Putovanja</span>
               </div>
             </Link>
             <p className="text-sm text-muted-foreground">
@@ -118,7 +118,7 @@ const Footer = () => {
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} IDSS Superior Field Trip Planner. All rights reserved.
+            © {new Date().getFullYear()} Internationale Deutsche Schule Sarajevo. Sva prava zadržana.
           </p>
           <div className="flex items-center gap-4">
             {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
