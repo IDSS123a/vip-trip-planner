@@ -93,8 +93,8 @@ export const IdssComplianceBanner = ({
       </Alert>
 
       {!compliance.compliant && destinations.length > 0 && (
-        <Alert variant="default" className="border-yellow-500/50 bg-yellow-500/5">
-          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+        <Alert variant="default" className="border-destructive/40 bg-destructive/5">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
           <AlertTitle>Preporuka: destinacija van Pravilnika</AlertTitle>
           <AlertDescription className="text-sm">{compliance.message}</AlertDescription>
         </Alert>
@@ -136,8 +136,8 @@ export const IdssComplianceBanner = ({
             </div>
           </div>
           {rotation.violates && (
-            <Alert variant="default" className="border-yellow-500/50 bg-yellow-500/5 mt-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <Alert variant="default" className="border-destructive/40 bg-destructive/5 mt-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
               <AlertDescription className="text-xs">{rotation.message}</AlertDescription>
             </Alert>
           )}
