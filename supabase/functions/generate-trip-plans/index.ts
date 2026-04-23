@@ -21,6 +21,7 @@ interface TripRequest {
   mealPlan?: string;
   accommodationType?: string;
   medicalInfo?: string;
+  previousYearDestination?: string;
 }
 
 interface POI {
@@ -344,13 +345,24 @@ async function generateSinglePlan(
 
   const numberedRoute = tripData.destinations.map((d, i) => `${i + 1}. ${d}`).join(', ');
 
-  const systemPrompt = `Ti si profesionalni planer školskih ekskurzija. Generišeš JEDAN ultra-detaljan ${tier} plan puta.
+  const systemPrompt = `Ti si profesionalni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS). Generišeš JEDAN ultra-detaljan ${tier} plan puta U SKLADU SA IDSS PRAVILNIKOM I UPUTSTVOM O ORGANIZACIJI EKSKURZIJA (09.03.2026).
 
 KRITIČNO — REDOSLIJED DESTINACIJA:
 Korisnik je EKSPLICITNO odredio redoslijed posjete destinacija. MORAŠ ga STROGO poštovati:
 ${numberedRoute}
 Grupa PRVO ide na destinaciju br. 1, PA ONDA na br. 2, itd. Na povratku se vraća u polazište.
 NE SMIJEŠ mijenjati ovaj redoslijed ni pod kojim uvjetima!
+
+IDSS PRAVILNIK — OBAVEZNI STANDARDI (Uputstvo 5.1, 5.2, Pravilnik Član 15):
+- DNEVNI RASPORED za višednevne ekskurzije MORA pratiti ovaj okvir:
+  07:00 buđenje | 07:00–08:00 higijena | 08:00–09:00 doručak | 09:00–13:00 obrazovne aktivnosti |
+  13:00–14:00 ručak | 14:00–18:00 obilazak/radionice | 18:00–19:00 večera |
+  19:00–21:30 kulturni/zabavni program | 21:30–22:00 priprema za spavanje | 22:00 OBAVEZNO gašenje svjetla.
+- SMJEŠTAJ: nakon 22:00 zabranjeno napuštanje soba; bez alkohola, cigareta, energetskih pića, opasnih predmeta.
+- PRIJEVOZ (Pravilnik Član 15): isključivo licencirani autobus s pojasevima i klimom; pauza svakih 2 sata; bez ustajanja tokom vožnje.
+- KOMUNIKACIJA: dnevni izvještaji u Viber grupu razreda; roditelji kontaktiraju razrednika 19:00–20:00.
+- PLAĆANJE (Uputstvo 4): jednokratno, najkasnije 14 dana prije polaska. Bez rata.
+- HITNI BROJEVI: uvijek navedi 112 (EU/BiH), kontakt razrednika i lokalnu hitnu pomoć po destinaciji.
 
 OBAVEZNA PRAVILA:
 - Svaki obrok: KONKRETNO ime restorana, adresa, telefon, opis hrane (min 2 rečenice)
@@ -391,6 +403,7 @@ Udaljenost: ~${routeInfo.distance_km}km, ~${routeInfo.duration_hours}h | Fokus: 
 ${tripData.specialNeeds ? 'Posebne potrebe: ' + tripData.specialNeeds : ''}
 ${tripData.mealPlan ? 'Ishrana: ' + tripData.mealPlan : ''}
 ${tripData.accommodationType ? 'Smještaj: ' + tripData.accommodationType : ''}
+${tripData.previousYearDestination ? 'NAPOMENA O ROTACIJI (Pravilnik Glava II, Član 4): grupa je prošle godine bila u ' + tripData.previousYearDestination + '. Uvaži ovo pri preporukama.' : ''}
 
 LOKACIJE U GRADOVIMA (koristi + dopuni):
 ${poiContext}
