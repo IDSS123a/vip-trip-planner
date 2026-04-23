@@ -96,21 +96,17 @@ export const useTripDocuments = () => {
   const addFooter = (doc: jsPDF, pageNum: number, totalPages: number) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      schoolInfo.name + " - Stranica " + pageNum + " od " + totalPages,
-      pageWidth / 2,
-      pageHeight - 10,
-      { align: "center" }
-    );
-    doc.text(
-      "Generirano: " + format(new Date(), "dd.MM.yyyy HH:mm"),
-      pageWidth / 2,
-      pageHeight - 5,
-      { align: "center" }
-    );
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110, 110, 110);
+    const line1 = schoolInfo.address + " | tel " + schoolInfo.phone + " - mob " + schoolInfo.mobile;
+    const line2 = schoolInfo.bank.name + " - " + schoolInfo.bank.account + " | IBAN: " + schoolInfo.bank.iban + " | SWIFT (BIC): " + schoolInfo.bank.swift;
+    const line3 = "ID broj: " + schoolInfo.registration.idNumber + " | REG broj: " + schoolInfo.registration.regNumber;
+    const line4 = schoolInfo.website + " | " + schoolInfo.email + "   ·   Stranica " + pageNum + " od " + totalPages;
+    doc.text(line1, pageWidth / 2, pageHeight - 18, { align: "center" });
+    doc.text(line2, pageWidth / 2, pageHeight - 14, { align: "center" });
+    doc.text(line3, pageWidth / 2, pageHeight - 10, { align: "center" });
+    doc.text(line4, pageWidth / 2, pageHeight - 6, { align: "center" });
     doc.setTextColor(0, 0, 0);
   };
 
