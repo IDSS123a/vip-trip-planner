@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { IDSS_SCHOOL } from "@/lib/idssRegulations";
 
 interface SchoolInfo {
   id: string;
@@ -15,13 +16,13 @@ interface SchoolInfo {
 // Default school info (IDSS)
 const defaultSchoolInfo: SchoolInfo = {
   id: "default",
-  schoolName: "Internationale Deutsche Schule Sarajevo",
-  address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
-  phone: "+38733560520",
-  email: "info@idss.ba",
-  website: "https://www.idss.edu.ba",
+  schoolName: IDSS_SCHOOL.shortName,
+  address: IDSS_SCHOOL.fullAddress,
+  phone: IDSS_SCHOOL.phone,
+  email: IDSS_SCHOOL.email,
+  website: IDSS_SCHOOL.websiteUrl,
   logoUrl: "https://idss.edu.ba/wp-content/uploads/2023/09/IDSS-Logo.png",
-  headmasterName: null,
+  headmasterName: IDSS_SCHOOL.director,
 };
 
 export const useSchoolInfo = () => {

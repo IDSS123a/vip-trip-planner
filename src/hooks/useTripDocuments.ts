@@ -2,6 +2,7 @@ import { useState } from "react";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { IDSS_SCHOOL, IDSS_PAYMENT_RULES, IDSS_DAILY_SCHEDULE } from "@/lib/idssRegulations";
 
 export interface Student {
   id?: string;
@@ -79,32 +80,33 @@ export const useTripDocuments = () => {
   const { toast } = useToast();
 
   const schoolInfo = {
-    name: "Internationale Deutsche Schule Sarajevo",
-    address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
-    phone: "+387 33 560 520",
-    email: "info@idss.ba",
-    website: "www.idss.edu.ba"
+    name: IDSS_SCHOOL.shortName,
+    legalName: IDSS_SCHOOL.legalName,
+    address: IDSS_SCHOOL.fullAddress,
+    phone: IDSS_SCHOOL.phone,
+    mobile: IDSS_SCHOOL.mobile,
+    email: IDSS_SCHOOL.email,
+    website: IDSS_SCHOOL.website,
+    director: IDSS_SCHOOL.director,
+    bank: IDSS_SCHOOL.bank,
+    registration: IDSS_SCHOOL.registration,
   };
 
   // Helper to add page footer
   const addFooter = (doc: jsPDF, pageNum: number, totalPages: number) => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(128, 128, 128);
-    doc.text(
-      schoolInfo.name + " - Stranica " + pageNum + " od " + totalPages,
-      pageWidth / 2,
-      pageHeight - 10,
-      { align: "center" }
-    );
-    doc.text(
-      "Generirano: " + format(new Date(), "dd.MM.yyyy HH:mm"),
-      pageWidth / 2,
-      pageHeight - 5,
-      { align: "center" }
-    );
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(110, 110, 110);
+    const line1 = schoolInfo.address + " | tel " + schoolInfo.phone + " - mob " + schoolInfo.mobile;
+    const line2 = schoolInfo.bank.name + " - " + schoolInfo.bank.account + " | IBAN: " + schoolInfo.bank.iban + " | SWIFT (BIC): " + schoolInfo.bank.swift;
+    const line3 = "ID broj: " + schoolInfo.registration.idNumber + " | REG broj: " + schoolInfo.registration.regNumber;
+    const line4 = schoolInfo.website + " | " + schoolInfo.email + "   ·   Stranica " + pageNum + " od " + totalPages;
+    doc.text(line1, pageWidth / 2, pageHeight - 18, { align: "center" });
+    doc.text(line2, pageWidth / 2, pageHeight - 14, { align: "center" });
+    doc.text(line3, pageWidth / 2, pageHeight - 10, { align: "center" });
+    doc.text(line4, pageWidth / 2, pageHeight - 6, { align: "center" });
     doc.setTextColor(0, 0, 0);
   };
 
@@ -117,177 +119,246 @@ export const useTripDocuments = () => {
     return yPos;
   };
 
-  // Generate Parent Permission Form (Saglasnost roditelja)
+  // Generate Parent Permission Form (Saglasnost roditelja) — TAČNO prema Prilogu 1 Pravilnika
   const generateParentPermission = async (data: TripDocumentData): Promise<void> => {
     setIsGenerating(true);
-    
+
     try {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
       let yPos = margin;
 
-      // Header
-      doc.setFontSize(10);
+      // === HEADER ===
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(schoolInfo.legalName, pageWidth / 2, yPos, { align: "center" });
+      yPos += 6;
       doc.setFont("helvetica", "normal");
-      doc.text(schoolInfo.name, pageWidth / 2, yPos, { align: "center" });
-      yPos += 5;
       doc.setFontSize(9);
-      doc.text(schoolInfo.address + " | Tel: " + schoolInfo.phone, pageWidth / 2, yPos, { align: "center" });
-      yPos += 15;
+      doc.text(schoolInfo.address + " · tel " + schoolInfo.phone + " · " + schoolInfo.email, pageWidth / 2, yPos, { align: "center" });
+      yPos += 12;
 
-      // Title
-      doc.setFontSize(18);
+      // === TITLE (bilingual) ===
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("SAGLASNOST RODITELJA / STARATELJA", pageWidth / 2, yPos, { align: "center" });
-      yPos += 8;
-      doc.setFontSize(14);
-      doc.text("ZA UCESCE DJETETA NA SKOLSKOJ EKSKURZIJI", pageWidth / 2, yPos, { align: "center" });
-      yPos += 15;
-
-      // Trip Info Box
-      doc.setDrawColor(200, 100, 50);
-      doc.setLineWidth(0.5);
-      doc.rect(margin, yPos, pageWidth - 2 * margin, 45);
-      yPos += 8;
-
+      doc.text("FORMULAR SAGLASNOSTI RODITELJA", pageWidth / 2, yPos, { align: "center" });
+      yPos += 6;
       doc.setFontSize(11);
+      doc.setFont("helvetica", "italic");
+      doc.text("Parental Consent Form", pageWidth / 2, yPos, { align: "center" });
+      yPos += 12;
+
+      // === STUDENT INFO / Student Information ===
       doc.setFont("helvetica", "bold");
-      doc.text("PODACI O EKSKURZIJI:", margin + 5, yPos);
+      doc.setFontSize(11);
+      doc.text("Podaci o učeniku / Student Information", margin, yPos);
       yPos += 7;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
-      doc.text("Naziv: " + (data.tripName || data.plan.route), margin + 5, yPos);
+      doc.text("Ime i prezime učenika / Student\u2019s full name:", margin, yPos);
       yPos += 5;
-      doc.text("Destinacija: " + data.destinations.join(", "), margin + 5, yPos);
-      yPos += 5;
-      doc.text("Datum polaska: " + (data.departureDate || "_______________"), margin + 5, yPos);
-      doc.text("Datum povratka: " + (data.returnDate || "_______________"), pageWidth / 2, yPos);
-      yPos += 5;
-      doc.text("Razred: " + (data.gradeLevel || "_______________"), margin + 5, yPos);
-      doc.text("Cijena: " + data.plan.cost_per_student + " EUR", pageWidth / 2, yPos);
-      yPos += 5;
-      doc.text("Pratitelji: " + (data.chaperones.length > 0 ? data.chaperones.join(", ") : "_______________"), margin + 5, yPos);
-      yPos += 15;
-
-      // Student Info Section
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("PODACI O UCENIKU/CI:", margin, yPos);
-      yPos += 8;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      
-      const lineHeight = 8;
-      doc.text("Ime i prezime ucenika/ce: _________________________________________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Razred: ________________  Datum rodjenja: ________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Adresa stanovanja: _______________________________________________________", margin, yPos);
-      yPos += lineHeight + 5;
-
-      // Parent Info Section
-      doc.setFont("helvetica", "bold");
-      doc.text("PODACI O RODITELJU/STARATELJU:", margin, yPos);
-      yPos += 8;
-
-      doc.setFont("helvetica", "normal");
-      doc.text("Ime i prezime roditelja/staratelja: __________________________________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Kontakt telefon: ___________________  Alternativni telefon: ___________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Email adresa: ____________________________________________________________", margin, yPos);
-      yPos += lineHeight + 5;
-
-      // Medical Info Section
-      doc.setFont("helvetica", "bold");
-      doc.text("ZDRAVSTVENE INFORMACIJE (OBAVEZNO POPUNITI):", margin, yPos);
-      yPos += 8;
-
-      doc.setFont("helvetica", "normal");
-      doc.text("Alergije (hrana, lijekovi, drugo): ___________________________________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Hronicne bolesti: _________________________________________________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Redovna terapija/lijekovi: _________________________________________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("Posebne potrebe (dijeta, fizicka ogranicenja): ________________________________", margin, yPos);
-      yPos += lineHeight;
-      doc.text("_________________________________________________________________________", margin, yPos);
-      yPos += lineHeight + 5;
-
-      // Declaration
-      doc.setFont("helvetica", "bold");
-      doc.text("IZJAVA:", margin, yPos);
+      doc.text("__________________________________________________________________________", margin, yPos);
       yPos += 7;
+
+      doc.text("Razred / Grade: " + (data.gradeLevel || "_____________") + "      Datum rođenja / Date of birth: ____________________", margin, yPos);
+      yPos += 9;
+
+      // === EXCURSION INFO / Excursion Information ===
+      doc.setFont("helvetica", "bold");
+      doc.text("Informacije o ekskurziji / Excursion Information", margin, yPos);
+      yPos += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.text("Naziv ekskurzije / Excursion title:  " + (data.tripName || data.plan.route), margin, yPos);
+      yPos += 6;
+      const dest = data.destinations.join(", ") || "_______________";
+      doc.text("Destinacija / Destination:  " + dest, margin, yPos);
+      yPos += 6;
+      const dateRange = (data.departureDate || "____") + "  →  " + (data.returnDate || "____");
+      doc.text("Datum održavanja / Date:  " + dateRange, margin, yPos);
+      yPos += 6;
+      doc.text("Cijena / Price:  " + data.plan.cost_per_student + " EUR  (jednokratno / one-time payment)", margin, yPos);
+      yPos += 6;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.text("Organizator / Organizer:  " + schoolInfo.legalName, margin, yPos);
+      yPos += 9;
+
+      // === PARENT/GUARDIAN STATEMENT ===
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Izjava roditelja / Parent/Guardian Statement", margin, yPos);
+      yPos += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      const stmtBs = "Ja, _____________________________________ (ime i prezime roditelja/staratelja), kao roditelj/staratelj gore navedenog učenika, dajem svoju punu saglasnost da moje dijete učestvuje na ekskurziji koju organizuje " + schoolInfo.name + ".";
+      const stmtEn = "I, _____________________________________ (parent/guardian\u2019s full name), as the parent/guardian of the above-named student, give my full consent for my child to participate in the excursion organized by " + schoolInfo.name + ".";
+      const wrapBs = doc.splitTextToSize(stmtBs, pageWidth - 2 * margin);
+      doc.text(wrapBs, margin, yPos);
+      yPos += wrapBs.length * 4.5 + 2;
+      doc.setFont("helvetica", "italic");
+      const wrapEn = doc.splitTextToSize(stmtEn, pageWidth - 2 * margin);
+      doc.text(wrapEn, margin, yPos);
+      yPos += wrapEn.length * 4.5 + 7;
+
+      // === CONFIRMATION CHECKLIST ===
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Potvrđujem da sam upoznat/a sa / I confirm that I am aware of:", margin, yPos);
+      yPos += 6;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      const declaration = "Ja, dole potpisani roditelj/staratelj, dajem saglasnost da moje dijete ucestvuje na gore navedenoj skolskoj ekskurziji. Potvrdjujem da su svi navedeni podaci tacni i da sam upoznat/a sa programom putovanja, pravilima ponasanja i cijenama. Obavezujem se da cu dijete pripremiti u skladu sa uputama skole i osigurati da ima sve potrebne dokumente.";
-      
-      const splitDeclaration = doc.splitTextToSize(declaration, pageWidth - 2 * margin);
-      doc.text(splitDeclaration, margin, yPos);
-      yPos += splitDeclaration.length * 4 + 8;
+      const items = [
+        ["planom i programom ekskurzije", "the excursion plan and program"],
+        ["svim pravilima ponašanja i sigurnosnim mjerama", "all behavior rules and safety measures"],
+        ["obavezom jednokratnog i kompletnog plaćanja troškova ekskurzije", "the obligation of full one-time payment of the excursion costs"],
+        ["zabrani plaćanja u ratama", "the prohibition of installment payments"],
+        ["poštivanjem uputa nastavnika i osoblja", "compliance with instructions from teachers and staff"],
+        ["procedurama u slučaju zdravstvenih problema ili nezgoda", "procedures in case of health issues or accidents"],
+        ["obavezom mog djeteta da poštuje propisana pravila tokom ekskurzije", "my child\u2019s obligation to follow all rules during the excursion"],
+        ["obavezom škole da me obavijesti u slučaju incidenta ili potrebe", "the school\u2019s obligation to inform me in case of an incident or need"],
+      ];
+      for (const [bs, en] of items) {
+        doc.rect(margin, yPos - 3, 3, 3);
+        const line = "  " + bs + " / " + en;
+        const wrapped = doc.splitTextToSize(line, pageWidth - 2 * margin - 6);
+        doc.text(wrapped, margin + 5, yPos);
+        yPos += wrapped.length * 4 + 2;
+      }
 
-      // Checkboxes
-      doc.setFontSize(10);
-      doc.rect(margin, yPos - 3, 4, 4);
-      doc.text("  Potvrdjujem da sam procitao/la i razumio/la pravila ponasanja na ekskurziji", margin + 6, yPos);
-      yPos += 7;
-      doc.rect(margin, yPos - 3, 4, 4);
-      doc.text("  Potvrdjujem da sam upoznat/a sa zdravstvenim i sigurnosnim mjerama", margin + 6, yPos);
-      yPos += 7;
-      doc.rect(margin, yPos - 3, 4, 4);
-      doc.text("  Dajem saglasnost za fotografisanje djeteta u edukativne svrhe skole", margin + 6, yPos);
-      yPos += 7;
-      doc.rect(margin, yPos - 3, 4, 4);
-      doc.text("  U slucaju hitnosti, dajem saglasnost za medicinsku intervenciju", margin + 6, yPos);
-      yPos += 15;
+      // === FOOTER ON PAGE 1 ===
+      addFooter(doc, 1, 2);
 
-      // Signature Section
+      // === PAGE 2 — HEALTH INFO + RESPONSIBILITY + SIGNATURE ===
+      doc.addPage();
+      yPos = margin;
+
+      doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
-      doc.text("POTPIS:", margin, yPos);
+      doc.text(schoolInfo.legalName, pageWidth / 2, yPos, { align: "center" });
+      yPos += 12;
+
+      doc.setFontSize(13);
+      doc.text("Podaci o zdravstvenom stanju učenika", margin, yPos);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "italic");
+      doc.text("Student Health Information", margin, yPos + 5);
+      yPos += 13;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+
+      // 1. Allergies
+      doc.text("1. Ima li dijete alergije? / Does the child have allergies?", margin, yPos);
+      yPos += 6;
+      doc.rect(margin + 4, yPos - 3, 3, 3);
+      doc.text("Da / Yes (navesti / specify): ____________________________________________", margin + 10, yPos);
+      yPos += 6;
+      doc.rect(margin + 4, yPos - 3, 3, 3);
+      doc.text("Ne / No", margin + 10, yPos);
+      yPos += 9;
+
+      // 2. Medication
+      doc.text("2. Koristi li dijete redovne lijekove? / Does the child take regular medication?", margin, yPos);
+      yPos += 6;
+      doc.rect(margin + 4, yPos - 3, 3, 3);
+      doc.text("Da / Yes (navesti / specify): ____________________________________________", margin + 10, yPos);
+      yPos += 6;
+      doc.rect(margin + 4, yPos - 3, 3, 3);
+      doc.text("Ne / No", margin + 10, yPos);
+      yPos += 9;
+
+      // 3. Special needs
+      doc.text("3. Posebne zdravstvene potrebe / Special health considerations:", margin, yPos);
+      yPos += 6;
+      doc.text("__________________________________________________________________________", margin, yPos);
+      yPos += 6;
+      doc.text("__________________________________________________________________________", margin, yPos);
+      yPos += 9;
+
+      // 4. Emergency contact
+      doc.text("4. Kontakt telefon roditelja/staratelja u hitnim slučajevima:", margin, yPos);
+      yPos += 5;
+      doc.setFont("helvetica", "italic");
+      doc.text("    Emergency contact phone number:", margin, yPos);
+      yPos += 6;
+      doc.setFont("helvetica", "normal");
+      doc.text("__________________________________________________________________________", margin, yPos);
+      yPos += 12;
+
+      // === RESPONSIBILITY ===
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Odgovornost / Responsibility", margin, yPos);
+      yPos += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      const respItems = [
+        ["Slažem se da će moje dijete poštovati upute nastavnog osoblja.", "I agree that my child will follow the instructions of the school staff."],
+        ["Prihvatam da škola nije odgovorna za lične stvari učenika.", "I accept that the school is not responsible for the student\u2019s personal belongings."],
+        ["Slažem se sa pravilima škole i Uputstvom o organizaciji ekskurzija.", "I agree with the school rules and the Excursion Organization Guidelines."],
+        ["Razumijem da u slučaju kršenja pravila moje dijete može biti udaljeno s ekskurzije bez povrata novca.", "I understand that if rules are violated, my child may be removed from the excursion without a refund."],
+      ];
+      for (const [bs, en] of respItems) {
+        doc.setFont("helvetica", "normal");
+        const wBs = doc.splitTextToSize("• " + bs, pageWidth - 2 * margin);
+        doc.text(wBs, margin, yPos);
+        yPos += wBs.length * 4 + 1;
+        doc.setFont("helvetica", "italic");
+        const wEn = doc.splitTextToSize("  " + en, pageWidth - 2 * margin);
+        doc.text(wEn, margin, yPos);
+        yPos += wEn.length * 4 + 3;
+      }
+
+      yPos += 4;
+      // === SIGNATURE ===
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Mjesto i datum / Place and date:", margin, yPos);
+      doc.setFont("helvetica", "normal");
+      doc.text("_______________________________________", margin + 65, yPos);
+      yPos += 12;
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Potpis roditelja/staratelja / Parent/Guardian signature:", margin, yPos);
+      doc.setFont("helvetica", "normal");
+      yPos += 10;
+      doc.text("_______________________________________", margin, yPos);
       yPos += 10;
 
-      doc.setFont("helvetica", "normal");
-      doc.text("Mjesto i datum: ________________________", margin, yPos);
-      yPos += 15;
-
-      doc.text("_______________________________________", margin, yPos);
-      yPos += 5;
+      // === INTERNAL USE ===
+      doc.setDrawColor(180, 180, 180);
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 6;
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
-      doc.text("(Potpis roditelja/staratelja)", margin + 20, yPos);
+      doc.text("Za internu upotrebu škole / For school internal use", margin, yPos);
+      yPos += 6;
+      doc.setFont("helvetica", "normal");
+      doc.text("Primio/la / Received by: __________________________   Datum / Date: ______________", margin, yPos);
+      yPos += 6;
+      doc.text("Napomene / Notes: ________________________________________________________", margin, yPos);
 
-      doc.text("_______________________________________", pageWidth / 2 + 10, yPos - 5);
-      doc.text("(Potpis ucenika/ce - ako je stariji/a od 14 god.)", pageWidth / 2 + 5, yPos);
-
-      // Footer note
-      yPos = doc.internal.pageSize.getHeight() - 25;
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(100, 100, 100);
-      doc.text("Napomena: Ovaj obrazac cuvati i donijeti sa svim potrebnim dokumentima na dan polaska.", margin, yPos);
-      yPos += 4;
-      doc.text("Rok za predaju: Najkasnije 7 dana prije polaska na ekskurziju.", margin, yPos);
-
-      // Add footer
-      addFooter(doc, 1, 1);
+      addFooter(doc, 2, 2);
 
       const fileName = "Saglasnost-roditelja-" + (data.tripName || "ekskurzija").replace(/\s+/g, "-") + ".pdf";
       doc.save(fileName);
 
       toast({
         title: "Saglasnost generirana!",
-        description: fileName + " je uspjesno preuzet.",
+        description: fileName + " je uspješno preuzet.",
       });
     } catch (error) {
       console.error("Error generating parent permission:", error);
       toast({
         variant: "destructive",
-        title: "Greska",
-        description: "Nije moguce generirati dokument.",
+        title: "Greška",
+        description: "Nije moguće generirati dokument.",
       });
     } finally {
       setIsGenerating(false);
