@@ -101,7 +101,7 @@ export const usePdfExport = () => {
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(255, 255, 255);
-      doc.text("IDSS Field Trip Planner", pageWidth / 2, 12, { align: "center" });
+      doc.text("IDSS Ekskurzije – Planer Putovanja", pageWidth / 2, 12, { align: "center" });
 
       y = 28;
       doc.setTextColor(0, 0, 0);
@@ -415,7 +415,7 @@ export const usePdfExport = () => {
         doc.setFont("helvetica", "normal");
         doc.setTextColor(130, 130, 130);
         doc.text(
-          `IDSS Field Trip Planner — Stranica ${i} od ${pageCount}`,
+          `IDSS Ekskurzije – Planer Putovanja — Stranica ${i} od ${pageCount}`,
           MARGIN_LEFT,
           pageHeight - 10
         );
