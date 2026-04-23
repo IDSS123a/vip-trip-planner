@@ -125,7 +125,7 @@ const TeacherGuide = () => {
             Vodič za Nastavnike
           </h1>
           <p className="text-lg text-muted-foreground">
-            Korak-po-korak upute za korištenje IDSS Field Trip Planner platforme.
+            Korak-po-korak upute za korištenje IDSS Ekskurzije – Planer Putovanja platforme.
           </p>
         </div>
 

@@ -42,7 +42,7 @@ const allDestinations = [
     image: "https://images.unsplash.com/photo-1544894079-e81a9eb1da8b?w=800&auto=format&fit=crop&q=60",
     featured: true,
     description: "Explore fossils, gems, and interactive exhibits about Earth's history.",
-    amenities: ["Cafeteria", "Gift Shop", "Wheelchair Accessible", "Guided Tours"],
+    amenities: ["Kafeterija", "Suvenirnica", "Pristupačno za invalide", "Vođeni obilasci"],
   },
   {
     id: 2,
@@ -181,19 +181,19 @@ const Destinations = () => {
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-              Explore <span className="text-primary">Destinations</span>
+              Istraži <span className="text-primary">Destinacije</span>
             </h1>
             <p className="text-muted-foreground">
-              Discover educator-approved venues perfect for your next field trip.
+              Otkrijte destinacije usklađene sa IDSS Pravilnikom o organizaciji ekskurzija.
             </p>
           </div>
 
-          {/* Search and Filters */}
+          {/* Search and Filteri */}
           <div className="flex flex-col lg:flex-row gap-4 mb-8">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search destinations..."
+                placeholder="Pretraži destinacije..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -202,7 +202,7 @@ const Destinations = () => {
             <div className="flex gap-2">
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder="Kategorija" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((cat) => (
@@ -217,19 +217,19 @@ const Destinations = () => {
                 <SheetTrigger asChild>
                   <Button variant="outline">
                     <SlidersHorizontal className="mr-2 h-4 w-4" />
-                    Filters
+                    Filteri
                   </Button>
                 </SheetTrigger>
                 <SheetContent>
                   <SheetHeader>
-                    <SheetTitle>Filter Destinations</SheetTitle>
+                    <SheetTitle>Filtriraj Destinacije</SheetTitle>
                     <SheetDescription>
-                      Refine your search with additional filters.
+                      Suzite pretragu dodatnim filterima.
                     </SheetDescription>
                   </SheetHeader>
                   <div className="py-6 space-y-6">
                     <div className="space-y-4">
-                      <Label>Price Range (per student)</Label>
+                      <Label>Raspon cijena (po učeniku)</Label>
                       <Slider
                         value={priceRange}
                         onValueChange={setPriceRange}
@@ -243,9 +243,9 @@ const Destinations = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <Label>Grade Levels</Label>
+                      <Label>Razredi</Label>
                       <div className="space-y-2">
-                        {["Elementary (K-5)", "Middle School (6-8)", "High School (9-12)"].map((grade) => (
+                        {["Razredna nastava (1-5)", "Predmetna nastava (6-9)"].map((grade) => (
                           <div key={grade} className="flex items-center space-x-2">
                             <Checkbox id={grade} />
                             <label htmlFor={grade} className="text-sm text-foreground">
@@ -257,9 +257,9 @@ const Destinations = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <Label>Amenities</Label>
+                      <Label>Sadržaji</Label>
                       <div className="space-y-2">
-                        {["Cafeteria", "Gift Shop", "Wheelchair Accessible", "Guided Tours"].map((amenity) => (
+                        {["Kafeterija", "Suvenirnica", "Pristupačno za invalide", "Vođeni obilasci"].map((amenity) => (
                           <div key={amenity} className="flex items-center space-x-2">
                             <Checkbox id={amenity} />
                             <label htmlFor={amenity} className="text-sm text-foreground">
@@ -277,7 +277,7 @@ const Destinations = () => {
 
           {/* Results Count */}
           <p className="text-sm text-muted-foreground mb-6">
-            Showing {filteredDestinations.length} destinations
+            Prikazano {filteredDestinations.length} destinacija
           </p>
 
           {/* Destinations Grid */}
@@ -298,7 +298,7 @@ const Destinations = () => {
                       {destination.category}
                     </Badge>
                     {destination.featured && (
-                      <Badge className="bg-primary text-primary-foreground">Featured</Badge>
+                      <Badge className="bg-primary text-primary-foreground">Preporučeno</Badge>
                     )}
                   </div>
                   <button
@@ -340,12 +340,12 @@ const Destinations = () => {
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-border">
                     <span className="text-lg font-bold text-primary">
-                      ${destination.price}<span className="text-sm font-normal text-muted-foreground">/student</span>
+                      ${destination.price}<span className="text-sm font-normal text-muted-foreground">/učenik</span>
                     </span>
                     <Button size="sm" onClick={() => {
-                      window.open(`https://www.google.com/search?q=${encodeURIComponent(destination.name + ' field trip')}`, '_blank');
+                      window.open(`https://www.google.com/search?q=${encodeURIComponent(destination.name + ' ekskurzija')}`, '_blank');
                     }}>
-                      View Details
+                      Pogledaj Detalje
                       <ExternalLink className="ml-1 h-3 w-3" />
                     </Button>
                   </div>

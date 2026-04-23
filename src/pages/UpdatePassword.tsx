@@ -76,7 +76,7 @@ const UpdatePassword = () => {
 
       setIsSuccess(true);
       toast({
-        title: "Password Updated!",
+        title: "Lozinka ažurirana!",
         description: "Your password has been successfully changed.",
       });
 
@@ -117,14 +117,14 @@ const UpdatePassword = () => {
               <div className="mx-auto mb-4 w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
                 <XCircle className="h-8 w-8 text-destructive" />
               </div>
-              <CardTitle>Invalid or Expired Link</CardTitle>
+              <CardTitle>Nevažeći ili istekao link</CardTitle>
               <CardDescription>
-                This password reset link is invalid or has expired. Please request a new one.
+                Ovaj link za resetovanje lozinke je nevažeći ili je istekao. Zatražite novi.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Button onClick={() => navigate("/auth")} className="w-full">
-                Back to Login
+                Nazad na Prijavu
               </Button>
             </CardContent>
           </Card>
@@ -143,9 +143,9 @@ const UpdatePassword = () => {
               <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                 <CheckCircle className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>Password Updated!</CardTitle>
+              <CardTitle>Lozinka ažurirana!</CardTitle>
               <CardDescription>
-                Your password has been successfully changed. Redirecting you...
+                Vaša lozinka je uspješno promijenjena. Preusmjeravamo vas...
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -167,15 +167,15 @@ const UpdatePassword = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
             <GraduationCap className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Field Trip Planner</h1>
-          <p className="text-muted-foreground">Set your new password</p>
+          <h1 className="text-2xl font-bold text-foreground">IDSS Ekskurzije</h1>
+          <p className="text-muted-foreground">Postavite novu lozinku</p>
         </div>
 
         <Card className="border-border">
           <CardHeader>
-            <CardTitle>Update Password</CardTitle>
+            <CardTitle>Ažuriraj Lozinku</CardTitle>
             <CardDescription>
-              Enter your new password below. Make sure it's at least 6 characters long.
+              Unesite novu lozinku. Mora imati najmanje 6 znakova.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -230,7 +230,7 @@ const UpdatePassword = () => {
                       Updating...
                     </>
                   ) : (
-                    "Update Password"
+                    "Ažuriraj Lozinku"
                   )}
                 </Button>
               </form>

@@ -311,7 +311,7 @@ const Auth = () => {
                               <Input
                                 {...field}
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="vase.ime@idss.ba"
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -326,7 +326,7 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Lozinka</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -351,17 +351,17 @@ const Auth = () => {
                         className="px-0 text-muted-foreground hover:text-primary"
                         onClick={() => setShowReset(true)}
                       >
-                        Forgot Password?
+                        Zaboravljena lozinka?
                       </Button>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing in...
+                          Prijava u toku...
                         </>
                       ) : (
-                        "Sign In"
+                        "Prijavi se"
                       )}
                     </Button>
                   </form>
@@ -376,13 +376,13 @@ const Auth = () => {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>Ime i Prezime</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
-                                placeholder="John Smith"
+                                placeholder="Ime Prezime"
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -404,7 +404,7 @@ const Auth = () => {
                               <Input
                                 {...field}
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="vase.ime@idss.ba"
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -419,7 +419,7 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Lozinka</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -441,7 +441,7 @@ const Auth = () => {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
+                          <FormLabel>Potvrdi Lozinku</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -462,10 +462,10 @@ const Auth = () => {
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
+                          Kreiranje računa...
                         </>
                       ) : (
-                        "Create Account"
+                        "Kreiraj Račun"
                       )}
                     </Button>
                   </form>
@@ -478,7 +478,7 @@ const Auth = () => {
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-card px-2 text-muted-foreground">Ili nastavite sa</span>
               </div>
             </div>
 
@@ -506,13 +506,13 @@ const Auth = () => {
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              Nastavi sa Google
             </Button>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+          Nastavkom prihvatate Uslove korištenja i Politiku privatnosti.
         </p>
       </div>
     </div>

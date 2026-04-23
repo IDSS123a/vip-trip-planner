@@ -16,8 +16,8 @@ const faqCategories = [
     title: "Opća Pitanja",
     faqs: [
       {
-        question: "Što je IDSS Field Trip Planner?",
-        answer: "IDSS Field Trip Planner je digitalna platforma za planiranje školskih ekskurzija. Omogućuje nastavnicima da kreiraju detaljne planove putovanja, upravljaju dozvolama roditelja, prate budžet i koordiniraju sve aspekte ekskurzije na jednom mjestu.",
+        question: "Što je IDSS Ekskurzije – Planer Putovanja?",
+        answer: "IDSS Ekskurzije – Planer Putovanja je digitalna platforma za planiranje školskih ekskurzija. Omogućuje nastavnicima da kreiraju detaljne planove putovanja, upravljaju dozvolama roditelja, prate budžet i koordiniraju sve aspekte ekskurzije na jednom mjestu.",
       },
       {
         question: "Je li korištenje platforme besplatno?",

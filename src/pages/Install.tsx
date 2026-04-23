@@ -132,7 +132,7 @@ const Install = () => {
           </div>
           
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Instalirajte <span className="text-primary">IDSS Field Trip</span> Aplikaciju
+            Instalirajte <span className="text-primary">IDSS Ekskurzije</span> Aplikaciju
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
             Dodajte aplikaciju na početni ekran za brži pristup i rad offline.
