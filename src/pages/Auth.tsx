@@ -13,22 +13,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Loader2, GraduationCap, ArrowLeft } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Unesite ispravnu email adresu"),
+  password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova"),
 });
 
 const signupSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters").max(100, "Name is too long"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters").max(72, "Password is too long"),
+  fullName: z.string().min(2, "Ime mora imati najmanje 2 znaka").max(100, "Ime je predugačko"),
+  email: z.string().email("Unesite ispravnu email adresu"),
+  password: z.string().min(6, "Lozinka mora imati najmanje 6 znakova").max(72, "Lozinka je predugačka"),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Lozinke se ne podudaraju",
   path: ["confirmPassword"],
 });
 
 const resetSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email("Unesite ispravnu email adresu"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -86,13 +86,13 @@ const Auth = () => {
         if (error.message.includes("Invalid login credentials")) {
           toast({
             variant: "destructive",
-            title: "Login Failed",
-            description: "Invalid email or password. Please try again.",
+            title: "Prijava neuspješna",
+            description: "Pogrešan email ili lozinka. Pokušajte ponovo.",
           });
         } else {
           toast({
             variant: "destructive",
-            title: "Login Failed",
+            title: "Prijava neuspješna",
             description: error.message,
           });
         }
@@ -100,15 +100,15 @@ const Auth = () => {
       }
 
       toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
+        title: "Dobro došli nazad!",
+        description: "Uspješno ste prijavljeni.",
       });
       navigate("/my-trips");
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Greška",
+        description: "Došlo je do neočekivane greške. Pokušajte ponovo.",
       });
     } finally {
       setIsLoading(false);
@@ -135,15 +135,15 @@ const Auth = () => {
         if (error.message.includes("already registered")) {
           toast({
             variant: "destructive",
-            title: "Account Exists",
-            description: "An account with this email already exists. Please log in instead.",
+            title: "Račun već postoji",
+            description: "Već postoji račun s ovom email adresom. Prijavite se umjesto registracije.",
           });
           setActiveTab("login");
           loginForm.setValue("email", data.email);
         } else {
           toast({
             variant: "destructive",
-            title: "Signup Failed",
+            title: "Registracija neuspješna",
             description: error.message,
           });
         }
@@ -151,15 +151,15 @@ const Auth = () => {
       }
 
       toast({
-        title: "Account Created!",
-        description: "Welcome to the Field Trip Planner. You're now logged in.",
+        title: "Račun kreiran!",
+        description: "Dobro došli u IDSS Ekskurzije – Planer Putovanja. Prijavljeni ste.",
       });
       navigate("/my-trips");
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: "Greška",
+        description: "Došlo je do neočekivane greške. Pokušajte ponovo.",
       });
     } finally {
       setIsLoading(false);
@@ -176,22 +176,22 @@ const Auth = () => {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Reset Failed",
+          title: "Resetovanje neuspješno",
           description: error.message,
         });
         return;
       }
 
       toast({
-        title: "Check Your Email",
-        description: "If an account exists with this email, you'll receive a password reset link.",
+        title: "Provjerite email",
+        description: "Ako račun postoji, dobit ćete link za resetovanje lozinke.",
       });
       setShowReset(false);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred.",
+        title: "Greška",
+        description: "Došlo je do neočekivane greške.",
       });
     } finally {
       setIsLoading(false);
@@ -211,15 +211,15 @@ const Auth = () => {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Google Login Failed",
+          title: "Google prijava neuspješna",
           description: error.message,
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to initiate Google login.",
+        title: "Greška",
+        description: "Nije moguće pokrenuti Google prijavu.",
       });
     } finally {
       setIsLoading(false);
@@ -234,10 +234,10 @@ const Auth = () => {
           <Card className="border-border">
             <CardHeader>
               <Button variant="ghost" size="sm" onClick={() => setShowReset(false)} className="w-fit mb-2">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Back to Login
+                <ArrowLeft className="h-4 w-4 mr-2" /> Nazad na Prijavu
               </Button>
-              <CardTitle>Reset Password</CardTitle>
-              <CardDescription>Enter your email to receive a reset link</CardDescription>
+              <CardTitle>Resetuj Lozinku</CardTitle>
+              <CardDescription>Unesite svoj email za link za resetovanje</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...resetForm}>
@@ -251,7 +251,7 @@ const Auth = () => {
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input {...field} type="email" placeholder="you@example.com" className="pl-10" disabled={isLoading} />
+                            <Input {...field} type="email" placeholder="vase.ime@idss.ba" className="pl-10" disabled={isLoading} />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -259,7 +259,7 @@ const Auth = () => {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : "Send Reset Link"}
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Slanje...</> : "Pošalji Link za Reset"}
                   </Button>
                 </form>
               </Form>
@@ -278,22 +278,22 @@ const Auth = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <GraduationCap className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Field Trip Planner</h1>
-          <p className="text-muted-foreground mt-2">Organize unforgettable educational experiences</p>
+          <h1 className="text-2xl font-bold text-foreground">IDSS Ekskurzije</h1>
+          <p className="text-muted-foreground mt-2">Organizujte nezaboravna obrazovna iskustva</p>
         </div>
 
         <Card className="border-border">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center">Welcome</CardTitle>
+            <CardTitle className="text-xl text-center">Dobro došli</CardTitle>
             <CardDescription className="text-center">
-              Sign in to manage your field trips
+              Prijavite se za upravljanje ekskurzijama
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="login">Prijava</TabsTrigger>
+                <TabsTrigger value="signup">Registracija</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="space-y-4">
@@ -311,7 +311,7 @@ const Auth = () => {
                               <Input
                                 {...field}
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="vase.ime@idss.ba"
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -326,7 +326,7 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Lozinka</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -351,17 +351,17 @@ const Auth = () => {
                         className="px-0 text-muted-foreground hover:text-primary"
                         onClick={() => setShowReset(true)}
                       >
-                        Forgot Password?
+                        Zaboravljena lozinka?
                       </Button>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing in...
+                          Prijava u toku...
                         </>
                       ) : (
-                        "Sign In"
+                        "Prijavi se"
                       )}
                     </Button>
                   </form>
@@ -376,13 +376,13 @@ const Auth = () => {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>Ime i Prezime</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
-                                placeholder="John Smith"
+                                placeholder="Ime Prezime"
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -404,7 +404,7 @@ const Auth = () => {
                               <Input
                                 {...field}
                                 type="email"
-                                placeholder="you@example.com"
+                                placeholder="vase.ime@idss.ba"
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -419,7 +419,7 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Lozinka</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -441,7 +441,7 @@ const Auth = () => {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Confirm Password</FormLabel>
+                          <FormLabel>Potvrdi Lozinku</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -462,10 +462,10 @@ const Auth = () => {
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating account...
+                          Kreiranje računa...
                         </>
                       ) : (
-                        "Create Account"
+                        "Kreiraj Račun"
                       )}
                     </Button>
                   </form>
@@ -478,7 +478,7 @@ const Auth = () => {
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                <span className="bg-card px-2 text-muted-foreground">Ili nastavite sa</span>
               </div>
             </div>
 
@@ -506,13 +506,13 @@ const Auth = () => {
                   fill="#EA4335"
                 />
               </svg>
-              Continue with Google
+              Nastavi sa Google
             </Button>
           </CardContent>
         </Card>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+          Nastavkom prihvatate Uslove korištenja i Politiku privatnosti.
         </p>
       </div>
     </div>

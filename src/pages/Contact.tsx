@@ -13,11 +13,11 @@ import { Mail, Phone, MapPin, Clock, Send, MessageSquare, HelpCircle, FileQuesti
 import { useToast } from "@/hooks/use-toast";
 
 const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(2, "Ime mora imati najmanje 2 znaka").max(100),
+  email: z.string().email("Unesite ispravnu email adresu"),
   phone: z.string().optional(),
-  subject: z.string().min(1, "Please select a subject"),
-  message: z.string().min(10, "Message must be at least 10 characters").max(1000),
+  subject: z.string().min(1, "Odaberite temu"),
+  message: z.string().min(10, "Poruka mora imati najmanje 10 znakova").max(1000),
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
@@ -38,8 +38,8 @@ const Contact = () => {
 
   const onSubmit = (data: ContactFormData) => {
     toast({
-      title: "Message Sent!",
-      description: "We'll get back to you within 24 hours.",
+      title: "Poruka poslana!",
+      description: "Odgovorit ćemo vam u roku od 24 sata.",
     });
     form.reset();
   };
@@ -52,10 +52,10 @@ const Contact = () => {
           {/* Page Header */}
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Get in <span className="text-primary">Touch</span>
+              Kontakt s <span className="text-primary">Nama</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Have questions about planning your field trip? Our team is here to help you create the perfect educational experience.
+              Imate pitanja o planiranju ekskurzije? Naš tim vam stoji na raspolaganju za podršku.
             </p>
           </div>
 
@@ -68,9 +68,9 @@ const Contact = () => {
                     <Mail className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Email Us</h3>
+                    <h3 className="font-semibold text-foreground mb-1">Pišite nam</h3>
                     <p className="text-muted-foreground text-sm mb-2">
-                      We'll respond within 24 hours
+                      Odgovorit ćemo u roku od 24 sata
                     </p>
                     <a href="mailto:info@idss.ba" className="text-primary hover:underline">
                       info@idss.ba
@@ -85,7 +85,7 @@ const Contact = () => {
                     <Phone className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Call Us</h3>
+                    <h3 className="font-semibold text-foreground mb-1">Pozovite nas</h3>
                     <p className="text-muted-foreground text-sm mb-2">
                       Pon-Pet, 08:00 – 16:00
                     </p>
@@ -102,7 +102,7 @@ const Contact = () => {
                     <MapPin className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Visit Us</h3>
+                    <h3 className="font-semibold text-foreground mb-1">Posjetite nas</h3>
                     <p className="text-muted-foreground text-sm">
                       Internationale Deutsche Schule Sarajevo<br />
                       Buka 13, 71 000 Sarajevo<br />
@@ -118,7 +118,7 @@ const Contact = () => {
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Office Hours</h3>
+                    <h3 className="font-semibold text-foreground mb-1">Radno vrijeme</h3>
                     <p className="text-muted-foreground text-sm">
                       Ponedjeljak – Petak: 08:00 – 16:00<br />
                       Subota – Nedjelja: zatvoreno
@@ -132,9 +132,9 @@ const Contact = () => {
             <div className="lg:col-span-2">
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Send Us a Message</CardTitle>
+                  <CardTitle className="text-foreground">Pošaljite nam Poruku</CardTitle>
                   <CardDescription>
-                    Fill out the form below and we'll get back to you as soon as possible.
+                    Ispunite obrazac ispod i odgovorit ćemo vam u najkraćem mogućem roku.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -146,9 +146,9 @@ const Contact = () => {
                           name="name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Full Name</FormLabel>
+                              <FormLabel>Ime i Prezime</FormLabel>
                               <FormControl>
-                                <Input placeholder="John Smith" {...field} />
+                                <Input placeholder="Ime Prezime" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -160,9 +160,9 @@ const Contact = () => {
                           name="email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Email Address</FormLabel>
+                              <FormLabel>Email Adresa</FormLabel>
                               <FormControl>
-                                <Input type="email" placeholder="john@school.edu" {...field} />
+                                <Input type="email" placeholder="vase.ime@idss.ba" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -176,9 +176,9 @@ const Contact = () => {
                           name="phone"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Phone Number (Optional)</FormLabel>
+                              <FormLabel>Telefon (Opcionalno)</FormLabel>
                               <FormControl>
-                                <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                                <Input type="tel" placeholder="+387 33 560 520" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -190,20 +190,20 @@ const Contact = () => {
                           name="subject"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Subject</FormLabel>
+                              <FormLabel>Tema</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Select a topic" />
+                                    <SelectValue placeholder="Odaberite temu" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="general">General Inquiry</SelectItem>
-                                  <SelectItem value="trip-planning">Trip Planning Help</SelectItem>
-                                  <SelectItem value="technical">Technical Support</SelectItem>
-                                  <SelectItem value="billing">Billing Question</SelectItem>
-                                  <SelectItem value="partnership">Partnership Opportunity</SelectItem>
-                                  <SelectItem value="feedback">Feedback</SelectItem>
+                                  <SelectItem value="general">Opšti upit</SelectItem>
+                                  <SelectItem value="trip-planning">Pomoć pri planiranju</SelectItem>
+                                  <SelectItem value="technical">Tehnička podrška</SelectItem>
+                                  <SelectItem value="billing">Pitanje o naplati</SelectItem>
+                                  <SelectItem value="partnership">Saradnja</SelectItem>
+                                  <SelectItem value="feedback">Povratne informacije</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -217,10 +217,10 @@ const Contact = () => {
                         name="message"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Message</FormLabel>
+                            <FormLabel>Poruka</FormLabel>
                             <FormControl>
                               <Textarea
-                                placeholder="How can we help you today?"
+                                placeholder="Kako vam možemo pomoći?"
                                 className="min-h-[150px]"
                                 {...field}
                               />
@@ -232,7 +232,7 @@ const Contact = () => {
 
                       <Button type="submit" size="lg" className="w-full md:w-auto">
                         <Send className="mr-2 h-4 w-4" />
-                        Send Message
+                        Pošalji Poruku
                       </Button>
                     </form>
                   </Form>
@@ -244,24 +244,24 @@ const Contact = () => {
           {/* FAQ Section */}
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-foreground mb-8 text-center">
-              Frequently Asked <span className="text-primary">Questions</span>
+              Često Postavljana <span className="text-primary">Pitanja</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
                   icon: HelpCircle,
-                  question: "How do I get started?",
-                  answer: "Simply create an account and use our trip planning wizard to set up your first field trip in minutes.",
+                  question: "Kako da počnem?",
+                  answer: "Kreirajte račun i koristite čarobnjaka za planiranje da biste za nekoliko minuta postavili prvu ekskurziju.",
                 },
                 {
                   icon: FileQuestion,
-                  question: "Is there a free trial?",
-                  answer: "Yes! Individual teachers can use our platform completely free. School-wide plans start with a 30-day trial.",
+                  question: "Postoji li besplatna verzija?",
+                  answer: "Da! Aplikacija je besplatna za sve nastavnike i osoblje IDSS škole.",
                 },
                 {
                   icon: MessageSquare,
-                  question: "Can parents track the trip?",
-                  answer: "Parents receive real-time updates and can track the trip's progress through our parent portal.",
+                  question: "Mogu li roditelji pratiti ekskurziju?",
+                  answer: "Roditelji dobijaju ažuriranja u realnom vremenu putem portala za roditelje.",
                 },
               ].map((faq, index) => (
                 <Card key={index} className="border-border bg-card">

@@ -5,28 +5,28 @@ import { Star, Quote } from "lucide-react";
 const testimonials = [
   {
     id: 1,
-    content: "This platform has revolutionized how we plan field trips. What used to take weeks now takes hours. The permission slip tracking alone has saved us countless phone calls to parents.",
-    author: "Sarah Mitchell",
-    role: "5th Grade Teacher",
-    school: "Westview Elementary",
+    content: "Platforma je u potpunosti pojednostavila planiranje ekskurzija. Ono što je nekad trajalo sedmicama sada se obavi za par sati. Generisanje saglasnosti roditelja prema Prilogu 1 nam je uštedjelo puno vremena.",
+    author: "Amina Hadžić",
+    role: "Razredna nastavnica, 5. razred",
+    school: "Internationale Deutsche Schule Sarajevo",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=60",
     rating: 5,
   },
   {
     id: 2,
-    content: "As a principal, I love having complete visibility into all our school's field trips. The safety features and real-time updates give me peace of mind every time our students leave campus.",
-    author: "Dr. James Chen",
-    role: "Principal",
-    school: "Lincoln Middle School",
+    content: "Kao direktor imam potpuni uvid u sve ekskurzije škole. Sigurnosne funkcije i ažuriranja u realnom vremenu daju mi mir svaki put kad učenici napuste školu.",
+    author: "Davor Mulalić",
+    role: "Direktor",
+    school: "Internationale Deutsche Schule Sarajevo",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=60",
     rating: 5,
   },
   {
     id: 3,
-    content: "The destination database with curriculum connections has helped me discover amazing learning opportunities I never knew existed. My students' engagement has increased dramatically.",
-    author: "Maria Rodriguez",
-    role: "Science Department Head",
-    school: "Oak Hills High School",
+    content: "Baza preporučenih destinacija prema IDSS Pravilniku pomaže mi da otkrijem izvanredne edukativne prilike. Angažovanost mojih učenika je primjetno porasla.",
+    author: "Selma Begović",
+    role: "Predmetni nastavnik prirodnih nauka",
+    school: "Internationale Deutsche Schule Sarajevo",
     avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=60",
     rating: 5,
   },
@@ -39,10 +39,10 @@ const TestimonialsSection = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Loved by <span className="text-primary">Educators</span>
+            Iskustva <span className="text-primary">Nastavnika</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            See what teachers and administrators are saying about their experience with our platform.
+            Pogledajte šta nastavnici i uprava IDSS škole kažu o svojim iskustvima.
           </p>
         </div>
 

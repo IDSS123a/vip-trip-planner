@@ -4,26 +4,26 @@ const steps = [
   {
     number: "01",
     icon: MapPin,
-    title: "Choose Your Destination",
-    description: "Browse our curated list of educational venues or add your own custom location with all the details you need.",
+    title: "Odaberite Destinaciju",
+    description: "Pregledajte preporučene obrazovne lokacije prema IDSS Pravilniku ili dodajte vlastitu sa svim potrebnim detaljima.",
   },
   {
     number: "02",
     icon: ClipboardList,
-    title: "Plan the Details",
-    description: "Set dates, create itineraries, arrange transportation, and budget everything in one organized dashboard.",
+    title: "Isplanirajte Detalje",
+    description: "Postavite datume, kreirajte itinerere, organizirajte prijevoz i budžet — sve na jednom mjestu.",
   },
   {
     number: "03",
     icon: Users,
-    title: "Collect Permissions",
-    description: "Send digital permission slips to parents, track responses, and manage medical information securely.",
+    title: "Prikupite Saglasnosti",
+    description: "Generišite saglasnosti roditelja prema Prilogu 1 IDSS Pravilnika i sigurno upravljajte medicinskim podacima.",
   },
   {
     number: "04",
     icon: PartyPopper,
-    title: "Enjoy the Trip",
-    description: "Use our mobile tools for headcounts, emergency contacts, and real-time updates during your adventure.",
+    title: "Uživajte u Ekskurziji",
+    description: "Koristite mobilne alate za prebrojavanje učenika, hitne kontakte i ažuriranja u realnom vremenu.",
   },
 ];
 
@@ -34,10 +34,10 @@ const HowItWorksSection = () => {
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            How It <span className="text-primary">Works</span>
+            Kako <span className="text-primary">Funkcioniše</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Four simple steps to transform your field trip planning from stressful to seamless.
+            Četiri jednostavna koraka za besprijekorno planiranje IDSS ekskurzija.
           </p>
         </div>
 

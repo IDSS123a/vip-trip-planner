@@ -95,9 +95,9 @@ const getStatusLabel = (status: string) => {
     case "upcoming":
       return "Upcoming";
     case "planning":
-      return "In Planning";
+      return "U Planiranju";
     case "completed":
-      return "Completed";
+      return "Realizovane";
     default:
       return status;
   }
@@ -304,16 +304,16 @@ const MyTrips = () => {
                     <LogIn className="h-8 w-8 text-primary" />
                   </div>
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Sign in to View Your Trips</h2>
+                <h2 className="text-2xl font-bold mb-2">Prijavite se za pregled ekskurzija</h2>
                 <p className="text-muted-foreground mb-6">
-                  Create an account or sign in to save and manage your field trip plans.
+                  Kreirajte račun ili se prijavite za spremanje i upravljanje vašim ekskurzijama.
                 </p>
                 <div className="flex gap-3 justify-center">
                   <Link to="/auth">
-                    <Button>Sign In</Button>
+                    <Button>Prijavi se</Button>
                   </Link>
                   <Link to="/plan-trip">
-                    <Button variant="outline">Plan a Trip First</Button>
+                    <Button variant="outline">Prvo Isplaniraj Ekskurziju</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -334,16 +334,16 @@ const MyTrips = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                My <span className="text-primary">Trips</span>
+                Moje <span className="text-primary">Ekskurzije</span>
               </h1>
               <p className="text-muted-foreground">
-                Manage and track all your field trip plans in one place.
+                Upravljajte i pratite sve svoje ekskurzije na jednom mjestu.
               </p>
             </div>
             <Link to="/plan-trip">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New Trip
+                Nova Ekskurzija
               </Button>
             </Link>
           </div>
@@ -357,7 +357,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.upcoming}</p>
-                  <p className="text-sm text-muted-foreground">Upcoming Trips</p>
+                  <p className="text-sm text-muted-foreground">Predstojeće</p>
                 </div>
               </CardContent>
             </Card>
@@ -368,7 +368,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.planning}</p>
-                  <p className="text-sm text-muted-foreground">In Planning</p>
+                  <p className="text-sm text-muted-foreground">U Planiranju</p>
                 </div>
               </CardContent>
             </Card>
@@ -379,7 +379,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
-                  <p className="text-sm text-muted-foreground">Completed</p>
+                  <p className="text-sm text-muted-foreground">Realizovane</p>
                 </div>
               </CardContent>
             </Card>
@@ -390,7 +390,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.totalStudents}</p>
-                  <p className="text-sm text-muted-foreground">Total Students</p>
+                  <p className="text-sm text-muted-foreground">Ukupno Učenika</p>
                 </div>
               </CardContent>
             </Card>
@@ -401,10 +401,10 @@ const MyTrips = () => {
             <CardHeader>
               <Tabs defaultValue="all" onValueChange={setActiveTab}>
                 <TabsList>
-                  <TabsTrigger value="all">All Trips ({trips.length})</TabsTrigger>
-                  <TabsTrigger value="upcoming">Upcoming ({stats.upcoming})</TabsTrigger>
-                  <TabsTrigger value="planning">Planning ({stats.planning})</TabsTrigger>
-                  <TabsTrigger value="completed">Completed ({stats.completed})</TabsTrigger>
+                  <TabsTrigger value="all">Sve Ekskurzije ({trips.length})</TabsTrigger>
+                  <TabsTrigger value="upcoming">Predstojeće ({stats.upcoming})</TabsTrigger>
+                  <TabsTrigger value="planning">U Planiranju ({stats.planning})</TabsTrigger>
+                  <TabsTrigger value="completed">Realizovane ({stats.completed})</TabsTrigger>
                 </TabsList>
               </Tabs>
             </CardHeader>
@@ -416,14 +416,14 @@ const MyTrips = () => {
               ) : filteredTrips.length === 0 ? (
                 <div className="text-center py-12">
                   <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No trips found</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">Nema pronađenih ekskurzija</h3>
                   <p className="text-muted-foreground mb-4">
-                    Start planning your first field trip adventure!
+                    Započnite planiranje svoje prve ekskurzije!
                   </p>
                   <Link to="/plan-trip">
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Create New Trip
+                      Create Nova Ekskurzija
                     </Button>
                   </Link>
                 </div>
