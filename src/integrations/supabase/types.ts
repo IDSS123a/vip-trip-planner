@@ -157,6 +157,45 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_history: {
+        Row: {
+          created_at: string
+          destination: string
+          grade_group: string
+          id: string
+          notes: string | null
+          realized_at: string | null
+          school_year: string
+          trip_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          grade_group: string
+          id?: string
+          notes?: string | null
+          realized_at?: string | null
+          school_year: string
+          trip_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          grade_group?: string
+          id?: string
+          notes?: string | null
+          realized_at?: string | null
+          school_year?: string
+          trip_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       trip_versions: {
         Row: {
           change_description: string | null
