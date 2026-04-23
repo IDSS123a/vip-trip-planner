@@ -141,7 +141,7 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
                 <FormItem>
                   <FormLabel>Recipient Name</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="John Smith" disabled={isSending} />
+                    <Input {...field} placeholder="Ime Prezime" disabled={isSending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -158,7 +158,7 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
                     <Input
                       {...field}
                       type="email"
-                      placeholder="parent@example.com"
+                      placeholder="roditelj@primjer.com"
                       disabled={isSending}
                     />
                   </FormControl>
