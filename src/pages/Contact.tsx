@@ -72,8 +72,8 @@ const Contact = () => {
                     <p className="text-muted-foreground text-sm mb-2">
                       We'll respond within 24 hours
                     </p>
-                    <a href="mailto:support@idssfieldtrip.com" className="text-primary hover:underline">
-                      support@idssfieldtrip.com
+                    <a href="mailto:info@idss.ba" className="text-primary hover:underline">
+                      info@idss.ba
                     </a>
                   </div>
                 </CardContent>
@@ -87,10 +87,10 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Call Us</h3>
                     <p className="text-muted-foreground text-sm mb-2">
-                      Mon-Fri, 8am-6pm EST
+                      Pon-Pet, 08:00 – 16:00
                     </p>
-                    <a href="tel:+15551234567" className="text-primary hover:underline">
-                      (555) 123-4567
+                    <a href="tel:+38733560520" className="text-primary hover:underline">
+                      +387 33 560 520
                     </a>
                   </div>
                 </CardContent>
@@ -104,8 +104,9 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Visit Us</h3>
                     <p className="text-muted-foreground text-sm">
-                      123 Education Lane<br />
-                      Learning City, ED 12345
+                      Internationale Deutsche Schule Sarajevo<br />
+                      Buka 13, 71 000 Sarajevo<br />
+                      Bosna i Hercegovina
                     </p>
                   </div>
                 </CardContent>
@@ -119,9 +120,8 @@ const Contact = () => {
                   <div>
                     <h3 className="font-semibold text-foreground mb-1">Office Hours</h3>
                     <p className="text-muted-foreground text-sm">
-                      Monday - Friday: 8am - 6pm<br />
-                      Saturday: 9am - 2pm<br />
-                      Sunday: Closed
+                      Ponedjeljak – Petak: 08:00 – 16:00<br />
+                      Subota – Nedjelja: zatvoreno
                     </p>
                   </div>
                 </CardContent>

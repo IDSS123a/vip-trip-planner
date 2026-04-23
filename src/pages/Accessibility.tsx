@@ -265,10 +265,10 @@ const Accessibility = () => {
               molimo vas da nas kontaktirate. Vaše povratne informacije su nam iznimno važne.
             </p>
             <a
-              href="mailto:accessibility@idss.ba"
+              href="mailto:ai@idss.ba"
               className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              accessibility@idss.ba
+              ai@idss.ba
             </a>
           </CardContent>
         </Card>
