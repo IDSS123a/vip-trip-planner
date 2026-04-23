@@ -13,6 +13,7 @@ import TripPlannerForm from "@/components/trip/TripPlannerForm";
 import TripRouteMap from "@/components/trip/TripRouteMap";
 import TripItinerary from "@/components/trip/TripItinerary";
 import ShareTripDialog from "@/components/trip/ShareTripDialog";
+import IdssComplianceBanner from "@/components/trip/IdssComplianceBanner";
 import { useTripStorage } from "@/hooks/useTripStorage";
 import { usePdfExport } from "@/hooks/usePdfExport";
 import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2 } from "lucide-react";
@@ -36,6 +37,7 @@ const PlanTrip = () => {
   const [isPublic, setIsPublic] = useState(false);
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [students, setStudents] = useState<Student[]>([]);
+  const [previousYearDestination, setPreviousYearDestination] = useState("");
   
   const { toast } = useToast();
   const { saveTrip, updateTrip, makePublic, isSaving } = useTripStorage();
@@ -93,6 +95,7 @@ const PlanTrip = () => {
           budget: data.budgetPerStudent ? parseInt(data.budgetPerStudent) : undefined,
           educationalFocus: data.educationalFocus || "",
           specialNeeds: data.specialNeeds || "",
+          previousYearDestination: previousYearDestination || undefined,
         }
       });
 
@@ -268,6 +271,12 @@ const PlanTrip = () => {
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                       <TripPlannerForm form={form} />
+                      <IdssComplianceBanner
+                        gradeLevel={watchedValues.gradeLevel}
+                        destinations={destinations}
+                        previousYearDestination={previousYearDestination}
+                        onPreviousYearChange={setPreviousYearDestination}
+                      />
                       
                       <div className="flex flex-wrap gap-4 pt-6 border-t border-border">
                         <Button 
