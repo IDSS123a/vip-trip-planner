@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { MapPin, Mail, Phone, Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import idssLogo from "@/assets/idss-logo.png";
+import { IDSS_SCHOOL } from "@/lib/idssRegulations";
 
 const Footer = () => {
   return (
@@ -76,25 +77,44 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary" />
-                info@idss.ba
+                {IDSS_SCHOOL.email}
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4 text-primary" />
-                +387 33 560 520
+                <span>
+                  {IDSS_SCHOOL.phone}
+                  <br />
+                  <span className="text-xs">mob {IDSS_SCHOOL.mobile}</span>
+                </span>
               </li>
               <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4 text-primary mt-0.5" />
-                <span>Buka 13<br />71 000 Sarajevo<br />Bosna i Hercegovina</span>
+                <span>{IDSS_SCHOOL.address}<br />{IDSS_SCHOOL.city}<br />{IDSS_SCHOOL.country}</span>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="text-primary font-semibold">Web:</span>
-                <a href="https://www.idss.edu.ba" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">www.idss.edu.ba</a>
+                <a href={IDSS_SCHOOL.websiteUrl} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{IDSS_SCHOOL.website}</a>
               </li>
             </ul>
           </div>
         </div>
 
         <Separator className="my-8" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground mb-6">
+          <div>
+            <span className="font-semibold text-foreground">Direktor:</span> {IDSS_SCHOOL.director}
+            <br />
+            <span className="font-semibold text-foreground">ID broj:</span> {IDSS_SCHOOL.registration.idNumber}
+            {" · "}
+            <span className="font-semibold text-foreground">REG broj:</span> {IDSS_SCHOOL.registration.regNumber}
+          </div>
+          <div className="md:text-right">
+            <span className="font-semibold text-foreground">{IDSS_SCHOOL.bank.name}</span>
+            <br />
+            IBAN: {IDSS_SCHOOL.bank.iban} · SWIFT: {IDSS_SCHOOL.bank.swift}
+          </div>
+        </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">

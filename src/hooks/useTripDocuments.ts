@@ -2,6 +2,7 @@ import { useState } from "react";
 import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { IDSS_SCHOOL, IDSS_PAYMENT_RULES, IDSS_DAILY_SCHEDULE } from "@/lib/idssRegulations";
 
 export interface Student {
   id?: string;
@@ -79,11 +80,16 @@ export const useTripDocuments = () => {
   const { toast } = useToast();
 
   const schoolInfo = {
-    name: "Internationale Deutsche Schule Sarajevo",
-    address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
-    phone: "+387 33 560 520",
-    email: "info@idss.ba",
-    website: "www.idss.edu.ba"
+    name: IDSS_SCHOOL.shortName,
+    legalName: IDSS_SCHOOL.legalName,
+    address: IDSS_SCHOOL.fullAddress,
+    phone: IDSS_SCHOOL.phone,
+    mobile: IDSS_SCHOOL.mobile,
+    email: IDSS_SCHOOL.email,
+    website: IDSS_SCHOOL.website,
+    director: IDSS_SCHOOL.director,
+    bank: IDSS_SCHOOL.bank,
+    registration: IDSS_SCHOOL.registration,
   };
 
   // Helper to add page footer
