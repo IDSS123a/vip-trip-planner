@@ -1,6 +1,19 @@
 import { useState } from "react";
-import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
+import {
+  createIdssPdf,
+  paginate,
+  ensureSpace,
+  drawSectionTitle,
+  drawDivider,
+  writeWrapped,
+  writeKeyValue,
+  setFill,
+  setText,
+  setDraw,
+  PDF_THEME,
+} from "@/lib/pdfTheme";
+import { IDSS_SCHOOL } from "@/lib/idssRegulations";
 
 interface TripPlan {
   id: number;
@@ -49,13 +62,6 @@ interface ExportData {
   plan: TripPlan;
 }
 
-const MARGIN_LEFT = 20;
-const MARGIN_RIGHT = 20;
-const MARGIN_TOP = 25;
-const MARGIN_BOTTOM = 25;
-const LINE_HEIGHT = 5.5;
-const SECTION_GAP = 8;
-
 export const usePdfExport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
@@ -64,120 +70,69 @@ export const usePdfExport = () => {
     setIsExporting(true);
 
     try {
-      const doc = new jsPDF("p", "mm", "a4");
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const contentWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
-      let y = MARGIN_TOP;
+      const doc = createIdssPdf();
+      const ML = PDF_THEME.margin.left;
+      const MR = PDF_THEME.margin.right;
+      const PW = PDF_THEME.page.width;
+      const contentWidth = PW - ML - MR;
+      // Reserve top space for header that paginate() will draw later
+      let y = PDF_THEME.margin.top + 10;
 
-      const ensureSpace = (needed: number) => {
-        if (y + needed > pageHeight - MARGIN_BOTTOM) {
-          doc.addPage();
-          y = MARGIN_TOP;
-        }
-      };
+      // ── COVER TITLE ──
+      doc.setFont("DejaVu", "bold");
+      doc.setFontSize(20);
+      setText(doc, PDF_THEME.color.text);
+      const titleLines = doc.splitTextToSize(data.tripName || "Plan Ekskurzije", contentWidth) as string[];
+      titleLines.forEach((ln) => { doc.text(ln, PW / 2, y, { align: "center" }); y += 8; });
+      y += 1;
 
-      const drawLine = (yPos: number) => {
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.3);
-        doc.line(MARGIN_LEFT, yPos, pageWidth - MARGIN_RIGHT, yPos);
-      };
-
-      const writeWrapped = (text: string, x: number, maxWidth: number, fontSize: number, style: string = "normal"): number => {
-        doc.setFontSize(fontSize);
-        doc.setFont("helvetica", style);
-        const lines = doc.splitTextToSize(text, maxWidth);
-        lines.forEach((line: string) => {
-          ensureSpace(fontSize * 0.4 + 2);
-          doc.text(line, x, y);
-          y += fontSize * 0.4 + 1.5;
-        });
-        return lines.length;
-      };
-
-      // ── HEADER ──
-      doc.setFillColor(230, 126, 34);
-      doc.rect(0, 0, pageWidth, 18, "F");
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(255, 255, 255);
-      doc.text("IDSS Ekskurzije – Planer Putovanja", pageWidth / 2, 12, { align: "center" });
-
-      y = 28;
-      doc.setTextColor(0, 0, 0);
-
-      // Trip name
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text(data.tripName || "Plan Putovanja", pageWidth / 2, y, { align: "center" });
+      // Plan badge
+      const badge = `${data.plan.type}  ·  ${data.plan.cost_per_student} EUR / učenik`;
+      doc.setFontSize(10);
+      doc.setFont("DejaVu", "bold");
+      const bw = doc.getTextWidth(badge) + 10;
+      const bx = (PW - bw) / 2;
+      setFill(doc, PDF_THEME.color.primary);
+      doc.roundedRect(bx, y - 4, bw, 7, 1.5, 1.5, "F");
+      setText(doc, PDF_THEME.color.white);
+      doc.text(badge, PW / 2, y + 1, { align: "center" });
+      setText(doc, PDF_THEME.color.text);
       y += 10;
 
-      // Plan type badge line
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(230, 126, 34);
-      doc.text(`${data.plan.type} Plan`, MARGIN_LEFT, y);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont("helvetica", "normal");
-      doc.text(` — ${data.plan.cost_per_student} EUR / učenik`, MARGIN_LEFT + doc.getTextWidth(`${data.plan.type} Plan`), y);
-      y += 7;
+      y = drawDivider(doc, y) + 4;
 
-      drawLine(y);
-      y += SECTION_GAP;
+      // ── TRIP DETAILS (two-column key/value layout) ──
+      y = drawSectionTitle(doc, "Detalji putovanja", y);
 
-      // ── TRIP DETAILS ──
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Detalji Putovanja", MARGIN_LEFT, y);
-      y += 7;
-
-      const detailPairs = [
+      const detailPairs: Array<[string, string]> = [
         ["Ruta", data.plan.route],
         ["Polazište", data.departureCity],
-        ["Destinacije", data.destinations.join(" → ")],
-        ["Datumi", `${data.departureDate || "TBD"} — ${data.returnDate || "TBD"}`],
-        ["Razred", data.gradeLevel || "TBD"],
+        ["Destinacije", data.destinations.join("  →  ")],
+        ["Datum polaska", data.departureDate || "—"],
+        ["Datum povratka", data.returnDate || "—"],
+        ["Razred", data.gradeLevel || "—"],
         ["Broj učenika", String(data.studentCount)],
         ["Trajanje", `${data.plan.days} dana`],
         ["Udaljenost", `${data.plan.distance_km} km`],
-        ["Putovanje", `${data.plan.travel_hours} h`],
+        ["Vrijeme putovanja", `${data.plan.travel_hours} h`],
         ["Pouzdanost", `${data.plan.reliability}%`],
       ];
-
       if (data.chaperones.length > 0) {
         detailPairs.push(["Pratitelji", data.chaperones.join(", ")]);
       }
 
-      doc.setFontSize(9.5);
-      detailPairs.forEach(([label, value]) => {
-        ensureSpace(LINE_HEIGHT + 2);
-        doc.setFont("helvetica", "bold");
-        doc.text(`${label}:`, MARGIN_LEFT, y);
-        doc.setFont("helvetica", "normal");
-        const labelWidth = doc.getTextWidth(`${label}: `);
-        const valLines = doc.splitTextToSize(value, contentWidth - labelWidth - 5);
-        valLines.forEach((line: string, i: number) => {
-          if (i === 0) {
-            doc.text(line, MARGIN_LEFT + labelWidth, y);
-          } else {
-            y += LINE_HEIGHT;
-            ensureSpace(LINE_HEIGHT);
-            doc.text(line, MARGIN_LEFT + labelWidth, y);
-          }
-        });
-        y += LINE_HEIGHT;
-      });
-
-      y += SECTION_GAP;
-      drawLine(y);
-      y += SECTION_GAP;
+      // Card background for details
+      const cardStartY = y - 1;
+      detailPairs.forEach(([k, v]) => { y = writeKeyValue(doc, k, v, y, { labelWidth: 42 }); });
+      // Draw card border around what we just wrote (best-effort, single page only)
+      setDraw(doc, PDF_THEME.color.rule);
+      doc.setLineWidth(0.2);
+      doc.roundedRect(ML - 3, cardStartY - 4, contentWidth + 6, y - cardStartY + 2, 1.5, 1.5);
+      y += 6;
 
       // ── COSTS TABLE ──
-      ensureSpace(60);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Troškovi po učeniku (EUR)", MARGIN_LEFT, y);
-      y += 8;
+      y = ensureSpace(doc, y, 70);
+      y = drawSectionTitle(doc, "Troškovi po učeniku (EUR)", y);
 
       const costRows: Array<[string, number, string?]> = [
         ["Transport", data.plan.costs.transport, (data.plan.costs as any).transport_detail],
@@ -189,151 +144,158 @@ export const usePdfExport = () => {
         ["Rezerva (5%)", data.plan.costs.contingency],
       ];
 
-      const colLabelWidth = 55;
-      const colAmountWidth = 25;
-      const colDetailX = MARGIN_LEFT + colLabelWidth + colAmountWidth + 2;
-      const colAmountX = MARGIN_LEFT + colLabelWidth;
+      const colItem = ML + 2;
+      const colAmount = ML + 70;
+      const colDetail = ML + 100;
+      const tableW = contentWidth;
 
-      // Table header
-      doc.setFillColor(245, 245, 245);
-      doc.rect(MARGIN_LEFT, y - 4, contentWidth, 7, "F");
+      // Header row
+      setFill(doc, PDF_THEME.color.primary);
+      doc.rect(ML, y - 4.5, tableW, 7, "F");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
-      doc.text("Stavka", MARGIN_LEFT + 2, y);
-      doc.text("Iznos (EUR)", colAmountX, y);
-      doc.text("Detalji", colDetailX, y);
-      y += 7;
+      setText(doc, PDF_THEME.color.white);
+      doc.text("Stavka", colItem, y);
+      doc.text("Iznos (EUR)", colAmount, y);
+      doc.text("Detalji", colDetail, y);
+      setText(doc, PDF_THEME.color.text);
+      y += 6;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       costRows.forEach(([label, value, detail], i) => {
-        ensureSpace(7);
+        y = ensureSpace(doc, y, 6.5);
         if (i % 2 === 0) {
-          doc.setFillColor(252, 252, 252);
-          doc.rect(MARGIN_LEFT, y - 4, contentWidth, 6, "F");
+          setFill(doc, PDF_THEME.color.rowAlt);
+          doc.rect(ML, y - 4, tableW, 5.8, "F");
         }
         doc.setFontSize(9);
-        doc.text(String(label), MARGIN_LEFT + 2, y);
-        doc.text(String(value), colAmountX, y);
+        setText(doc, PDF_THEME.color.text);
+        doc.text(String(label), colItem, y);
+        doc.text(String(value ?? 0), colAmount, y);
         if (detail) {
-          doc.setFontSize(7);
-          doc.setTextColor(100, 100, 100);
-          const detailLines = doc.splitTextToSize(detail, contentWidth - colLabelWidth - colAmountWidth - 5);
-          doc.text(detailLines[0] || '', colDetailX, y);
-          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(7.5);
+          setText(doc, PDF_THEME.color.muted);
+          const dl = doc.splitTextToSize(detail, tableW - (colDetail - ML) - 2) as string[];
+          doc.text(dl[0] || "", colDetail, y);
+          setText(doc, PDF_THEME.color.text);
         }
         y += 6;
       });
 
       // Total row
-      ensureSpace(10);
-      doc.setFillColor(230, 126, 34);
-      doc.rect(MARGIN_LEFT, y - 4, contentWidth, 8, "F");
-      doc.setFont("helvetica", "bold");
+      y = ensureSpace(doc, y, 9);
+      setFill(doc, PDF_THEME.color.primaryDark);
+      doc.rect(ML, y - 4.5, tableW, 8, "F");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(10);
-      doc.setTextColor(255, 255, 255);
-      doc.text("UKUPNO", MARGIN_LEFT + 2, y);
-      doc.text(`${data.plan.costs.total} EUR`, colAmountX, y);
-      doc.text(`${data.plan.cost_per_student} EUR / učenik`, colDetailX, y);
-      doc.setTextColor(0, 0, 0);
+      setText(doc, PDF_THEME.color.white);
+      doc.text("UKUPNO", colItem, y + 0.5);
+      doc.text(`${data.plan.costs.total} EUR`, colAmount, y + 0.5);
+      doc.text(`${data.plan.cost_per_student} EUR / učenik`, colDetail, y + 0.5);
+      setText(doc, PDF_THEME.color.text);
       y += 12;
+
+      // Group total
+      const groupTotal = data.plan.cost_per_student * data.studentCount;
+      doc.setFont("DejaVu", "italic");
+      doc.setFontSize(9);
+      setText(doc, PDF_THEME.color.muted);
+      doc.text(
+        `Procijenjeni ukupni iznos za ${data.studentCount} učenika: ${groupTotal.toLocaleString("hr-HR")} EUR`,
+        ML,
+        y
+      );
+      setText(doc, PDF_THEME.color.text);
+      y += 8;
 
       // ── ACCOMMODATION ──
       if (data.plan.accommodation_info) {
-        ensureSpace(20);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Smještaj", MARGIN_LEFT, y);
-        y += 6;
-        writeWrapped(data.plan.accommodation_info, MARGIN_LEFT, contentWidth, 9.5);
-        y += SECTION_GAP;
+        y = drawDivider(doc, y) + 2;
+        y = drawSectionTitle(doc, "Smještaj", y);
+        y = writeWrapped(doc, data.plan.accommodation_info, y);
+        y += 4;
       }
 
       // ── WHY THIS FITS ──
       if (data.plan.why_this_fits) {
-        drawLine(y);
-        y += SECTION_GAP;
-        ensureSpace(20);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Zašto ovaj plan", MARGIN_LEFT, y);
-        y += 6;
-        writeWrapped(data.plan.why_this_fits, MARGIN_LEFT, contentWidth, 9.5);
-        y += SECTION_GAP;
+        y = drawDivider(doc, y) + 2;
+        y = drawSectionTitle(doc, "Zašto ovaj plan odgovara", y);
+        y = writeWrapped(doc, data.plan.why_this_fits, y);
+        y += 4;
       }
 
       // ── ITINERARY ──
-      drawLine(y);
-      y += SECTION_GAP;
-      ensureSpace(15);
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Dnevni Itinerar", MARGIN_LEFT, y);
-      y += 10;
+      y = drawDivider(doc, y) + 2;
+      y = drawSectionTitle(doc, "Dnevni itinerar", y, { fontSize: 14 });
 
       data.plan.itinerary.forEach((day) => {
-        ensureSpace(25);
+        y = ensureSpace(doc, y, 24);
 
-        // Day header with colored bar
-        doc.setFillColor(230, 126, 34);
-        doc.rect(MARGIN_LEFT, y - 4.5, contentWidth, 8, "F");
+        // Day header bar
+        setFill(doc, PDF_THEME.color.primary);
+        doc.rect(ML, y - 5, contentWidth, 8, "F");
+        doc.setFont("DejaVu", "bold");
         doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(255, 255, 255);
-        doc.text(`Dan ${day.day}: ${day.title}`, MARGIN_LEFT + 3, y);
-        doc.setTextColor(0, 0, 0);
+        setText(doc, PDF_THEME.color.white);
+        doc.text(`Dan ${day.day}: ${day.title}`, ML + 3, y);
+        if (day.date) {
+          doc.setFontSize(9);
+          doc.setFont("DejaVu", "normal");
+          doc.text(day.date, PW - MR - 3, y, { align: "right" });
+        }
+        setText(doc, PDF_THEME.color.text);
         y += 8;
 
-        if (day.date) {
-          doc.setFontSize(8.5);
-          doc.setFont("helvetica", "italic");
-          doc.text(day.date, MARGIN_LEFT + 3, y);
-          y += 5;
-        }
-
         day.activities.forEach((activity) => {
-          ensureSpace(14);
+          y = ensureSpace(doc, y, 11);
 
           // Time column
-          doc.setFontSize(8.5);
-          doc.setFont("helvetica", "bold");
-          doc.text(activity.time, MARGIN_LEFT + 3, y);
+          doc.setFontSize(9);
+          doc.setFont("DejaVu", "bold");
+          setText(doc, PDF_THEME.color.primaryDark);
+          doc.text(activity.time, ML + 2, y);
+          setText(doc, PDF_THEME.color.text);
 
           // Description
-          doc.setFont("helvetica", "normal");
-          const descLines = doc.splitTextToSize(activity.description, contentWidth - 35);
-          descLines.forEach((line: string, i: number) => {
-            if (i > 0) {
-              y += 4;
-              ensureSpace(6);
-            }
-            doc.text(line, MARGIN_LEFT + 28, y);
+          doc.setFont("DejaVu", "normal");
+          const descX = ML + 22;
+          const descW = contentWidth - 24;
+          const descLines = doc.splitTextToSize(activity.description, descW) as string[];
+          descLines.forEach((line, i) => {
+            if (i > 0) { y += 4.2; y = ensureSpace(doc, y, 5); }
+            doc.text(line, descX, y);
           });
-          y += 4;
+          y += 4.4;
 
           if (activity.location) {
-            ensureSpace(5);
-            doc.setFontSize(7.5);
-            doc.setFont("helvetica", "italic");
-            doc.setTextColor(100, 100, 100);
-            doc.text(`Lokacija: ${activity.location}`, MARGIN_LEFT + 28, y);
-            doc.setTextColor(0, 0, 0);
+            y = ensureSpace(doc, y, 4.5);
+            doc.setFontSize(8);
+            doc.setFont("DejaVu", "normal");
+            setText(doc, PDF_THEME.color.muted);
+            const lc = doc.splitTextToSize(`📍 ${activity.location}`, descW) as string[];
+            doc.text(lc[0] || "", descX, y);
+            setText(doc, PDF_THEME.color.text);
             y += 4;
           }
 
           if (activity.notes) {
-            ensureSpace(5);
-            doc.setFontSize(7.5);
-            doc.setFont("helvetica", "italic");
-            doc.setTextColor(200, 100, 0);
-            const noteLines = doc.splitTextToSize(`Napomena: ${activity.notes}`, contentWidth - 35);
-            noteLines.forEach((line: string) => {
-              doc.text(line, MARGIN_LEFT + 28, y);
+            y = ensureSpace(doc, y, 4.5);
+            doc.setFontSize(8);
+            setText(doc, PDF_THEME.color.primaryDark);
+            const nl = doc.splitTextToSize(`Napomena: ${activity.notes}`, descW) as string[];
+            nl.forEach((line) => {
+              y = ensureSpace(doc, y, 4);
+              doc.text(line, descX, y);
               y += 4;
             });
-            doc.setTextColor(0, 0, 0);
+            setText(doc, PDF_THEME.color.text);
           }
 
-          y += 1;
+          // Subtle divider between activities
+          setDraw(doc, PDF_THEME.color.rule);
+          doc.setLineWidth(0.15);
+          doc.line(ML + 2, y, PW - MR - 2, y);
+          y += 2.5;
         });
 
         y += 4;
@@ -342,91 +304,63 @@ export const usePdfExport = () => {
       // ── PACKING LIST ──
       const packingList = (data.plan as any).packing_list;
       if (packingList && Array.isArray(packingList) && packingList.length > 0) {
-        drawLine(y);
-        y += SECTION_GAP;
-        ensureSpace(15);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Lista za Pakovanje", MARGIN_LEFT, y);
-        y += 8;
-
-        doc.setFontSize(8.5);
-        doc.setFont("helvetica", "normal");
-        packingList.forEach((item: string) => {
-          ensureSpace(6);
-          doc.text("☐  " + item, MARGIN_LEFT + 3, y);
-          y += 5;
-        });
-        y += 4;
+        y = drawDivider(doc, y) + 2;
+        y = drawSectionTitle(doc, "Lista za pakovanje", y);
+        doc.setFontSize(9);
+        doc.setFont("DejaVu", "normal");
+        // Two-column packing list
+        const half = Math.ceil(packingList.length / 2);
+        const colW = contentWidth / 2;
+        const startY = y;
+        let ly = y;
+        for (let i = 0; i < half; i++) {
+          ly = ensureSpace(doc, ly, 5);
+          setDraw(doc, PDF_THEME.color.text);
+          doc.setLineWidth(0.3);
+          doc.rect(ML, ly - 3, 3, 3);
+          doc.text(String(packingList[i]), ML + 5, ly);
+          ly += 5;
+        }
+        let ry = startY;
+        for (let i = half; i < packingList.length; i++) {
+          ry = ensureSpace(doc, ry, 5);
+          doc.rect(ML + colW, ry - 3, 3, 3);
+          doc.text(String(packingList[i]), ML + colW + 5, ry);
+          ry += 5;
+        }
+        y = Math.max(ly, ry) + 3;
       }
 
       // ── RULES ──
       const rules = (data.plan as any).rules;
       if (rules && Array.isArray(rules) && rules.length > 0) {
-        drawLine(y);
-        y += SECTION_GAP;
-        ensureSpace(15);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Pravila Ponašanja na Ekskurziji", MARGIN_LEFT, y);
-        y += 8;
-
-        doc.setFontSize(8.5);
-        doc.setFont("helvetica", "normal");
+        y = drawDivider(doc, y) + 2;
+        y = drawSectionTitle(doc, "Pravila ponašanja na ekskurziji", y);
         rules.forEach((rule: string, i: number) => {
-          ensureSpace(6);
-          doc.text((i + 1) + ". " + rule, MARGIN_LEFT + 3, y);
-          y += 5;
+          y = writeWrapped(doc, `${i + 1}. ${rule}`, y, { fontSize: 9 });
+          y += 0.5;
         });
-        y += 4;
+        y += 3;
       }
 
       // ── EMERGENCY CONTACTS ──
       const emergency = (data.plan as any).emergency_contacts;
       if (emergency) {
-        drawLine(y);
-        y += SECTION_GAP;
-        ensureSpace(30);
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(200, 50, 50);
-        doc.text("HITNI KONTAKTI", MARGIN_LEFT, y);
-        doc.setTextColor(0, 0, 0);
-        y += 8;
-
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        if (emergency.school) { doc.text("Škola: " + emergency.school, MARGIN_LEFT + 3, y); y += 5; }
-        if (emergency.local_emergency) { doc.text("Hitna pomoć: " + emergency.local_emergency, MARGIN_LEFT + 3, y); y += 5; }
-        if (emergency.embassy_info) { doc.text("Ambasada: " + emergency.embassy_info, MARGIN_LEFT + 3, y); y += 5; }
-        if (emergency.medical_info) { doc.text("Medicinske napomene: " + emergency.medical_info, MARGIN_LEFT + 3, y); y += 5; }
-        y += 4;
+        y = drawDivider(doc, y) + 2;
+        y = drawSectionTitle(doc, "Hitni kontakti", y);
+        doc.setFont("DejaVu", "normal");
+        doc.setFontSize(9.5);
+        const items: Array<[string, string]> = [
+          ["Škola", emergency.school],
+          ["Hitna pomoć", emergency.local_emergency || "112 (jedinstveni broj)"],
+          ["Ambasada", emergency.embassy_info],
+          ["Medicinske napomene", emergency.medical_info],
+        ].filter(([, v]) => v) as Array<[string, string]>;
+        items.forEach(([k, v]) => { y = writeKeyValue(doc, k, v, y, { labelWidth: 50 }); });
       }
 
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        // Footer line
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.3);
-        doc.line(MARGIN_LEFT, pageHeight - 15, pageWidth - MARGIN_RIGHT, pageHeight - 15);
-
-        doc.setFontSize(7.5);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(130, 130, 130);
-        doc.text(
-          `IDSS Ekskurzije – Planer Putovanja — Stranica ${i} od ${pageCount}`,
-          MARGIN_LEFT,
-          pageHeight - 10
-        );
-        doc.text(
-          `Generirano: ${new Date().toLocaleString("hr-HR")}`,
-          pageWidth - MARGIN_RIGHT,
-          pageHeight - 10,
-          { align: "right" }
-        );
-        doc.setTextColor(0, 0, 0);
-      }
+      // Apply branded header + footer to every page
+      paginate(doc);
 
       // Save
       const fileName = `${(data.tripName || "trip-plan").replace(/\s+/g, "-")}-${data.plan.type.toLowerCase()}.pdf`;
