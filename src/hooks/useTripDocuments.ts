@@ -112,7 +112,7 @@ export const useTripDocuments = () => {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("DejaVu", "normal");
     doc.setTextColor(110, 110, 110);
     const line1 = schoolInfo.address + " | tel " + schoolInfo.phone + " - mob " + schoolInfo.mobile;
     const line2 = schoolInfo.bank.name + " - " + schoolInfo.bank.account + " | IBAN: " + schoolInfo.bank.iban + " | SWIFT (BIC): " + schoolInfo.bank.swift;
@@ -139,38 +139,38 @@ export const useTripDocuments = () => {
     setIsGenerating(true);
 
     try {
-      const doc = new jsPDF();
+      const doc = createIdssPdf();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
       let yPos = margin;
 
       // === HEADER ===
       doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text(schoolInfo.legalName, pageWidth / 2, yPos, { align: "center" });
       yPos += 6;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.setFontSize(9);
       doc.text(schoolInfo.address + " · tel " + schoolInfo.phone + " · " + schoolInfo.email, pageWidth / 2, yPos, { align: "center" });
       yPos += 12;
 
       // === TITLE (bilingual) ===
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("FORMULAR SAGLASNOSTI RODITELJA", pageWidth / 2, yPos, { align: "center" });
       yPos += 6;
       doc.setFontSize(11);
-      doc.setFont("helvetica", "italic");
+      doc.setFont("DejaVu", "italic");
       doc.text("Parental Consent Form", pageWidth / 2, yPos, { align: "center" });
       yPos += 12;
 
       // === STUDENT INFO / Student Information ===
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(11);
       doc.text("Podaci o učeniku / Student Information", margin, yPos);
       yPos += 7;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.setFontSize(10);
       doc.text("Ime i prezime učenika / Student\u2019s full name:", margin, yPos);
       yPos += 5;
@@ -181,11 +181,11 @@ export const useTripDocuments = () => {
       yPos += 9;
 
       // === EXCURSION INFO / Excursion Information ===
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("Informacije o ekskurziji / Excursion Information", margin, yPos);
       yPos += 7;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("Naziv ekskurzije / Excursion title:  " + (data.tripName || data.plan.route), margin, yPos);
       yPos += 6;
       const dest = data.destinations.join(", ") || "_______________";
@@ -197,35 +197,35 @@ export const useTripDocuments = () => {
       doc.text("Cijena / Price:  " + data.plan.cost_per_student + " EUR  (jednokratno / one-time payment)", margin, yPos);
       yPos += 6;
       doc.setFontSize(9);
-      doc.setFont("helvetica", "italic");
+      doc.setFont("DejaVu", "italic");
       doc.text("Organizator / Organizer:  " + schoolInfo.legalName, margin, yPos);
       yPos += 9;
 
       // === PARENT/GUARDIAN STATEMENT ===
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(11);
       doc.text("Izjava roditelja / Parent/Guardian Statement", margin, yPos);
       yPos += 7;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.setFontSize(9.5);
       const stmtBs = "Ja, _____________________________________ (ime i prezime roditelja/staratelja), kao roditelj/staratelj gore navedenog učenika, dajem svoju punu saglasnost da moje dijete učestvuje na ekskurziji koju organizuje " + schoolInfo.name + ".";
       const stmtEn = "I, _____________________________________ (parent/guardian\u2019s full name), as the parent/guardian of the above-named student, give my full consent for my child to participate in the excursion organized by " + schoolInfo.name + ".";
       const wrapBs = doc.splitTextToSize(stmtBs, pageWidth - 2 * margin);
       doc.text(wrapBs, margin, yPos);
       yPos += wrapBs.length * 4.5 + 2;
-      doc.setFont("helvetica", "italic");
+      doc.setFont("DejaVu", "italic");
       const wrapEn = doc.splitTextToSize(stmtEn, pageWidth - 2 * margin);
       doc.text(wrapEn, margin, yPos);
       yPos += wrapEn.length * 4.5 + 7;
 
       // === CONFIRMATION CHECKLIST ===
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(10);
       doc.text("Potvrđujem da sam upoznat/a sa / I confirm that I am aware of:", margin, yPos);
       yPos += 6;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.setFontSize(9);
       const items = [
         ["planom i programom ekskurzije", "the excursion plan and program"],
@@ -253,18 +253,18 @@ export const useTripDocuments = () => {
       yPos = margin;
 
       doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text(schoolInfo.legalName, pageWidth / 2, yPos, { align: "center" });
       yPos += 12;
 
       doc.setFontSize(13);
       doc.text("Podaci o zdravstvenom stanju učenika", margin, yPos);
       doc.setFontSize(10);
-      doc.setFont("helvetica", "italic");
+      doc.setFont("DejaVu", "italic");
       doc.text("Student Health Information", margin, yPos + 5);
       yPos += 13;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.setFontSize(10);
 
       // 1. Allergies
@@ -298,20 +298,20 @@ export const useTripDocuments = () => {
       // 4. Emergency contact
       doc.text("4. Kontakt telefon roditelja/staratelja u hitnim slučajevima:", margin, yPos);
       yPos += 5;
-      doc.setFont("helvetica", "italic");
+      doc.setFont("DejaVu", "italic");
       doc.text("    Emergency contact phone number:", margin, yPos);
       yPos += 6;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("__________________________________________________________________________", margin, yPos);
       yPos += 12;
 
       // === RESPONSIBILITY ===
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(11);
       doc.text("Odgovornost / Responsibility", margin, yPos);
       yPos += 7;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.setFontSize(9);
       const respItems = [
         ["Slažem se da će moje dijete poštovati upute nastavnog osoblja.", "I agree that my child will follow the instructions of the school staff."],
@@ -320,11 +320,11 @@ export const useTripDocuments = () => {
         ["Razumijem da u slučaju kršenja pravila moje dijete može biti udaljeno s ekskurzije bez povrata novca.", "I understand that if rules are violated, my child may be removed from the excursion without a refund."],
       ];
       for (const [bs, en] of respItems) {
-        doc.setFont("helvetica", "normal");
+        doc.setFont("DejaVu", "normal");
         const wBs = doc.splitTextToSize("• " + bs, pageWidth - 2 * margin);
         doc.text(wBs, margin, yPos);
         yPos += wBs.length * 4 + 1;
-        doc.setFont("helvetica", "italic");
+        doc.setFont("DejaVu", "italic");
         const wEn = doc.splitTextToSize("  " + en, pageWidth - 2 * margin);
         doc.text(wEn, margin, yPos);
         yPos += wEn.length * 4 + 3;
@@ -332,16 +332,16 @@ export const useTripDocuments = () => {
 
       yPos += 4;
       // === SIGNATURE ===
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(10);
       doc.text("Mjesto i datum / Place and date:", margin, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("_______________________________________", margin + 65, yPos);
       yPos += 12;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("Potpis roditelja/staratelja / Parent/Guardian signature:", margin, yPos);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       yPos += 10;
       doc.text("_______________________________________", margin, yPos);
       yPos += 10;
@@ -350,11 +350,11 @@ export const useTripDocuments = () => {
       doc.setDrawColor(180, 180, 180);
       doc.line(margin, yPos, pageWidth - margin, yPos);
       yPos += 6;
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setFontSize(9);
       doc.text("Za internu upotrebu škole / For school internal use", margin, yPos);
       yPos += 6;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("Primio/la / Received by: __________________________   Datum / Date: ______________", margin, yPos);
       yPos += 6;
       doc.text("Napomene / Notes: ________________________________________________________", margin, yPos);
@@ -385,7 +385,7 @@ export const useTripDocuments = () => {
     setIsGenerating(true);
     
     try {
-      const doc = new jsPDF();
+      const doc = createIdssPdf();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 15;
       let yPos = margin;
@@ -394,19 +394,19 @@ export const useTripDocuments = () => {
 
       // Header
       doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text(schoolInfo.name, pageWidth / 2, yPos, { align: "center" });
       yPos += 12;
 
       // Title
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("LISTA UCENIKA - SKOLSKA EKSKURZIJA", pageWidth / 2, yPos, { align: "center" });
       yPos += 10;
 
       // Trip Info
       doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("Destinacija: " + data.destinations.join(", "), margin, yPos);
       yPos += 5;
       doc.text("Datum: " + (data.departureDate || "___") + " - " + (data.returnDate || "___"), margin, yPos);
@@ -425,7 +425,7 @@ export const useTripDocuments = () => {
       doc.rect(margin, yPos, pageWidth - 2 * margin, 8, "F");
       
       doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.setTextColor(255, 255, 255);
       
       let xPos = margin + 2;
@@ -437,7 +437,7 @@ export const useTripDocuments = () => {
       yPos += 8;
 
       // Table Rows
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       const rowHeight = 10;
       const totalRows = hasStudentData ? data.students!.length : (data.studentCount || 25);
       
@@ -472,9 +472,9 @@ export const useTripDocuments = () => {
         if (hasStudentData && data.students![i]) {
           const student = data.students![i];
           // Name
-          doc.setFont("helvetica", "bold");
+          doc.setFont("DejaVu", "bold");
           doc.text(student.name.substring(0, 25), xPos, yPos + 6);
-          doc.setFont("helvetica", "normal");
+          doc.setFont("DejaVu", "normal");
           xPos += colWidths[1];
           // Gender
           doc.text(student.gender === "F" ? "Z" : "M", xPos + 3, yPos + 6);
@@ -501,11 +501,11 @@ export const useTripDocuments = () => {
       yPos = checkNewPage(doc, yPos, margin, 40);
       
       doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("SUMARNI PODACI:", margin, yPos);
       yPos += 7;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       if (hasStudentData) {
         const maleCount = data.students!.filter(s => s.gender === "M").length;
         const femaleCount = data.students!.filter(s => s.gender === "F").length;
@@ -526,11 +526,11 @@ export const useTripDocuments = () => {
       yPos += 12;
 
       // Verification section
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("VERIFIKACIJA LISTE:", margin, yPos);
       yPos += 8;
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("Listu pripremio/la: _________________________  Potpis: _________________________", margin, yPos);
       yPos += 8;
       doc.text("Datum: _______________", margin, yPos);
@@ -571,23 +571,23 @@ export const useTripDocuments = () => {
     setIsGenerating(true);
     
     try {
-      const doc = new jsPDF();
+      const doc = createIdssPdf();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
       let yPos = margin;
 
       // ===== PAGE 1: COVER PAGE =====
       doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text(schoolInfo.name, pageWidth / 2, yPos, { align: "center" });
       yPos += 5;
       doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text(schoolInfo.address, pageWidth / 2, yPos, { align: "center" });
       yPos += 40;
 
       doc.setFontSize(24);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("DOKUMENTACIJA", pageWidth / 2, yPos, { align: "center" });
       yPos += 12;
       doc.setFontSize(20);
@@ -604,7 +604,7 @@ export const useTripDocuments = () => {
 
       // Trip details
       doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("Destinacija: " + data.destinations.join(", "), pageWidth / 2, yPos, { align: "center" });
       yPos += 8;
       doc.text("Period: " + (data.departureDate || "___") + " - " + (data.returnDate || "___"), pageWidth / 2, yPos, { align: "center" });
@@ -616,12 +616,12 @@ export const useTripDocuments = () => {
 
       // Table of contents
       doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("SADRZAJ DOKUMENTACIJE:", margin, yPos);
       yPos += 10;
 
       doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       const contents = [
         "1. Osnovne informacije o ekskurziji",
         "2. Detaljan plan putovanja (itinerar)",
@@ -640,12 +640,12 @@ export const useTripDocuments = () => {
       yPos = margin;
 
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("1. OSNOVNE INFORMACIJE O EKSKURZIJI", margin, yPos);
       yPos += 12;
 
       doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       
       const infoItems = [
         ["Naziv ekskurzije:", data.tripName || data.plan.route],
@@ -664,9 +664,9 @@ export const useTripDocuments = () => {
       ];
 
       infoItems.forEach(([label, value]) => {
-        doc.setFont("helvetica", "bold");
+        doc.setFont("DejaVu", "bold");
         doc.text(label, margin, yPos);
-        doc.setFont("helvetica", "normal");
+        doc.setFont("DejaVu", "normal");
         doc.text(String(value), margin + 50, yPos);
         yPos += 7;
       });
@@ -674,10 +674,10 @@ export const useTripDocuments = () => {
       // Meeting point if available
       if (data.plan.meeting_point) {
         yPos += 10;
-        doc.setFont("helvetica", "bold");
+        doc.setFont("DejaVu", "bold");
         doc.text("MJESTO OKUPLJANJA:", margin, yPos);
         yPos += 7;
-        doc.setFont("helvetica", "normal");
+        doc.setFont("DejaVu", "normal");
         doc.text("Lokacija: " + data.plan.meeting_point.name, margin, yPos);
         yPos += 5;
         doc.text("Adresa: " + data.plan.meeting_point.address, margin, yPos);
@@ -690,7 +690,7 @@ export const useTripDocuments = () => {
       yPos = margin;
 
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("2. DETALJAN PLAN PUTOVANJA (ITINERAR)", margin, yPos);
       yPos += 15;
 
@@ -701,7 +701,7 @@ export const useTripDocuments = () => {
         doc.setFillColor(200, 100, 50);
         doc.rect(margin, yPos, pageWidth - 2 * margin, 10, "F");
         doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
+        doc.setFont("DejaVu", "bold");
         doc.setTextColor(255, 255, 255);
         doc.text("DAN " + day.day + ": " + day.title, margin + 5, yPos + 7);
         if (day.date) {
@@ -712,21 +712,21 @@ export const useTripDocuments = () => {
 
         if (day.summary) {
           doc.setFontSize(10);
-          doc.setFont("helvetica", "italic");
+          doc.setFont("DejaVu", "italic");
           const summaryLines = doc.splitTextToSize(day.summary, pageWidth - 2 * margin);
           doc.text(summaryLines, margin, yPos);
           yPos += summaryLines.length * 4 + 5;
         }
 
         // Activities
-        doc.setFont("helvetica", "normal");
+        doc.setFont("DejaVu", "normal");
         day.activities.forEach((activity) => {
           yPos = checkNewPage(doc, yPos, margin, 20);
           
           doc.setFontSize(10);
-          doc.setFont("helvetica", "bold");
+          doc.setFont("DejaVu", "bold");
           doc.text(activity.time, margin, yPos);
-          doc.setFont("helvetica", "normal");
+          doc.setFont("DejaVu", "normal");
           
           const activityText = doc.splitTextToSize(activity.description, pageWidth - 2 * margin - 30);
           doc.text(activityText, margin + 30, yPos);
@@ -759,12 +759,12 @@ export const useTripDocuments = () => {
       yPos = margin;
 
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("3. FINANSIJSKI PREGLED", margin, yPos);
       yPos += 15;
 
       doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("Troskovi po uceniku (" + data.plan.type + " plan):", margin, yPos);
       yPos += 10;
 
@@ -777,7 +777,7 @@ export const useTripDocuments = () => {
         ["Rezerva (5%)", data.plan.costs.contingency]
       ];
 
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       costs.forEach(([label, value]) => {
         doc.text(String(label) + ":", margin + 10, yPos);
         doc.text(value + " EUR", margin + 80, yPos);
@@ -788,7 +788,7 @@ export const useTripDocuments = () => {
       doc.line(margin, yPos, margin + 100, yPos);
       yPos += 8;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("UKUPNO PO UCENIKU:", margin + 10, yPos);
       doc.text(data.plan.costs.total + " EUR", margin + 80, yPos);
       yPos += 10;
@@ -802,12 +802,12 @@ export const useTripDocuments = () => {
         yPos = checkNewPage(doc, yPos, margin, 50);
         
         doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
+        doc.setFont("DejaVu", "bold");
         doc.text("4. PRAVILA PONASANJA", margin, yPos);
         yPos += 12;
 
         doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
+        doc.setFont("DejaVu", "normal");
         data.plan.rules.forEach((rule, i) => {
           yPos = checkNewPage(doc, yPos, margin, 10);
           const ruleText = doc.splitTextToSize((i + 1) + ". " + rule, pageWidth - 2 * margin);
@@ -822,12 +822,12 @@ export const useTripDocuments = () => {
         yPos = checkNewPage(doc, yPos, margin, 50);
         
         doc.setFontSize(16);
-        doc.setFont("helvetica", "bold");
+        doc.setFont("DejaVu", "bold");
         doc.text("5. LISTA POTREBNIH STVARI", margin, yPos);
         yPos += 12;
 
         doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
+        doc.setFont("DejaVu", "normal");
         
         const halfLength = Math.ceil(data.plan.packing_list.length / 2);
         const col1 = data.plan.packing_list.slice(0, halfLength);
@@ -853,15 +853,15 @@ export const useTripDocuments = () => {
       yPos = margin;
 
       doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("6. KONTAKT INFORMACIJE", margin, yPos);
       yPos += 15;
 
       doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("SKOLA:", margin, yPos);
       yPos += 7;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text(schoolInfo.name, margin, yPos);
       yPos += 5;
       doc.text("Adresa: " + schoolInfo.address, margin, yPos);
@@ -871,10 +871,10 @@ export const useTripDocuments = () => {
       doc.text("Email: " + schoolInfo.email, margin, yPos);
       yPos += 15;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("PRATITELJI NA EKSKURZIJI:", margin, yPos);
       yPos += 7;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       if (data.chaperones.length > 0) {
         data.chaperones.forEach((chaperone, i) => {
           doc.text((i + 1) + ". " + chaperone + " - Telefon: _______________", margin, yPos);
@@ -887,10 +887,10 @@ export const useTripDocuments = () => {
       }
       yPos += 15;
 
-      doc.setFont("helvetica", "bold");
+      doc.setFont("DejaVu", "bold");
       doc.text("HITNI KONTAKTI:", margin, yPos);
       yPos += 7;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("DejaVu", "normal");
       doc.text("Hitna pomoc: 124", margin, yPos);
       yPos += 5;
       doc.text("Policija: 122", margin, yPos);
