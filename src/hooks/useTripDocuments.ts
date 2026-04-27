@@ -3,6 +3,21 @@ import { jsPDF } from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { IDSS_SCHOOL, IDSS_PAYMENT_RULES, IDSS_DAILY_SCHEDULE } from "@/lib/idssRegulations";
+import {
+  createIdssPdf,
+  paginate,
+  ensureSpace as themeEnsureSpace,
+  drawSectionTitle,
+  drawDivider,
+  writeWrapped,
+  writeKeyValue,
+  drawCheckbox,
+  setFill,
+  setText,
+  setDraw,
+  PDF_THEME,
+  registerIdssFonts,
+} from "@/lib/pdfTheme";
 
 export interface Student {
   id?: string;
