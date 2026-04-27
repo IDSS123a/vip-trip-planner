@@ -13,7 +13,6 @@ import {
   setDraw,
   PDF_THEME,
 } from "@/lib/pdfTheme";
-import { IDSS_SCHOOL } from "@/lib/idssRegulations";
 
 interface TripPlan {
   id: number;
