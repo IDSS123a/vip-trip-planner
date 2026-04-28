@@ -271,7 +271,7 @@ export const usePdfExport = () => {
             doc.setFontSize(8);
             doc.setFont("DejaVu", "normal");
             setText(doc, PDF_THEME.color.muted);
-            const lc = doc.splitTextToSize(`📍 ${activity.location}`, descW) as string[];
+            const lc = doc.splitTextToSize(`Lokacija: ${activity.location}`, descW) as string[];
             doc.text(lc[0] || "", descX, y);
             setText(doc, PDF_THEME.color.text);
             y += 4;
