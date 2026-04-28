@@ -13,7 +13,7 @@ import { IDSS_SCHOOL } from "@/lib/idssRegulations";
 export const PDF_THEME = {
   // A4 portrait, 20mm margins
   page: { width: 210, height: 297 },
-  margin: { top: 22, bottom: 26, left: 20, right: 20 },
+  margin: { top: 22, bottom: 34, left: 20, right: 20 },
   // Brand colors (RGB) — matched to the app's orange primary
   color: {
     primary: [230, 126, 34] as [number, number, number],
