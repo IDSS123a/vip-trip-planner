@@ -175,8 +175,20 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     { value: "11", label: "11. razred (Sekundarstufe II)" },
     { value: "12", label: "12. razred (Sekundarstufe II)" },
     { value: "13", label: "13. razred (Abitur)" },
+    { value: "5+6", label: "Spojena grupa: 5. + 6. razred (Pravilnik)" },
+    { value: "7+8", label: "Spojena grupa: 7. + 8. razred (Pravilnik)" },
     { value: "mixed", label: "Mješovita grupa (više razreda)" },
     { value: "all", label: "Cijela škola" },
+  ];
+
+  // Predefinisane tačke okupljanja u Sarajevu
+  const meetingPointPresets = [
+    { value: "IDSS, Buka 13, 71 000 Sarajevo, Bosna i Hercegovina", label: "IDSS — Buka 13 (škola)" },
+    { value: "Zemaljski muzej BiH, Zmaja od Bosne 3, 71 000 Sarajevo", label: "Zemaljski muzej BiH" },
+    { value: "Vijećnica, Obala Kulina bana 1, 71 000 Sarajevo", label: "Vijećnica" },
+    { value: "Glavna autobuska stanica, Put života 8, 71 000 Sarajevo", label: "Autobuska stanica Sarajevo" },
+    { value: "Željeznička stanica Sarajevo, Put života 2, 71 000 Sarajevo", label: "Željeznička stanica Sarajevo" },
+    { value: "BBI Centar, Trg djece Sarajeva 1, 71 000 Sarajevo", label: "BBI Centar" },
   ];
 
   return (
@@ -238,13 +250,13 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
               <FormLabel>Polazište *</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Sarajevo (IDSS, Buka 13)" 
+                  placeholder="Sarajevo" 
                   maxLength={100}
                   {...field} 
                 />
               </FormControl>
               <FormDescription>
-                Ostavite "Sarajevo" za polazak iz škole
+                Grad polaska (npr. Sarajevo)
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -323,6 +335,46 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
           )}
         />
       </div>
+
+      {/* Tačka okupljanja (adresa polazišta) */}
+      <FormField
+        control={form.control}
+        name="departureAddress"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Tačka okupljanja (adresa polazišta) *</FormLabel>
+            <div className="space-y-2">
+              <Select
+                onValueChange={(v) => field.onChange(v)}
+                value={meetingPointPresets.find(p => p.value === field.value)?.value ?? ""}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Odaberite predefinisanu tačku okupljanja" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {meetingPointPresets.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormControl>
+                <Input
+                  placeholder="ili unesite drugu adresu okupljanja"
+                  maxLength={200}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+            </div>
+            <FormDescription>
+              Tačno mjesto okupljanja učenika prije polaska. Default: ispred IDSS škole, Buka 13.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       {/* Row 2: Grade Level, Student Count, Trip Type */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
