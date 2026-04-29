@@ -21,8 +21,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { tripValidationSchema, type ValidatedTripFormData } from "@/lib/tripValidation";
 import type { Student } from "@/components/trip/StudentListInput";
 import { getGradePlan, violatesRotation } from "@/lib/idssRegulations";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ShieldAlert } from "lucide-react";
 
 interface TripPlansData {
   plans: any[];
