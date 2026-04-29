@@ -150,8 +150,17 @@ export const ACCOMMODATION_TYPES = {
   mountain_hut: { id: "mountain_hut", name: "Planinska kuća", stars: [1, 2], suitableFor: ["grade3", "grade4", "grade5", "grade6", "grade7", "grade8", "grade9", "grade10", "grade11", "grade12", "grade13"] },
 } as const;
 
+// Helper for combined IDSS groups (Pravilnik Član 2)
+const COMBINED_GROUPS: Record<string, { primary: keyof typeof IDSS_GROUPS; allowedTripTypes: string[]; maxTripDays: number; maxStudentsPerChaperone: number }> = {
+  "5+6": { primary: "grade6", allowedTripTypes: ["day-trip","multi-day","educational","cultural","sports"], maxTripDays: 5, maxStudentsPerChaperone: 12 },
+  "7+8": { primary: "grade8", allowedTripTypes: ["day-trip","multi-day","educational","cultural","sports"], maxTripDays: 7, maxStudentsPerChaperone: 15 },
+};
+
 // Helper function to calculate minimum required chaperones
 export function calculateMinChaperones(gradeLevel: string, studentCount: number): number {
+  if (COMBINED_GROUPS[gradeLevel]) {
+    return Math.ceil(studentCount / COMBINED_GROUPS[gradeLevel].maxStudentsPerChaperone);
+  }
   const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
   const gradeConfig = IDSS_GROUPS[gradeKey];
   
@@ -172,6 +181,10 @@ export function calculateTripDays(departureDate: Date, returnDate: Date): number
 
 // Helper function to validate trip type for grade
 export function isTripTypeAllowedForGrade(gradeLevel: string, tripType: string): boolean {
+  if (COMBINED_GROUPS[gradeLevel]) {
+    return COMBINED_GROUPS[gradeLevel].allowedTripTypes.includes(tripType);
+  }
+  if (gradeLevel === "mixed" || gradeLevel === "all") return true;
   const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
   const gradeConfig = IDSS_GROUPS[gradeKey];
   
@@ -182,6 +195,7 @@ export function isTripTypeAllowedForGrade(gradeLevel: string, tripType: string):
 
 // Helper to get max trip days for a grade
 export function getMaxTripDays(gradeLevel: string): number {
+  if (COMBINED_GROUPS[gradeLevel]) return COMBINED_GROUPS[gradeLevel].maxTripDays;
   const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
   const gradeConfig = IDSS_GROUPS[gradeKey];
   return gradeConfig?.maxTripDays || 7;
