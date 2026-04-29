@@ -65,10 +65,14 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         info.maxTripDays = getMaxTripDays(gradeLevel);
         
         // Get allowed trip types for grade
-        const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
-        const gradeConfig = IDSS_GROUPS[gradeKey];
-        if (gradeConfig) {
-          info.allowedTripTypes = [...gradeConfig.allowedTripTypes];
+        if (gradeLevel === "5+6" || gradeLevel === "7+8") {
+          info.allowedTripTypes = ["day-trip","multi-day","educational","cultural","sports"];
+        } else {
+          const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
+          const gradeConfig = IDSS_GROUPS[gradeKey];
+          if (gradeConfig) {
+            info.allowedTripTypes = [...gradeConfig.allowedTripTypes];
+          }
         }
       }
     }
