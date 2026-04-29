@@ -156,7 +156,8 @@ const StudentListInput = ({
         gender,
         parentName: parts[2] || "",
         parentPhone: parts[3] || "",
-        medicalNotes: parts[4] || ""
+        medicalNotes: parts[4] || "",
+        consentStatus: "pending" as const,
       };
     }).filter(s => s.name);
 
@@ -171,9 +172,19 @@ const StudentListInput = ({
   };
 
   const exportToCSV = () => {
-    const headers = "Ime i prezime,Spol,Ime roditelja,Telefon roditelja,Medicinske napomene\n";
+    const headers = "Ime i prezime,Spol,Ime roditelja,Telefon roditelja,Medicinske napomene,Saglasnost,Potpisao,Datum potpisa,Dokument\n";
     const rows = students.map(s => 
-      [s.name, s.gender, s.parentName, s.parentPhone, s.medicalNotes].join(",")
+      [
+        s.name, 
+        s.gender, 
+        s.parentName, 
+        s.parentPhone, 
+        s.medicalNotes,
+        s.consentStatus === "submitted" ? "Predata" : "Nije predata",
+        s.consentSignedBy ?? "",
+        s.consentSignedDate ?? "",
+        s.consentDocumentUrl ?? "",
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")
     ).join("\n");
     
     const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
