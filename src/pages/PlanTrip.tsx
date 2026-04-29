@@ -336,6 +336,10 @@ const PlanTrip = () => {
                         destinations={destinations}
                         previousYearDestination={previousYearDestination}
                         onPreviousYearChange={setPreviousYearDestination}
+                        rotationOverride={rotationOverride}
+                        onRotationOverrideChange={setRotationOverride}
+                        rotationOverrideReason={rotationOverrideReason}
+                        onRotationOverrideReasonChange={setRotationOverrideReason}
                       />
                       
                       <div className="flex flex-wrap gap-4 pt-6 border-t border-border">
