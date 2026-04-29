@@ -31,7 +31,9 @@ import {
   UserPlus,
   ClipboardList,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  ShieldCheck,
+  ShieldAlert
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +44,11 @@ export interface Student {
   parentName: string;
   parentPhone: string;
   medicalNotes: string;
+  // Hibridni model saglasnosti — Pravilnik IDSS, Prilog 1
+  consentStatus?: "submitted" | "pending";
+  consentSignedBy?: string; // Ime roditelja koji je potpisao
+  consentSignedDate?: string; // ISO date kada je potpisana
+  consentDocumentUrl?: string; // Opcioni link na uploadovan dokument
 }
 
 interface StudentListInputProps {
@@ -82,7 +89,12 @@ const StudentListInput = ({
 
     onStudentsChange([
       ...students,
-      { ...newStudent, id: generateId(), name: newStudent.name.trim() }
+      { 
+        ...newStudent, 
+        id: generateId(), 
+        name: newStudent.name.trim(),
+        consentStatus: "pending",
+      }
     ]);
 
     setNewStudent({
@@ -109,6 +121,20 @@ const StudentListInput = ({
     );
   };
 
+  const toggleConsent = (id: string) => {
+    onStudentsChange(
+      students.map(s => {
+        if (s.id !== id) return s;
+        const next = s.consentStatus === "submitted" ? "pending" : "submitted";
+        return {
+          ...s,
+          consentStatus: next,
+          consentSignedDate: next === "submitted" ? new Date().toISOString().slice(0, 10) : undefined,
+        };
+      })
+    );
+  };
+
   const handleBulkImport = () => {
     if (!bulkInput.trim()) {
       toast({
@@ -130,7 +156,8 @@ const StudentListInput = ({
         gender,
         parentName: parts[2] || "",
         parentPhone: parts[3] || "",
-        medicalNotes: parts[4] || ""
+        medicalNotes: parts[4] || "",
+        consentStatus: "pending" as const,
       };
     }).filter(s => s.name);
 
@@ -145,9 +172,19 @@ const StudentListInput = ({
   };
 
   const exportToCSV = () => {
-    const headers = "Ime i prezime,Spol,Ime roditelja,Telefon roditelja,Medicinske napomene\n";
+    const headers = "Ime i prezime,Spol,Ime roditelja,Telefon roditelja,Medicinske napomene,Saglasnost,Potpisao,Datum potpisa,Dokument\n";
     const rows = students.map(s => 
-      [s.name, s.gender, s.parentName, s.parentPhone, s.medicalNotes].join(",")
+      [
+        s.name, 
+        s.gender, 
+        s.parentName, 
+        s.parentPhone, 
+        s.medicalNotes,
+        s.consentStatus === "submitted" ? "Predata" : "Nije predata",
+        s.consentSignedBy ?? "",
+        s.consentSignedDate ?? "",
+        s.consentDocumentUrl ?? "",
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")
     ).join("\n");
     
     const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
@@ -167,6 +204,8 @@ const StudentListInput = ({
   const maleCount = students.filter(s => s.gender === "M").length;
   const femaleCount = students.filter(s => s.gender === "F").length;
   const hasSpecialNeeds = students.filter(s => s.medicalNotes).length;
+  const consentSubmittedCount = students.filter(s => s.consentStatus === "submitted").length;
+  const consentPendingCount = students.length - consentSubmittedCount;
 
   return (
     <Card className="border-border">
@@ -200,6 +239,32 @@ const StudentListInput = ({
                 Posebne potrebe: {hasSpecialNeeds}
               </Badge>
             )}
+            <Badge variant={consentPendingCount === 0 ? "default" : "secondary"} className="gap-1">
+              {consentPendingCount === 0 ? (
+                <ShieldCheck className="h-3 w-3" />
+              ) : (
+                <ShieldAlert className="h-3 w-3" />
+              )}
+              Saglasnosti: {consentSubmittedCount}/{students.length}
+            </Badge>
+          </div>
+        )}
+
+        {/* Consent gate alert */}
+        {students.length > 0 && consentPendingCount > 0 && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+            <div className="flex items-start gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <div className="font-medium text-foreground">
+                  Plan se ne može finalizovati — nedostaje {consentPendingCount} {consentPendingCount === 1 ? "saglasnost" : "saglasnosti"} roditelja
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  Za svakog učenika označite "Predato" tek kad imate potpisanu saglasnost
+                  (Pravilnik IDSS, Prilog 1). Dokument možete opciono uploadovati na svakoj stavci.
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -318,8 +383,9 @@ const StudentListInput = ({
               {students.map((student, index) => (
                 <div 
                   key={student.id}
-                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 group"
+                  className="flex flex-col gap-1.5 p-2 rounded-lg hover:bg-muted/50 group border border-transparent hover:border-border"
                 >
+                  <div className="flex items-center gap-2">
                   <span className="w-8 text-sm text-muted-foreground font-mono">
                     {index + 1}.
                   </span>
@@ -359,6 +425,47 @@ const StudentListInput = ({
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+                  </div>
+                  {/* Consent row */}
+                  <div className="flex flex-wrap items-center gap-2 pl-10 text-xs">
+                    <Button
+                      type="button"
+                      variant={student.consentStatus === "submitted" ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 gap-1.5"
+                      onClick={() => toggleConsent(student.id)}
+                    >
+                      {student.consentStatus === "submitted" ? (
+                        <>
+                          <ShieldCheck className="h-3 w-3" />
+                          Saglasnost predata
+                        </>
+                      ) : (
+                        <>
+                          <ShieldAlert className="h-3 w-3" />
+                          Označi kao predato
+                        </>
+                      )}
+                    </Button>
+                    <Input
+                      value={student.consentSignedBy ?? ""}
+                      onChange={(e) => updateStudent(student.id, "consentSignedBy", e.target.value)}
+                      placeholder="Ime roditelja koji potpisuje"
+                      className="h-7 text-xs flex-1 min-w-[160px]"
+                    />
+                    <Input
+                      type="date"
+                      value={student.consentSignedDate ?? ""}
+                      onChange={(e) => updateStudent(student.id, "consentSignedDate", e.target.value)}
+                      className="h-7 text-xs w-[140px]"
+                    />
+                    <Input
+                      value={student.consentDocumentUrl ?? ""}
+                      onChange={(e) => updateStudent(student.id, "consentDocumentUrl", e.target.value)}
+                      placeholder="Link na dokument (opciono)"
+                      className="h-7 text-xs flex-1 min-w-[160px]"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

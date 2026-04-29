@@ -111,22 +111,25 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     return info;
   }, [gradeLevel, studentCount, tripType, tripDate, returnDate, chaperones.length, transport]);
 
-  // Update student count when grade changes
+  // Pre-popuni studentCount SAMO jednom kad se odabere razred i polje je prazno.
+  // NAMJERNO ne stavljamo studentCount u dependency array — inače bi se effect
+  // okidao na svaki tipkani znak i ponovo upisivao default vrijednost preko korisnikovog unosa.
   useEffect(() => {
-    if (gradeLevel) {
-      // Spojene grupe: 5+6 ≈ 44, 7+8 ≈ 48 (sumirano iz IDSS_GROUPS)
-      const combined: Record<string, number> = { "5+6": 44, "7+8": 48 };
-      if (combined[gradeLevel]) {
-        if (!studentCount) form.setValue("studentCount", String(combined[gradeLevel]));
-      } else {
-        const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
-        const gradeConfig = IDSS_GROUPS[gradeKey];
-        if (gradeConfig && !studentCount) {
-          form.setValue("studentCount", String(gradeConfig.defaultStudentCount));
-        }
-      }
+    if (!gradeLevel) return;
+    const current = form.getValues("studentCount");
+    if (current && current.trim() !== "") return; // korisnik je već nešto upisao — ne diraj
+    const combined: Record<string, number> = { "5+6": 44, "7+8": 48 };
+    if (combined[gradeLevel]) {
+      form.setValue("studentCount", String(combined[gradeLevel]), { shouldValidate: false });
+      return;
     }
-  }, [gradeLevel, form, studentCount]);
+    const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
+    const gradeConfig = IDSS_GROUPS[gradeKey];
+    if (gradeConfig) {
+      form.setValue("studentCount", String(gradeConfig.defaultStudentCount), { shouldValidate: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradeLevel]);
 
   const addDestination = () => {
     const trimmed = newDestination.trim();
@@ -218,7 +221,8 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <ul className="list-disc list-inside space-y-1">
+            <div className="font-semibold mb-1">Provjerite sljedeće prije generiranja plana:</div>
+            <ul className="list-disc list-inside space-y-1 text-sm">
               {validationInfo.warnings.map((warning, idx) => (
                 <li key={idx}>{warning}</li>
               ))}
@@ -423,19 +427,28 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
               <FormLabel>Broj učenika *</FormLabel>
               <FormControl>
                 <Input 
-                  type="number" 
+                  type="number"
+                  inputMode="numeric"
                   min={1}
                   max={500}
-                  placeholder="14" 
+                  placeholder="npr. 22"
                   value={field.value ?? ""}
-                  onChange={(e) => field.onChange(e.target.value)}
+                  onChange={(e) => {
+                    // Dozvoli prazan unos i čisto numeričke vrijednosti, bez agresivne validacije dok korisnik tipka.
+                    const v = e.target.value;
+                    if (v === "" || /^\d+$/.test(v)) {
+                      field.onChange(v);
+                    }
+                  }}
                   onBlur={field.onBlur}
                   name={field.name}
                   ref={field.ref}
                 />
               </FormControl>
               <FormDescription>
-                Min. pratitelja: {validationInfo.minChaperones}
+                {studentCount && parseInt(studentCount, 10) > 0
+                  ? `Min. pratitelja za ${studentCount} učenika: ${validationInfo.minChaperones}`
+                  : "Unesite broj učenika između 1 i 500"}
               </FormDescription>
               <FormMessage />
             </FormItem>

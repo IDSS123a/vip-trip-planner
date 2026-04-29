@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { ShieldCheck, AlertTriangle, Info, RefreshCw } from "lucide-react";
 import {
   getGradePlan,
@@ -17,6 +19,10 @@ interface Props {
   destinations: string[];
   previousYearDestination: string;
   onPreviousYearChange: (value: string) => void;
+  rotationOverride?: boolean;
+  onRotationOverrideChange?: (value: boolean) => void;
+  rotationOverrideReason?: string;
+  onRotationOverrideReasonChange?: (value: string) => void;
 }
 
 /**
@@ -28,6 +34,10 @@ export const IdssComplianceBanner = ({
   destinations,
   previousYearDestination,
   onPreviousYearChange,
+  rotationOverride = false,
+  onRotationOverrideChange,
+  rotationOverrideReason = "",
+  onRotationOverrideReasonChange,
 }: Props) => {
   const [autoHistory, setAutoHistory] = useState<string[]>([]);
   const plan = getGradePlan(gradeLevel);
@@ -138,7 +148,33 @@ export const IdssComplianceBanner = ({
           {rotation.violates && (
             <Alert variant="default" className="border-destructive/40 bg-destructive/5 mt-2">
               <AlertTriangle className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-xs">{rotation.message}</AlertDescription>
+              <AlertDescription className="text-xs space-y-3">
+                <div>{rotation.message}</div>
+                {onRotationOverrideChange && (
+                  <div className="space-y-2 pt-2 border-t border-destructive/20">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="rotation-override"
+                        checked={rotationOverride}
+                        onCheckedChange={(c) => onRotationOverrideChange(Boolean(c))}
+                        className="mt-0.5"
+                      />
+                      <Label htmlFor="rotation-override" className="text-xs leading-snug cursor-pointer">
+                        Razumijem prekršaj rotacije i nastavljam uz pisano obrazloženje (loguje se u <code>trip_history.notes</code>)
+                      </Label>
+                    </div>
+                    {rotationOverride && (
+                      <Textarea
+                        value={rotationOverrideReason}
+                        onChange={(e) => onRotationOverrideReasonChange?.(e.target.value)}
+                        placeholder="Obrazloženje (npr. odluka Školskog odbora br. 12/2026, alternativa otkazana zbog vremenskih uslova...)"
+                        className="text-xs min-h-[60px]"
+                        maxLength={500}
+                      />
+                    )}
+                  </div>
+                )}
+              </AlertDescription>
             </Alert>
           )}
         </div>
