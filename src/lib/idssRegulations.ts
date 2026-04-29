@@ -165,6 +165,35 @@ export const IDSS_GRADE_PLANS: Record<string, GradePlan> = {
     categoryLabel: "Međunarodna",
     groupingNote: "Samostalna grupa. Inostranstvo (Pravilnik), Uputstvo navodi München.",
   },
+  // Spojene grupe — eksplicitne opcije po Pravilniku Član 2 / Uputstvo 3A
+  "5+6": {
+    gradeId: "5+6",
+    gradeLabel: "5. + 6. razred (spojena grupa)",
+    groupKey: "5+6",
+    groupLabel: "5. + 6. razred (spojena grupa)",
+    destinations: ["Mostar", "Blagaj", "Trebinje"],
+    primaryDestination: "Mostar",
+    rotationDestinations: ["Blagaj", "Trebinje"],
+    nights: 2,
+    days: 3,
+    category: "domesticMultiDay",
+    categoryLabel: "Lokalna / regionalna",
+    groupingNote: "Spojena grupa 5. i 6. razreda. Obavezna 2-godišnja rotacija (Mostar ↔ Blagaj/Trebinje).",
+  },
+  "7+8": {
+    gradeId: "7+8",
+    gradeLabel: "7. + 8. razred (spojena grupa)",
+    groupKey: "7+8",
+    groupLabel: "7. + 8. razred (spojena grupa)",
+    destinations: ["Zagreb", "Dubrovnik"],
+    primaryDestination: "Zagreb",
+    rotationDestinations: ["Dubrovnik"],
+    nights: 4,
+    days: 5,
+    category: "international",
+    categoryLabel: "Međunarodna",
+    groupingNote: "Spojena grupa 7. i 8. razreda. Obavezna 2-godišnja rotacija (Zagreb ↔ Dubrovnik).",
+  },
 };
 
 export const getGradePlan = (gradeLevel?: string): GradePlan | null => {

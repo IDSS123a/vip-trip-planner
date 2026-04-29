@@ -8,6 +8,7 @@ const corsHeaders = {
 interface TripRequest {
   departureCity: string;
   destinations: string[];
+  departureAddress?: string;
   tripType: string;
   gradeLevel: string;
   studentCount: number;
@@ -344,6 +345,7 @@ async function generateSinglePlan(
   const mealType = tier === 'Budget' ? 'pristupačni restorani, fast food, pekare' : tier === 'Balanced' ? 'srednja klasa restorani, lokalna kuhinja' : 'vrhunski restorani, fine dining';
 
   const numberedRoute = tripData.destinations.map((d, i) => `${i + 1}. ${d}`).join(', ');
+  const meetingAddress = tripData.departureAddress?.trim() || "IDSS, Buka 13, 71 000 Sarajevo";
 
   const systemPrompt = `Ti si profesionalni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS). Generišeš JEDAN ultra-detaljan ${tier} plan puta U SKLADU SA IDSS PRAVILNIKOM I UPUTSTVOM O ORGANIZACIJI EKSKURZIJA (09.03.2026).
 
@@ -352,6 +354,11 @@ Korisnik je EKSPLICITNO odredio redoslijed posjete destinacija. MORAŠ ga STROGO
 ${numberedRoute}
 Grupa PRVO ide na destinaciju br. 1, PA ONDA na br. 2, itd. Na povratku se vraća u polazište.
 NE SMIJEŠ mijenjati ovaj redoslijed ni pod kojim uvjetima!
+
+KRITIČNO — TAČKA OKUPLJANJA:
+Polazak grupe je TAČNO sa ove adrese (NE IZMIŠLJAJ drugu adresu, NE koristi "Džemala Bijedića" niti bilo koju drugu adresu):
+"${meetingAddress}"
+U prvoj aktivnosti dana 1 MORAŠ koristiti TAČNO ovu adresu kao mjesto okupljanja.
 
 IDSS PRAVILNIK — OBAVEZNI STANDARDI (Uputstvo 5.1, 5.2, Pravilnik Član 15):
 - DNEVNI RASPORED za višednevne ekskurzije MORA pratiti ovaj okvir:
@@ -619,8 +626,8 @@ serve(async (req) => {
           ? plan.accommodation_name + (plan.accommodation_address ? ", " + plan.accommodation_address : "") + (plan.accommodation_phone ? ", Tel: " + plan.accommodation_phone : "")
           : undefined,
         meeting_point: {
-          name: "Internationale Deutsche Schule Sarajevo",
-          address: "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
+          name: tripData.departureAddress ? "Tačka okupljanja" : "Internationale Deutsche Schule Sarajevo",
+          address: tripData.departureAddress?.trim() || "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
           lat: 43.8612, lng: 18.4028,
           time: "07:00"
         },

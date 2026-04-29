@@ -84,6 +84,7 @@ const PlanTrip = () => {
       const { data: responseData, error: functionError } = await supabase.functions.invoke('generate-trip-plans', {
         body: {
           departureCity: data.departureCity,
+          departureAddress: data.departureAddress,
           destinations: data.destinations,
           tripType: data.tripType,
           gradeLevel: data.gradeLevel,
