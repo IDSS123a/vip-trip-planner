@@ -417,7 +417,11 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                   min={1}
                   max={500}
                   placeholder="14" 
-                  {...field} 
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
                 />
               </FormControl>
               <FormDescription>
