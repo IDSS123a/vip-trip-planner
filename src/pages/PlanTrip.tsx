@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -41,6 +42,7 @@ const PlanTrip = () => {
   const [previousYearDestination, setPreviousYearDestination] = useState("");
   const [rotationOverride, setRotationOverride] = useState(false);
   const [rotationOverrideReason, setRotationOverrideReason] = useState("");
+  const location = useLocation();
   
   const { toast } = useToast();
   const { saveTrip, updateTrip, makePublic, isSaving } = useTripStorage();
@@ -75,6 +77,15 @@ const PlanTrip = () => {
   const watchedValues = form.watch();
   const destinations = watchedValues.destinations || [];
   const chaperones = watchedValues.chaperones || [];
+
+  // Pre-popuni razred ako je korisnik došao iz kataloga (/destinations)
+  useEffect(() => {
+    const preset = (location.state as { presetGradeLevel?: string } | null)?.presetGradeLevel;
+    if (preset && !form.getValues("gradeLevel")) {
+      form.setValue("gradeLevel", preset);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const onSubmit = async (data: ValidatedTripFormData) => {
     // Rotation guard: ako je rotacija prekršena a override nije potvrđen, blokiraj.
