@@ -8,6 +8,7 @@ const corsHeaders = {
 interface TripRequest {
   departureCity: string;
   destinations: string[];
+  departureAddress?: string;
   tripType: string;
   gradeLevel: string;
   studentCount: number;
