@@ -20,6 +20,9 @@ import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2 } fr
 import { supabase } from "@/integrations/supabase/client";
 import { tripValidationSchema, type ValidatedTripFormData } from "@/lib/tripValidation";
 import type { Student } from "@/components/trip/StudentListInput";
+import { getGradePlan, violatesRotation } from "@/lib/idssRegulations";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 
 interface TripPlansData {
   plans: any[];
@@ -38,6 +41,8 @@ const PlanTrip = () => {
   const [selectedPlanIndex, setSelectedPlanIndex] = useState(0);
   const [students, setStudents] = useState<Student[]>([]);
   const [previousYearDestination, setPreviousYearDestination] = useState("");
+  const [rotationOverride, setRotationOverride] = useState(false);
+  const [rotationOverrideReason, setRotationOverrideReason] = useState("");
   
   const { toast } = useToast();
   const { saveTrip, updateTrip, makePublic, isSaving } = useTripStorage();
@@ -74,6 +79,22 @@ const PlanTrip = () => {
   const chaperones = watchedValues.chaperones || [];
 
   const onSubmit = async (data: ValidatedTripFormData) => {
+    // Rotation guard: ako je rotacija prekršena a override nije potvrđen, blokiraj.
+    const plan = getGradePlan(data.gradeLevel);
+    if (plan && plan.rotationDestinations.length > 0 && previousYearDestination) {
+      const rot = violatesRotation(data.gradeLevel, data.destinations, [previousYearDestination]);
+      if (rot.violates && (!rotationOverride || rotationOverrideReason.trim().length < 10)) {
+        toast({
+          variant: "destructive",
+          title: "Pravilo rotacije prekršeno",
+          description: rotationOverride
+            ? "Unesite obrazloženje override-a (najmanje 10 karaktera)."
+            : rot.message,
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
     setError(null);
     setActiveTab("itinerary");
@@ -142,6 +163,19 @@ const PlanTrip = () => {
       return;
     }
 
+    // Consent gate: ako su učenici uneseni, sve saglasnosti moraju biti predate prije finalizacije.
+    if (students.length > 0) {
+      const pending = students.filter(s => s.consentStatus !== "submitted");
+      if (pending.length > 0) {
+        toast({
+          variant: "destructive",
+          title: `Nedostaje ${pending.length} ${pending.length === 1 ? "saglasnost" : "saglasnosti"} roditelja`,
+          description: `Nije moguće finalizovati plan dok svi učenici nemaju status "Saglasnost predata". Označite saglasnosti u sekciji "Lista Učenika".`,
+        });
+        return;
+      }
+    }
+
     const data = form.getValues();
     const tripName = data.tripName || `${data.departureCity} → ${data.destinations.join(" → ")}`;
 
@@ -183,6 +217,31 @@ const PlanTrip = () => {
       if (savedTrip) {
         setSavedTripId(savedTrip.id);
         setShareId(savedTrip.shareId);
+
+        // Loguj realizaciju u trip_history (za buduću rotaciju)
+        try {
+          const planRef = getGradePlan(data.gradeLevel);
+          if (planRef) {
+            const today = new Date();
+            const sy = today.getMonth() >= 7 // August onwards = nova školska godina
+              ? `${today.getFullYear()}/${today.getFullYear() + 1}`
+              : `${today.getFullYear() - 1}/${today.getFullYear()}`;
+            const noteParts: string[] = [];
+            if (rotationOverride && rotationOverrideReason.trim()) {
+              noteParts.push(`OVERRIDE rotacije: ${rotationOverrideReason.trim()}`);
+            }
+            await supabase.from("trip_history").insert({
+              grade_group: planRef.groupKey,
+              school_year: sy,
+              destination: data.destinations[0] ?? "",
+              trip_id: savedTrip.id,
+              realized_at: data.tripDate ? format(data.tripDate, "yyyy-MM-dd") : null,
+              notes: noteParts.join(" | ") || null,
+            });
+          }
+        } catch (e) {
+          console.warn("Could not log trip_history:", e);
+        }
       }
     }
   };
