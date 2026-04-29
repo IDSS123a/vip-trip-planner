@@ -110,10 +110,16 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
   // Update student count when grade changes
   useEffect(() => {
     if (gradeLevel) {
-      const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
-      const gradeConfig = IDSS_GROUPS[gradeKey];
-      if (gradeConfig && !studentCount) {
-        form.setValue("studentCount", String(gradeConfig.defaultStudentCount));
+      // Spojene grupe: 5+6 ≈ 44, 7+8 ≈ 48 (sumirano iz IDSS_GROUPS)
+      const combined: Record<string, number> = { "5+6": 44, "7+8": 48 };
+      if (combined[gradeLevel]) {
+        if (!studentCount) form.setValue("studentCount", String(combined[gradeLevel]));
+      } else {
+        const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
+        const gradeConfig = IDSS_GROUPS[gradeKey];
+        if (gradeConfig && !studentCount) {
+          form.setValue("studentCount", String(gradeConfig.defaultStudentCount));
+        }
       }
     }
   }, [gradeLevel, form, studentCount]);
