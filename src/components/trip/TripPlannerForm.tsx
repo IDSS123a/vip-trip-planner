@@ -221,13 +221,15 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <ul className="list-disc list-inside space-y-1">
+            <div className="font-semibold mb-1">Provjerite sljedeće prije generiranja plana:</div>
+            <ul className="list-disc list-inside space-y-1 text-sm">
               {validationInfo.warnings.map((warning, idx) => (
                 <li key={idx}>{warning}</li>
               ))}
             </ul>
           </AlertDescription>
         </Alert>
+      )}
       )}
 
       {/* Trip Name (Optional) */}
