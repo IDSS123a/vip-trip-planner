@@ -230,7 +230,6 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
           </AlertDescription>
         </Alert>
       )}
-      )}
 
       {/* Trip Name (Optional) */}
       <FormField
