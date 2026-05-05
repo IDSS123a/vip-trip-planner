@@ -9,7 +9,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescripti
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarIcon, Plus, X, AlertTriangle, Info, Users, ArrowUp, ArrowDown } from "lucide-react";
+import { CalendarIcon, Plus, X, AlertTriangle, Info, Users, MapPin, Hotel } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo } from "react";
 import { 
@@ -149,14 +149,8 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     form.trigger("destinations");
   };
 
-  const moveDestination = (index: number, direction: 'up' | 'down') => {
-    const current = [...(form.getValues("destinations") || [])];
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= current.length) return;
-    [current[index], current[newIndex]] = [current[newIndex], current[index]];
-    form.setValue("destinations", current);
-    form.trigger("destinations");
-  };
+  // Redoslijed destinacija je zaključan: zadnja unesena destinacija = konačna (s noćenjima).
+  // Ako korisnik želi drugačiji redoslijed, mora ukloniti destinaciju i ponovo je dodati na pravom mjestu.
 
   const addChaperone = () => {
     const trimmed = newChaperone.trim();
@@ -303,45 +297,52 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-2 min-h-[32px]">
-                  {destinations.map((dest, index) => (
-                    <Badge key={index} variant="secondary" className="gap-1 pr-1 items-center">
-                      <span className="text-xs text-muted-foreground mr-1">{index + 1}.</span>
-                      {dest}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0 hover:bg-transparent"
-                        onClick={() => moveDestination(index, 'up')}
-                        disabled={index === 0}
+                <div className="flex flex-col gap-2 min-h-[32px]">
+                  {destinations.map((dest, index) => {
+                    const isFinal = index === destinations.length - 1;
+                    return (
+                      <Badge
+                        key={index}
+                        variant={isFinal ? "default" : "secondary"}
+                        className={cn(
+                          "gap-2 pr-1 items-center justify-between w-full py-2 px-3",
+                          isFinal && "ring-2 ring-primary/40"
+                        )}
                       >
-                        <ArrowUp className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0 hover:bg-transparent"
-                        onClick={() => moveDestination(index, 'down')}
-                        disabled={index === destinations.length - 1}
-                      >
-                        <ArrowDown className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-4 w-4 p-0 hover:bg-transparent"
-                        onClick={() => removeDestination(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
+                        <span className="flex items-center gap-2 text-left">
+                          {isFinal ? (
+                            <Hotel className="h-3.5 w-3.5" aria-label="Konačna destinacija" />
+                          ) : (
+                            <MapPin className="h-3.5 w-3.5" aria-label="Međustanica" />
+                          )}
+                          <span className="text-xs opacity-70">{index + 1}.</span>
+                          <span className="font-medium">{dest}</span>
+                          {isFinal ? (
+                            <span className="text-[10px] uppercase tracking-wide opacity-90 ml-1">
+                              Konačna · noćenja
+                            </span>
+                          ) : (
+                            <span className="text-[10px] uppercase tracking-wide opacity-70 ml-1">
+                              Međustanica · bez noćenja
+                            </span>
+                          )}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 p-0 hover:bg-transparent"
+                          onClick={() => removeDestination(index)}
+                          aria-label={`Ukloni ${dest}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    );
+                  })}
                 </div>
                 <FormDescription>
-                  Dodajte destinacije u redoslijedu posjete — koristite strelice za promjenu redoslijeda (maks. 10)
+                  Dodajte destinacije TAČNO redoslijedom posjete. <strong>Zadnja unesena destinacija</strong> automatski postaje konačna (sva noćenja se planiraju tu). Redoslijed je zaključan — za izmjenu uklonite i ponovo dodajte. (maks. 10)
                 </FormDescription>
               </div>
               <FormMessage />
