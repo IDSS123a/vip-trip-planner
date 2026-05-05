@@ -540,6 +540,74 @@ function normalizeActivityType(type: string): string {
 }
 
 // =====================================================================
+// PLAN VALIDATION — ensure overnights are ONLY in the final destination
+// =====================================================================
+
+function normalizeName(s: string): string {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export interface PlanValidationResult {
+  ok: boolean;
+  violations: string[];
+  overnightStops: string[];
+  expectedFinal: string;
+}
+
+export function validatePlanOvernights(
+  plan: any,
+  finalDestination: string,
+  intermediateStops: string[],
+  tripNights: number
+): PlanValidationResult {
+  const violations: string[] = [];
+  const overnightStops: string[] = [];
+  const finalKey = normalizeName(finalDestination);
+  const intermediateKeys = intermediateStops.map(normalizeName);
+
+  const accomCity = normalizeName(
+    [plan?.accommodation_name, plan?.accommodation_address].filter(Boolean).join(" ")
+  );
+  if (tripNights > 0 && accomCity && intermediateKeys.some(k => k && accomCity.includes(k)) && !accomCity.includes(finalKey)) {
+    violations.push(`Smještaj naveden u međustanici (accommodation_address ne sadrži konačnu destinaciju '${finalDestination}').`);
+  }
+
+  for (const day of plan?.itinerary || []) {
+    for (const a of day?.activities || []) {
+      const t = String(a?.type || "").toLowerCase();
+      const desc = normalizeName(`${a?.description || ""} ${a?.location || ""} ${a?.notes || ""}`);
+      const looksLikeStay = t === "accommodation" || /\b(check in|checkin|nocenje|spavanje|hotel|hostel|smjestaj)\b/.test(desc);
+      if (!looksLikeStay) continue;
+      // Determine which city this stay is in
+      const matchedIntermediate = intermediateStops.find((c, i) => intermediateKeys[i] && desc.includes(intermediateKeys[i]));
+      const matchesFinal = finalKey && desc.includes(finalKey);
+      if (matchedIntermediate && !matchesFinal) {
+        overnightStops.push(matchedIntermediate);
+        violations.push(`Dan ${day?.day}: noćenje/smještaj planirano u međustanici '${matchedIntermediate}' (samo '${finalDestination}' smije imati noćenja).`);
+      }
+    }
+  }
+
+  if (tripNights === 0) {
+    // Jednodnevni izlet — ne smije biti accommodation aktivnosti uopšte
+    for (const day of plan?.itinerary || []) {
+      for (const a of day?.activities || []) {
+        if (String(a?.type || "").toLowerCase() === "accommodation") {
+          violations.push(`Dan ${day?.day}: jednodnevni izlet (0 noći) ne smije imati 'accommodation' aktivnosti.`);
+        }
+      }
+    }
+  }
+
+  return { ok: violations.length === 0, violations, overnightStops, expectedFinal: finalDestination };
+}
+
+// =====================================================================
 // MAIN SERVER
 // =====================================================================
 
@@ -616,8 +684,33 @@ serve(async (req) => {
 
     console.log(`${successfulPlans.length}/3 plans generated successfully`);
 
+    // Step 3b: Validate that overnights only happen in the final destination
+    const finalDestination = tripData.destinations[tripData.destinations.length - 1];
+    const intermediateStops = tripData.destinations.slice(0, -1);
+    const tripNights = Math.max(tripDays - 1, 0);
+    const validatedPlans: any[] = [];
+    const validationReports: Array<{ tier: string; violations: string[] }> = [];
+    for (const p of successfulPlans) {
+      const v = validatePlanOvernights(p, finalDestination, intermediateStops, tripNights);
+      validationReports.push({ tier: p?.type || "?", violations: v.violations });
+      if (v.ok) {
+        validatedPlans.push(p);
+      } else {
+        console.warn(`Plan ${p?.type} odbačen — kršenje pravila noćenja:`, v.violations);
+      }
+    }
+
+    if (validatedPlans.length === 0) {
+      return new Response(JSON.stringify({
+        error: "AI je generisao plan koji krši pravilo: sva noćenja MORAJU biti u konačnoj destinaciji. Pokušajte ponovo.",
+        validation_report: validationReports,
+      }), {
+        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Step 4: Enrich plans
-    const enrichedPlans = successfulPlans.map((plan: any, idx: number) => {
+    const enrichedPlans = validatedPlans.map((plan: any, idx: number) => {
       const tierType = plan.type || tiers[idx] || 'Balanced';
       const costs = calculateCosts(tripData, routeInfo, tripDays, tierType as 'Budget' | 'Balanced' | 'Premium');
 
