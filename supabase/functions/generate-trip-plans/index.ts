@@ -346,6 +346,9 @@ async function generateSinglePlan(
 
   const numberedRoute = tripData.destinations.map((d, i) => `${i + 1}. ${d}`).join(', ');
   const meetingAddress = tripData.departureAddress?.trim() || "IDSS, Buka 13, 71 000 Sarajevo";
+  const finalDestination = tripData.destinations[tripData.destinations.length - 1];
+  const intermediateStops = tripData.destinations.slice(0, -1);
+  const tripNights = Math.max(tripDays - 1, 0);
 
   const systemPrompt = `Ti si profesionalni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS). Generišeš JEDAN ultra-detaljan ${tier} plan puta U SKLADU SA IDSS PRAVILNIKOM I UPUTSTVOM O ORGANIZACIJI EKSKURZIJA (09.03.2026).
 
@@ -354,6 +357,13 @@ Korisnik je EKSPLICITNO odredio redoslijed posjete destinacija. MORAŠ ga STROGO
 ${numberedRoute}
 Grupa PRVO ide na destinaciju br. 1, PA ONDA na br. 2, itd. Na povratku se vraća u polazište.
 NE SMIJEŠ mijenjati ovaj redoslijed ni pod kojim uvjetima!
+
+KRITIČNO — RASPODJELA ZADRŽAVANJA I NOĆENJA:
+- KONAČNA (zadnja) destinacija "${finalDestination}" je GLAVNA destinacija ekskurzije. Tu grupa provodi NAJVIŠE vremena i SVA noćenja (ukupno ${tripNights} ${tripNights === 1 ? 'noć' : 'noći'}).
+- SVE ostale destinacije na ruti (${intermediateStops.length > 0 ? intermediateStops.join(', ') : 'nema međustanica'}) su MEĐUSTANICE BEZ NOĆENJA. Tu se grupa zadržava KRATKO (1–3 sata): ručak, kratko razgledanje, fotografska pauza ili obilazak jedne ključne znamenitosti — i nastavlja put.
+- Smještaj (hotel/hostel) se rezerviše ISKLJUČIVO u "${finalDestination}". Nikada ne planiraj noćenje u međustanicama.
+- Na povratku u "${tripData.departureCity}" dozvoljena je samo kratka pauza za obrok ili odmor, bez noćenja.
+- Ako je putovanje jednodnevno (0 noći), sve destinacije su kratke posjete bez smještaja.
 
 KRITIČNO — TAČKA OKUPLJANJA:
 Polazak grupe je TAČNO sa ove adrese (NE IZMIŠLJAJ drugu adresu, NE koristi "Džemala Bijedića" niti bilo koju drugu adresu):
