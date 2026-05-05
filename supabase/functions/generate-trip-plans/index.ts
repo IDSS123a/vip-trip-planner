@@ -268,7 +268,8 @@ function calculateCosts(
   const studentCount = tripData.studentCount || 14;
   const chaperoneCount = Math.max(tripData.chaperones?.length || 0, Math.ceil(studentCount / 15));
   const totalPersons = studentCount + chaperoneCount;
-  const nights = Math.max(tripDays - 1, 1);
+  // Tačan broj noći: jednodnevni izlet (tripDays = 1) → 0 noći, bez troškova smještaja.
+  const nights = Math.max(tripDays - 1, 0);
   const totalKm = routeInfo.distance_km + tripDays * 30;
 
   let transportCost: number, transportDetail: string;
@@ -283,18 +284,22 @@ function calculateCosts(
   }
 
   const accomRate = tierType === 'Budget' ? 28 : tierType === 'Balanced' ? 48 : 85;
-  const accommodationCost = Math.round(accomRate * totalPersons * nights);
+  const accommodationCost = nights > 0 ? Math.round(accomRate * totalPersons * nights) : 0;
   const accomLabel = tierType === 'Budget' ? 'hostel/2*' : tierType === 'Balanced' ? '3* hotel' : '4-5* hotel';
-  const accommodationDetail = nights + " noći × " + accomRate + " EUR/os (" + accomLabel + ")";
+  const accommodationDetail = nights > 0
+    ? nights + " noći × " + accomRate + " EUR/os (" + accomLabel + ")"
+    : "Jednodnevni izlet — bez smještaja";
 
   const mealRate = tierType === 'Budget' ? 25 : tierType === 'Balanced' ? 40 : 65;
   const mealsCost = Math.round(mealRate * totalPersons * tripDays);
   const mealsDetail = tripDays + " dana × " + mealRate + " EUR/os/dan";
 
+  // Aktivnosti i ulaznice: postoje i kod jednodnevnih izleta (min 1 dan aktivnosti).
+  const activeDays = Math.max(tripDays, 1);
   const entryRate = tierType === 'Budget' ? 7 : tierType === 'Balanced' ? 15 : 28;
-  const entryFees = Math.round(entryRate * totalPersons * Math.max(tripDays - 1, 1));
+  const entryFees = Math.round(entryRate * totalPersons * activeDays);
   const activityRate = tierType === 'Budget' ? 3 : tierType === 'Balanced' ? 10 : 22;
-  const activityFees = Math.round(activityRate * totalPersons * Math.max(tripDays - 1, 1));
+  const activityFees = Math.round(activityRate * totalPersons * activeDays);
   const localTransportRate = tierType === 'Budget' ? 5 : tierType === 'Balanced' ? 8 : 15;
   const localTransport = Math.round(localTransportRate * totalPersons * tripDays);
 
