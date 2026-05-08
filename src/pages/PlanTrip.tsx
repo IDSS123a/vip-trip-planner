@@ -611,6 +611,34 @@ const PlanTrip = () => {
                 </Button>
               </div>
             </TabsContent>
+
+            {/* Timeline Tab */}
+            <TabsContent value="timeline" className="space-y-6">
+              <DailyTimeline
+                itinerary={plansData?.plans?.[selectedPlanIndex]?.itinerary}
+                onChange={(newItinerary) => {
+                  if (!plansData) return;
+                  const plans = [...plansData.plans];
+                  plans[selectedPlanIndex] = { ...plans[selectedPlanIndex], itinerary: newItinerary };
+                  setPlansData({ ...plansData, plans });
+                }}
+              />
+            </TabsContent>
+
+            {/* Budget Tab */}
+            <TabsContent value="budget" className="space-y-6">
+              <BudgetTracker
+                costs={plansData?.plans?.[selectedPlanIndex]?.costs}
+                costPerStudent={plansData?.plans?.[selectedPlanIndex]?.cost_per_student}
+                studentCount={parseInt(watchedValues.studentCount) || undefined}
+                budgetPerStudent={watchedValues.budgetPerStudent ? parseInt(watchedValues.budgetPerStudent) : undefined}
+              />
+            </TabsContent>
+
+            {/* Checklist Tab */}
+            <TabsContent value="checklist" className="space-y-6">
+              <ChecklistTemplates storageKey={savedTripId ? `idss-checklist-${savedTripId}` : "idss-checklist-default"} />
+            </TabsContent>
           </Tabs>
         </div>
       </main>
