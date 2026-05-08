@@ -1,43 +1,24 @@
 import { MapPin, ClipboardList, Users, PartyPopper } from "lucide-react";
-
-const steps = [
-  {
-    number: "01",
-    icon: MapPin,
-    title: "Odaberite Destinaciju",
-    description: "Pregledajte preporučene obrazovne lokacije prema IDSS Pravilniku ili dodajte vlastitu sa svim potrebnim detaljima.",
-  },
-  {
-    number: "02",
-    icon: ClipboardList,
-    title: "Isplanirajte Detalje",
-    description: "Postavite datume, kreirajte itinerere, organizirajte prijevoz i budžet — sve na jednom mjestu.",
-  },
-  {
-    number: "03",
-    icon: Users,
-    title: "Prikupite Saglasnosti",
-    description: "Generišite saglasnosti roditelja prema Prilogu 1 IDSS Pravilnika i sigurno upravljajte medicinskim podacima.",
-  },
-  {
-    number: "04",
-    icon: PartyPopper,
-    title: "Uživajte u Ekskurziji",
-    description: "Koristite mobilne alate za prebrojavanje učenika, hitne kontakte i ažuriranja u realnom vremenu.",
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const HowItWorksSection = () => {
+  const { t } = useTranslation();
+  const steps = [
+    { number: "01", icon: MapPin, title: t("home.step1Title"), description: t("home.step1Desc") },
+    { number: "02", icon: ClipboardList, title: t("home.step2Title"), description: t("home.step2Desc") },
+    { number: "03", icon: Users, title: t("home.step3Title"), description: t("home.step3Desc") },
+    { number: "04", icon: PartyPopper, title: t("home.step4Title"), description: t("home.step4Desc") },
+  ];
   return (
     <section className="py-20 bg-background">
       <div className="container">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Kako <span className="text-primary">Funkcioniše</span>
+            {t("home.howItWorks")}
           </h2>
           <p className="text-lg text-muted-foreground">
-            Četiri jednostavna koraka za besprijekorno planiranje IDSS ekskurzija.
+            {t("home.howItWorksSubtitle")}
           </p>
         </div>
 

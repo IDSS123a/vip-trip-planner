@@ -15,13 +15,17 @@ import TripRouteMap from "@/components/trip/TripRouteMap";
 import TripItinerary from "@/components/trip/TripItinerary";
 import ShareTripDialog from "@/components/trip/ShareTripDialog";
 import IdssComplianceBanner from "@/components/trip/IdssComplianceBanner";
+import DailyTimeline from "@/components/trip/DailyTimeline";
+import BudgetTracker from "@/components/trip/BudgetTracker";
+import ChecklistTemplates from "@/components/trip/ChecklistTemplates";
 import { useTripStorage } from "@/hooks/useTripStorage";
 import { usePdfExport } from "@/hooks/usePdfExport";
-import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2 } from "lucide-react";
+import { MapPin, FileText, Route, Sparkles, Download, Printer, Save, Share2, Clock, DollarSign, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { tripValidationSchema, type ValidatedTripFormData } from "@/lib/tripValidation";
 import type { Student } from "@/components/trip/StudentListInput";
 import { getGradePlan, violatesRotation } from "@/lib/idssRegulations";
+import { useTranslation } from "react-i18next";
 
 interface TripPlansData {
   plans: any[];
@@ -30,6 +34,7 @@ interface TripPlansData {
 }
 
 const PlanTrip = () => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState("form");
   const [plansData, setPlansData] = useState<TripPlansData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,6 +132,7 @@ const PlanTrip = () => {
           educationalFocus: data.educationalFocus || "",
           specialNeeds: data.specialNeeds || "",
           previousYearDestination: previousYearDestination || undefined,
+          language: (i18n.language || "bs").startsWith("en") ? "en" : "bs",
         }
       });
 
@@ -309,27 +315,39 @@ const PlanTrip = () => {
                 <Route className="h-6 w-6 text-primary" />
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                IDSS — Planer Ekskurzija
+                {t("planTrip.pageTitle")}
               </h1>
             </div>
             <p className="text-muted-foreground">
-              Generira 3 verificirana plana i kompletne procjene troškova za više zemalja.
+              {t("planTrip.pageSubtitle")}
             </p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-6 max-w-3xl">
               <TabsTrigger value="form" className="gap-2">
                 <FileText className="h-4 w-4" />
-                Formular
+                <span className="hidden sm:inline">{t("planTrip.tabForm")}</span>
               </TabsTrigger>
               <TabsTrigger value="map" className="gap-2">
                 <MapPin className="h-4 w-4" />
-                Karta
+                <span className="hidden sm:inline">{t("planTrip.tabMap")}</span>
               </TabsTrigger>
               <TabsTrigger value="itinerary" className="gap-2">
                 <Route className="h-4 w-4" />
-                Plan Puta
+                <span className="hidden sm:inline">{t("planTrip.tabItinerary")}</span>
+              </TabsTrigger>
+              <TabsTrigger value="timeline" className="gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("planTrip.tabTimeline")}</span>
+              </TabsTrigger>
+              <TabsTrigger value="budget" className="gap-2">
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("planTrip.tabBudget")}</span>
+              </TabsTrigger>
+              <TabsTrigger value="checklist" className="gap-2">
+                <ClipboardList className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("planTrip.tabChecklist")}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -592,6 +610,34 @@ const PlanTrip = () => {
                   Prikaži Kartu
                 </Button>
               </div>
+            </TabsContent>
+
+            {/* Timeline Tab */}
+            <TabsContent value="timeline" className="space-y-6">
+              <DailyTimeline
+                itinerary={plansData?.plans?.[selectedPlanIndex]?.itinerary}
+                onChange={(newItinerary) => {
+                  if (!plansData) return;
+                  const plans = [...plansData.plans];
+                  plans[selectedPlanIndex] = { ...plans[selectedPlanIndex], itinerary: newItinerary };
+                  setPlansData({ ...plansData, plans });
+                }}
+              />
+            </TabsContent>
+
+            {/* Budget Tab */}
+            <TabsContent value="budget" className="space-y-6">
+              <BudgetTracker
+                costs={plansData?.plans?.[selectedPlanIndex]?.costs}
+                costPerStudent={plansData?.plans?.[selectedPlanIndex]?.cost_per_student}
+                studentCount={parseInt(watchedValues.studentCount) || undefined}
+                budgetPerStudent={watchedValues.budgetPerStudent ? parseInt(watchedValues.budgetPerStudent) : undefined}
+              />
+            </TabsContent>
+
+            {/* Checklist Tab */}
+            <TabsContent value="checklist" className="space-y-6">
+              <ChecklistTemplates storageKey={savedTripId ? `idss-checklist-${savedTripId}` : "idss-checklist-default"} />
             </TabsContent>
           </Tabs>
         </div>

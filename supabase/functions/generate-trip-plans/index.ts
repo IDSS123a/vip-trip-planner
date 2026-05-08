@@ -23,6 +23,7 @@ interface TripRequest {
   accommodationType?: string;
   medicalInfo?: string;
   previousYearDestination?: string;
+  language?: string;
 }
 
 interface POI {
@@ -354,6 +355,10 @@ async function generateSinglePlan(
   const finalDestination = tripData.destinations[tripData.destinations.length - 1];
   const intermediateStops = tripData.destinations.slice(0, -1);
   const tripNights = Math.max(tripDays - 1, 0);
+  const lang = (tripData.language || "bs").toLowerCase().startsWith("en") ? "en" : "bs";
+  const languageInstruction = lang === "en"
+    ? "\n\nIMPORTANT — OUTPUT LANGUAGE: All natural-language fields in the JSON (title, summary, description, why_this_fits, accommodation_*, location, notes) MUST be written in ENGLISH. Keep place names in their original local form (e.g. \"Sarajevo\", \"Wien\", \"Buka 13\"). All other rules above remain in force."
+    : "";
 
   const systemPrompt = `Ti si profesionalni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS). Generišeš JEDAN ultra-detaljan ${tier} plan puta U SKLADU SA IDSS PRAVILNIKOM I UPUTSTVOM O ORGANIZACIJI EKSKURZIJA (09.03.2026).
 
@@ -449,7 +454,7 @@ Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
       body: JSON.stringify({
         model: model,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: systemPrompt + languageInstruction },
           { role: "user", content: userPrompt }
         ],
         temperature: 0.3,

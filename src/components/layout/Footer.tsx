@@ -3,8 +3,10 @@ import { MapPin, Mail, Phone, Facebook, Twitter, Instagram, Linkedin } from "luc
 import { Separator } from "@/components/ui/separator";
 import idssLogo from "@/assets/idss-logo.png";
 import { IDSS_SCHOOL } from "@/lib/idssRegulations";
+import { useTranslation } from "react-i18next";
 
 const Footer = () => {
+  const { t } = useTranslation();
   return (
     <footer className="bg-card border-t border-border">
       <div className="container py-12">
@@ -16,25 +18,25 @@ const Footer = () => {
                 <img src={idssLogo} alt="IDSS Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-foreground">IDSS Ekskurzije</span>
-                <span className="text-xs text-muted-foreground">Planer Putovanja</span>
+                <span className="text-lg font-bold text-foreground">{t("brand.title")}</span>
+                <span className="text-xs text-muted-foreground">{t("brand.subtitle")}</span>
               </div>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Internationale Deutsche Schule Sarajevo - Planiranje nezaboravnih obrazovnih iskustava.
+              {t("brand.schoolName")} — {t("footer.tagline")}
             </p>
           </div>
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">Brzi Linkovi</h4>
+            <h4 className="text-sm font-semibold text-foreground">{t("footer.quickLinks")}</h4>
             <ul className="space-y-2">
               {[
-                { name: "Planiraj Ekskurziju", href: "/plan-trip" },
-                { name: "Moje Ekskurzije", href: "/my-trips" },
-                { name: "Destinacije", href: "/destinations" },
-                { name: "Sigurnosne Smjernice", href: "/safety-guidelines" },
-                { name: "FAQ", href: "/faq" },
+                { name: t("nav.planTrip"), href: "/plan-trip" },
+                { name: t("nav.myTrips"), href: "/my-trips" },
+                { name: t("nav.destinations"), href: "/destinations" },
+                { name: t("footer.safety"), href: "/safety-guidelines" },
+                { name: t("footer.faq"), href: "/faq" },
               ].map((item) => (
                 <li key={item.name}>
                   <Link
@@ -50,14 +52,14 @@ const Footer = () => {
 
           {/* Resources */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">Resursi</h4>
+            <h4 className="text-sm font-semibold text-foreground">{t("footer.resources")}</h4>
             <ul className="space-y-2">
               {[
-                { name: "Vodič za Nastavnike", href: "/teacher-guide" },
-                { name: "Portal za Roditelje", href: "/parent-portal" },
-                { name: "Hitni Postupci", href: "/emergency-procedures" },
-                { name: "Pristupačnost", href: "/accessibility" },
-                { name: "Politika Privatnosti", href: "/privacy-policy" },
+                { name: t("footer.teacherGuide"), href: "/teacher-guide" },
+                { name: t("footer.parentPortal"), href: "/parent-portal" },
+                { name: t("footer.emergency"), href: "/emergency-procedures" },
+                { name: t("footer.accessibility"), href: "/accessibility" },
+                { name: t("footer.privacy"), href: "/privacy-policy" },
               ].map((item) => (
                 <li key={item.name}>
                   <Link
@@ -73,7 +75,7 @@ const Footer = () => {
 
           {/* Contact */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-foreground">Kontakt</h4>
+            <h4 className="text-sm font-semibold text-foreground">{t("footer.contact")}</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 text-primary" />
@@ -103,7 +105,7 @@ const Footer = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground mb-6">
           <div>
-            <span className="font-semibold text-foreground">Direktor:</span> {IDSS_SCHOOL.director}
+            <span className="font-semibold text-foreground">{t("footer.director")}:</span> {IDSS_SCHOOL.director}
             <br />
             <span className="font-semibold text-foreground">ID broj:</span> {IDSS_SCHOOL.registration.idNumber}
             {" · "}
@@ -118,7 +120,7 @@ const Footer = () => {
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Internationale Deutsche Schule Sarajevo. Sva prava zadržana.
+            © {new Date().getFullYear()} {t("brand.schoolName")}. {t("footer.rights")}
           </p>
           <div className="flex items-center gap-4">
             {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
