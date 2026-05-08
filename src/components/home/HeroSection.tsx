@@ -2,15 +2,17 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, MapPin, Calendar, Users } from "lucide-react";
 import heroImage from "@/assets/hero-field-trip.jpg";
+import { useTranslation } from "react-i18next";
 
 const HeroSection = () => {
+  const { t } = useTranslation();
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
-          alt="Učenici na uzbudljivoj školskoj ekskurziji"
+          alt={t("home.heroTitle")}
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
@@ -24,33 +26,33 @@ const HeroSection = () => {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            <span className="text-sm font-medium text-primary">Internationale Deutsche Schule Sarajevo</span>
+            <span className="text-sm font-medium text-primary">{t("brand.schoolName")}</span>
           </div>
 
           {/* Main Heading */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground">
-            Planirajte Nezaboravne{" "}
-            <span className="text-primary">Ekskurzije</span>{" "}
-            s Lakoćom
+            {t("home.heroTitle")}
           </h1>
 
           {/* Description */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl">
-            Od otkrivanja destinacija do dozvola, upravljajte svakim aspektom vaših obrazovnih avantura na jednoj moćnoj platformi.
+            {t("home.heroSubtitle")}
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-wrap gap-4">
             <Link to="/plan-trip">
               <Button size="lg" className="group">
-                Počnite Planirati
+                {t("home.ctaPlan")}
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="gap-2">
-              <Play className="h-4 w-4" />
-              Pogledajte Demo
-            </Button>
+            <Link to="/destinations">
+              <Button size="lg" variant="outline" className="gap-2">
+                <Play className="h-4 w-4" />
+                {t("home.ctaExplore")}
+              </Button>
+            </Link>
           </div>
 
           {/* Stats */}
