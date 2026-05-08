@@ -23,6 +23,7 @@ interface TripRequest {
   accommodationType?: string;
   medicalInfo?: string;
   previousYearDestination?: string;
+  language?: string;
 }
 
 interface POI {
