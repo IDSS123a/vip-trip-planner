@@ -128,6 +128,12 @@ const bs = {
     contingency: "Rezerva (5%)",
     perCategory: "Troškovi po kategoriji",
     chartHint: "Vizuelni prikaz raspodjele budžeta po kategorijama.",
+    students: "učenika",
+    currency: "EUR",
+    budgetLimit: "Limit po učeniku",
+    overBudgetWarning: "Procjena premašuje zadati budžet po učeniku.",
+    withinBudget: "Procjena je unutar zadatog budžeta.",
+    noBudgetSet: "Nije postavljen budžet po učeniku.",
   },
   checklist: {
     title: "Kontrolne liste i šabloni",
@@ -169,6 +175,14 @@ const bs = {
     saveOrder: "Sačuvaj redoslijed",
     orderSaved: "Redoslijed sačuvan",
     dragHint: "Aktivnosti su preuređene lokalno — sačuvajte putovanje da biste perzistirali izmjene.",
+    dragHandle: "Premjesti aktivnost",
+    activityTypes: {
+      travel: "Putovanje",
+      meal: "Obrok",
+      activity: "Aktivnost",
+      accommodation: "Smještaj",
+      free_time: "Slobodno vrijeme",
+    },
   },
   auth: {
     welcomeBack: "Dobrodošli nazad",
