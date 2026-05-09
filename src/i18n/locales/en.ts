@@ -130,6 +130,12 @@ const en: Translations = {
     contingency: "Contingency (5%)",
     perCategory: "Costs by category",
     chartHint: "Visual breakdown of the budget across categories.",
+    students: "students",
+    currency: "EUR",
+    budgetLimit: "Limit per student",
+    overBudgetWarning: "The estimate exceeds the configured per-student budget.",
+    withinBudget: "The estimate is within the configured budget.",
+    noBudgetSet: "No per-student budget configured.",
   },
   checklist: {
     title: "Checklists & Templates",
@@ -171,6 +177,14 @@ const en: Translations = {
     saveOrder: "Save order",
     orderSaved: "Order saved",
     dragHint: "Activities are reordered locally — save the trip to persist changes.",
+    dragHandle: "Move activity",
+    activityTypes: {
+      travel: "Travel",
+      meal: "Meal",
+      activity: "Activity",
+      accommodation: "Accommodation",
+      free_time: "Free time",
+    },
   },
   auth: {
     welcomeBack: "Welcome back",

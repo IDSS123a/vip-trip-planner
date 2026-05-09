@@ -355,10 +355,7 @@ async function generateSinglePlan(
   const finalDestination = tripData.destinations[tripData.destinations.length - 1];
   const intermediateStops = tripData.destinations.slice(0, -1);
   const tripNights = Math.max(tripDays - 1, 0);
-  const lang = (tripData.language || "bs").toLowerCase().startsWith("en") ? "en" : "bs";
-  const languageInstruction = lang === "en"
-    ? "\n\nIMPORTANT — OUTPUT LANGUAGE: All natural-language fields in the JSON (title, summary, description, why_this_fits, accommodation_*, location, notes) MUST be written in ENGLISH. Keep place names in their original local form (e.g. \"Sarajevo\", \"Wien\", \"Buka 13\"). All other rules above remain in force."
-    : "";
+  const languageInstruction = buildLanguageInstruction(tripData.language);
 
   const systemPrompt = `Ti si profesionalni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS). Generišeš JEDAN ultra-detaljan ${tier} plan puta U SKLADU SA IDSS PRAVILNIKOM I UPUTSTVOM O ORGANIZACIJI EKSKURZIJA (09.03.2026).
 
@@ -438,8 +435,8 @@ ${poiContext}
 VAŽNO: Destinacije se posjećuju TAČNO ovim redoslijedom: ${tripData.destinations.join(', ')}. Ne mijenjaj redoslijed!
 Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
 
-  // Use faster model for Budget, standard for others
-  const model = tier === 'Budget' ? 'google/gemini-2.5-flash-lite' : 'google/gemini-2.5-flash';
+  // Use a single, broadly-enabled model to avoid "Unsupported provider" gateway errors.
+  const model = 'google/gemini-2.5-flash';
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 55000);
@@ -562,6 +559,21 @@ export interface PlanValidationResult {
   violations: string[];
   overnightStops: string[];
   expectedFinal: string;
+}
+
+// Resolves the requested output language and returns the system-prompt fragment
+// that forces the AI to write all natural-language fields in that language.
+// Exported so regression tests can verify the contract.
+export function resolveLanguage(input?: string | null): "bs" | "en" {
+  return (input || "bs").toLowerCase().startsWith("en") ? "en" : "bs";
+}
+
+export function buildLanguageInstruction(input?: string | null): string {
+  const lang = resolveLanguage(input);
+  if (lang === "en") {
+    return "\n\nIMPORTANT — OUTPUT LANGUAGE: All natural-language fields in the JSON (title, summary, description, why_this_fits, accommodation_*, location, notes) MUST be written in ENGLISH. Keep place names in their original local form (e.g. \"Sarajevo\", \"Wien\", \"Buka 13\"). All other rules above remain in force.";
+  }
+  return "\n\nVAŽNO — JEZIK IZLAZA: Sva polja u JSON-u (title, summary, description, why_this_fits, accommodation_*, location, notes) MORAJU biti napisana na BOSANSKOM jeziku. Imena mjesta zadrži u izvornom lokalnom obliku.";
 }
 
 export function validatePlanOvernights(
