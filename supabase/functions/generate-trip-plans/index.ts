@@ -561,6 +561,21 @@ export interface PlanValidationResult {
   expectedFinal: string;
 }
 
+// Resolves the requested output language and returns the system-prompt fragment
+// that forces the AI to write all natural-language fields in that language.
+// Exported so regression tests can verify the contract.
+export function resolveLanguage(input?: string | null): "bs" | "en" {
+  return (input || "bs").toLowerCase().startsWith("en") ? "en" : "bs";
+}
+
+export function buildLanguageInstruction(input?: string | null): string {
+  const lang = resolveLanguage(input);
+  if (lang === "en") {
+    return "\n\nIMPORTANT — OUTPUT LANGUAGE: All natural-language fields in the JSON (title, summary, description, why_this_fits, accommodation_*, location, notes) MUST be written in ENGLISH. Keep place names in their original local form (e.g. \"Sarajevo\", \"Wien\", \"Buka 13\"). All other rules above remain in force.";
+  }
+  return "\n\nVAŽNO — JEZIK IZLAZA: Sva polja u JSON-u (title, summary, description, why_this_fits, accommodation_*, location, notes) MORAJU biti napisana na BOSANSKOM jeziku. Imena mjesta zadrži u izvornom lokalnom obliku.";
+}
+
 export function validatePlanOvernights(
   plan: any,
   finalDestination: string,
