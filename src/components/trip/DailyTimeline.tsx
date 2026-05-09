@@ -55,7 +55,7 @@ const ICONS: Record<Activity["type"], React.ComponentType<{ className?: string }
   free_time: Coffee,
 };
 
-function SortableRow({ id, activity }: { id: string; activity: Activity }) {
+function SortableRow({ id, activity, dragLabel, typeLabel }: { id: string; activity: Activity; dragLabel: string; typeLabel: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const Icon = ICONS[activity.type] || MapPin;
   const style: React.CSSProperties = {
@@ -74,7 +74,7 @@ function SortableRow({ id, activity }: { id: string; activity: Activity }) {
         className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
         {...attributes}
         {...listeners}
-        aria-label="Drag handle"
+        aria-label={dragLabel}
       >
         <GripVertical className="h-4 w-4" />
       </button>
@@ -82,7 +82,11 @@ function SortableRow({ id, activity }: { id: string; activity: Activity }) {
         <Clock className="h-3 w-3" />
         {activity.time}
       </div>
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+      <div
+        className="flex-shrink-0 w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center"
+        title={typeLabel}
+        aria-label={typeLabel}
+      >
         <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="flex-1 min-w-0">
@@ -186,7 +190,13 @@ const DailyTimeline = ({ itinerary, onChange }: DailyTimelineProps) => {
               >
                 <div className="space-y-2">
                   {current.activities.map((a, i) => (
-                    <SortableRow key={`act-${i}`} id={`act-${i}`} activity={a} />
+                    <SortableRow
+                      key={`act-${i}`}
+                      id={`act-${i}`}
+                      activity={a}
+                      dragLabel={t("timeline.dragHandle")}
+                      typeLabel={t(`timeline.activityTypes.${a.type}`)}
+                    />
                   ))}
                 </div>
               </SortableContext>
