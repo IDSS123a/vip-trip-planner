@@ -70,6 +70,7 @@ const PlanTrip = () => {
       budgetPerStudent: "",
       educationalFocus: "",
       specialNeeds: "",
+      tripPriorities: "",
       mealPlan: undefined,
       accommodationType: undefined,
       emergencyContact: "",
@@ -131,6 +132,7 @@ const PlanTrip = () => {
           budget: data.budgetPerStudent ? parseInt(data.budgetPerStudent) : undefined,
           educationalFocus: data.educationalFocus || "",
           specialNeeds: data.specialNeeds || "",
+          tripPriorities: data.tripPriorities || "",
           previousYearDestination: previousYearDestination || undefined,
           language: (i18n.language || "bs").startsWith("en") ? "en" : "bs",
         }
