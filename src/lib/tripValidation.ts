@@ -289,6 +289,11 @@ export const tripValidationSchema = z.object({
     .string()
     .max(500, "Obrazovni fokus može imati maksimalno 500 karaktera")
     .optional(),
+
+  tripPriorities: z
+    .string()
+    .max(2000, "Važne informacije mogu imati maksimalno 2000 karaktera")
+    .optional(),
   
   specialNeeds: z
     .string()
