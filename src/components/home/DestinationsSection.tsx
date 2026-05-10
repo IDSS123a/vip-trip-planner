@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Clock, ArrowRight } from "lucide-react";
+import sarajevoImg from "@/assets/dest-sarajevo.jpg";
+import plitviceImg from "@/assets/dest-plitvice.jpg";
+import mostarImg from "@/assets/dest-mostar.jpg";
+import munichImg from "@/assets/dest-munich.jpg";
 
 const destinations = [
   {
@@ -13,7 +17,7 @@ const destinations = [
     reviews: 328,
     duration: "3-4 sata",
     grades: "1-9",
-    image: "https://images.unsplash.com/photo-1544894079-e81a9eb1da8b?w=800&auto=format&fit=crop&q=60",
+    image: sarajevoImg,
     featured: true,
   },
   {
@@ -24,7 +28,7 @@ const destinations = [
     reviews: 256,
     duration: "Cjelodnevno",
     grades: "5-9",
-    image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&auto=format&fit=crop&q=60",
+    image: plitviceImg,
     featured: true,
   },
   {
@@ -35,7 +39,7 @@ const destinations = [
     reviews: 189,
     duration: "Cjelodnevno",
     grades: "3-9",
-    image: "https://images.unsplash.com/photo-1555400038-63f5ba517a47?w=800&auto=format&fit=crop&q=60",
+    image: mostarImg,
     featured: false,
   },
   {
@@ -46,7 +50,7 @@ const destinations = [
     reviews: 412,
     duration: "Višednevno",
     grades: "9",
-    image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=800&auto=format&fit=crop&q=60",
+    image: munichImg,
     featured: false,
   },
 ];
@@ -84,6 +88,9 @@ const DestinationsSection = () => {
                 <img
                   src={destination.image}
                   alt={destination.name}
+                  loading="lazy"
+                  width={800}
+                  height={576}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute top-3 left-3 flex gap-2">
