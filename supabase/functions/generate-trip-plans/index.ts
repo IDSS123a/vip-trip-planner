@@ -19,6 +19,7 @@ interface TripRequest {
   budget?: number;
   educationalFocus: string;
   specialNeeds: string;
+  tripPriorities?: string;
   mealPlan?: string;
   accommodationType?: string;
   medicalInfo?: string;
@@ -427,6 +428,18 @@ Udaljenost: ~${routeInfo.distance_km}km, ~${routeInfo.duration_hours}h | Fokus: 
 ${tripData.specialNeeds ? 'Posebne potrebe: ' + tripData.specialNeeds : ''}
 ${tripData.mealPlan ? 'Ishrana: ' + tripData.mealPlan : ''}
 ${tripData.accommodationType ? 'Smještaj: ' + tripData.accommodationType : ''}
+${tripData.tripPriorities && tripData.tripPriorities.trim().length > 0 ? `
+
+========================================
+USTAVNI (OBAVEZUJUĆI) INPUT KORISNIKA — MORA SE POŠTOVATI U PLANU:
+${tripData.tripPriorities.trim()}
+========================================
+Pravila:
+- Sva vremena, ograničenja i zahtjevi iznad imaju NAJVIŠI prioritet i nadjačavaju default heuristike.
+- Ako korisnik traži "BEZ ZADRŽAVANJA" na međustanicama, prolazi kroz njih bez planiranih aktivnosti/pauza (samo tehnički prolazak).
+- Ako su navedena vremena polaska/povratka, koristi ih TAČNO kao prvi/posljednji item u itinereru.
+- Ne dodaj aktivnosti koje krše ova pravila čak i ako bi inače bile preporučene.
+` : ''}
 ${tripData.previousYearDestination ? 'NAPOMENA O ROTACIJI (Pravilnik Glava II, Član 4): grupa je prošle godine bila u ' + tripData.previousYearDestination + '. Uvaži ovo pri preporukama.' : ''}
 
 LOKACIJE U GRADOVIMA (koristi + dopuni):
