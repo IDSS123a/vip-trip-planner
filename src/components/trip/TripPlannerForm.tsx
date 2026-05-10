@@ -772,6 +772,36 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
       {/* Row 6: Educational Focus */}
       <FormField
         control={form.control}
+        name="tripPriorities"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Važne informacije za planiranje puta (USTAVAN input)</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder={
+                  "Unesite konkretne zahtjeve koji MORAJU biti ispoštovani u planu. Primjeri:\n" +
+                  "• Jednodnevni izlet — polazak u 07:00 (dogovoreno s prevoznikom), planirani povratak do 19:00\n" +
+                  "• BEZ ZADRŽAVANJA na međustanicama — što prije stići na odredišnu destinaciju\n" +
+                  "• Obavezna pauza za ručak između 12:30 i 13:30\n" +
+                  "• Povratak najkasnije do 21:00 zbog roditeljskog sastanka"
+                }
+                className="min-h-[120px] resize-y"
+                maxLength={2000}
+                {...field}
+              />
+            </FormControl>
+            <FormDescription>
+              Sve što unesete ovdje postaje <strong>obavezujući (ustavan) input</strong> za AI generator plana —
+              vrijeme polaska/povratka, obavezne ili zabranjene pauze, prioriteti rute, itd.
+              Bit će doslovno preneseno u sva 3 generirana plana.
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="educationalFocus"
         render={({ field }) => (
           <FormItem>
