@@ -358,6 +358,26 @@ async function generateSinglePlan(
   const tripNights = Math.max(tripDays - 1, 0);
   const languageInstruction = buildLanguageInstruction(tripData.language);
 
+  // Jednodnevni izlet: cijela škola ili predškolska grupa ili jedan razred — bez razgledanja usput.
+  const isDayTrip = tripDays === 1;
+  const isWholeSchool = tripData.gradeLevel === "all" || tripData.gradeLevel === "all+preschool";
+  const dayTripBlock = isDayTrip ? `
+
+KRITIČNO — JEDNODNEVNI IZLET (PRAVILO IDSS):
+- Tip grupe: ${isWholeSchool ? (tripData.gradeLevel === "all+preschool" ? "CIJELA ŠKOLA + PREDŠKOLSKA GRUPA" : "CIJELA ŠKOLA") : `samo jedan razred (${tripData.gradeLevel}. razred)`}.
+- BEZ razgledanja, obilazaka i turističkih pauza na međustanicama (${intermediateStops.length > 0 ? intermediateStops.join(', ') : 'nema'}). Cilj je ŠTO BRŽI dolazak na konačno odredište "${finalDestination}".
+- Dozvoljene su SAMO kratke tehničke pauze (toalet/voda) maksimalno 15 minuta, i to samo ako vožnja u jednom smjeru prelazi 2 sata (Pravilnik Član 15).
+- Sav obrazovni i rekreativni sadržaj se odvija ISKLJUČIVO na konačnom odredištu "${finalDestination}".
+- Dan ima jasan oblik: polazak → direktna vožnja (sa eventualnom tehničkom pauzom) → boravak na izletištu → direktan povratak.
+- BEZ smještaja, BEZ noćenja, BEZ "accommodation" aktivnosti.
+` : `
+
+KRITIČNO — VIŠEDNEVNA EKSKURZIJA (STROGO PREMA IDSS PRAVILNIKU 09.03.2026):
+- Plan MORA u potpunosti slijediti IDSS Pravilnik o organizaciji ekskurzija, IDSS Uputstvo i Saglasnost roditelja (Prilog 1).
+- Dnevni raspored, smještaj, prijevoz, komunikacija s roditeljima, plaćanje i hitni protokoli MORAJU pratiti standarde iz Uputstva 5.1, 5.2 i Pravilnika Član 15.
+- Sva noćenja samo u "${finalDestination}". Međustanice: kratko zadržavanje (1–3 sata) bez noćenja.
+`;
+
   const systemPrompt = `Ti si profesionalni planer školskih ekskurzija za Internationale Deutsche Schule Sarajevo (IDSS). Generišeš JEDAN ultra-detaljan ${tier} plan puta U SKLADU SA IDSS PRAVILNIKOM I UPUTSTVOM O ORGANIZACIJI EKSKURZIJA (09.03.2026).
 
 KRITIČNO — REDOSLIJED DESTINACIJA:
@@ -365,7 +385,7 @@ Korisnik je EKSPLICITNO odredio redoslijed posjete destinacija. MORAŠ ga STROGO
 ${numberedRoute}
 Grupa PRVO ide na destinaciju br. 1, PA ONDA na br. 2, itd. Na povratku se vraća u polazište.
 NE SMIJEŠ mijenjati ovaj redoslijed ni pod kojim uvjetima!
-
+${dayTripBlock}
 KRITIČNO — RASPODJELA ZADRŽAVANJA I NOĆENJA:
 - KONAČNA (zadnja) destinacija "${finalDestination}" je GLAVNA destinacija ekskurzije. Tu grupa provodi NAJVIŠE vremena i SVA noćenja (ukupno ${tripNights} ${tripNights === 1 ? 'noć' : 'noći'}).
 - SVE ostale destinacije na ruti (${intermediateStops.length > 0 ? intermediateStops.join(', ') : 'nema međustanica'}) su MEĐUSTANICE BEZ NOĆENJA. Tu se grupa zadržava KRATKO (1–3 sata): ručak, kratko razgledanje, fotografska pauza ili obilazak jedne ključne znamenitosti — i nastavlja put.
