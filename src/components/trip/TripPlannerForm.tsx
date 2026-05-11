@@ -239,6 +239,30 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
         </Alert>
       )}
 
+      {tripType === "day-trip" && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Pravilo za jednodnevni izlet (IDSS):</strong> Može ići <em>cijela škola + IDSS predškolska grupa</em>,
+            <em> samo cijela škola</em>, ili <em>samo jedan razred</em>. Na međustanicama nema razgledanja —
+            grupa ide direktno na konačno odredište radi maksimalnog vremena na izletištu. Dozvoljene su samo
+            kratke tehničke pauze (toalet/voda) ako vožnja u jednom smjeru prelazi 2 sata.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {tripType === "multi-day" && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Višednevna ekskurzija:</strong> Plan se generiše strogo prema
+            <em> IDSS Pravilniku i Uputstvu o organizaciji ekskurzija (09.03.2026)</em> i
+            <em> Saglasnosti roditelja (Prilog 1)</em> — dnevni raspored, smještaj, prijevoz, plaćanje,
+            komunikacija s roditeljima i hitni protokoli prate Uputstvo 5.1, 5.2 i Pravilnik Član 15.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Trip Name (Optional) */}
       <FormField
         control={form.control}
