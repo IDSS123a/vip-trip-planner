@@ -116,6 +116,14 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
   // okidao na svaki tipkani znak i ponovo upisivao default vrijednost preko korisnikovog unosa.
   useEffect(() => {
     if (!gradeLevel) return;
+    // "Cijela škola" i "Cijela škola + Predškolska grupa" su ISKLJUČIVO za jednodnevni izlet —
+    // automatski namjesti tripType da korisnik ne može pogriješiti.
+    if (gradeLevel === "all" || gradeLevel === "all+preschool") {
+      const currentType = form.getValues("tripType");
+      if (currentType !== "day-trip") {
+        form.setValue("tripType", "day-trip", { shouldValidate: true });
+      }
+    }
     const current = form.getValues("studentCount");
     if (current && current.trim() !== "") return; // korisnik je već nešto upisao — ne diraj
     const combined: Record<string, number> = {
