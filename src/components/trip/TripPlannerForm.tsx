@@ -185,7 +185,8 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     { value: "5+6", label: "Spojena grupa: 5. + 6. razred (Pravilnik)" },
     { value: "7+8", label: "Spojena grupa: 7. + 8. razred (Pravilnik)" },
     { value: "mixed", label: "Mješovita grupa (više razreda)" },
-    { value: "all", label: "Cijela škola" },
+    { value: "all", label: "Cijela škola (samo jednodnevni izlet)" },
+    { value: "all+preschool", label: "Cijela škola + Predškolska grupa (samo jednodnevni izlet)" },
   ];
 
   // Predefinisane tačke okupljanja u Sarajevu
