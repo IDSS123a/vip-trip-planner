@@ -116,9 +116,22 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
   // okidao na svaki tipkani znak i ponovo upisivao default vrijednost preko korisnikovog unosa.
   useEffect(() => {
     if (!gradeLevel) return;
+    // "Cijela škola" i "Cijela škola + Predškolska grupa" su ISKLJUČIVO za jednodnevni izlet —
+    // automatski namjesti tripType da korisnik ne može pogriješiti.
+    if (gradeLevel === "all" || gradeLevel === "all+preschool") {
+      const currentType = form.getValues("tripType");
+      if (currentType !== "day-trip") {
+        form.setValue("tripType", "day-trip", { shouldValidate: true });
+      }
+    }
     const current = form.getValues("studentCount");
     if (current && current.trim() !== "") return; // korisnik je već nešto upisao — ne diraj
-    const combined: Record<string, number> = { "5+6": 44, "7+8": 48 };
+    const combined: Record<string, number> = {
+      "5+6": 44,
+      "7+8": 48,
+      "all": 250,            // procjena cijele škole IDSS
+      "all+preschool": 280,  // cijela škola + predškolska grupa
+    };
     if (combined[gradeLevel]) {
       form.setValue("studentCount", String(combined[gradeLevel]), { shouldValidate: false });
       return;
@@ -185,7 +198,8 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     { value: "5+6", label: "Spojena grupa: 5. + 6. razred (Pravilnik)" },
     { value: "7+8", label: "Spojena grupa: 7. + 8. razred (Pravilnik)" },
     { value: "mixed", label: "Mješovita grupa (više razreda)" },
-    { value: "all", label: "Cijela škola" },
+    { value: "all", label: "Cijela škola (samo jednodnevni izlet)" },
+    { value: "all+preschool", label: "Cijela škola + Predškolska grupa (samo jednodnevni izlet)" },
   ];
 
   // Predefinisane tačke okupljanja u Sarajevu
@@ -221,6 +235,30 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
                 <li key={idx}>{warning}</li>
               ))}
             </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {tripType === "day-trip" && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Pravilo za jednodnevni izlet (IDSS):</strong> Može ići <em>cijela škola + IDSS predškolska grupa</em>,
+            <em> samo cijela škola</em>, ili <em>samo jedan razred</em>. Na međustanicama nema razgledanja —
+            grupa ide direktno na konačno odredište radi maksimalnog vremena na izletištu. Dozvoljene su samo
+            kratke tehničke pauze (toalet/voda) ako vožnja u jednom smjeru prelazi 2 sata.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {tripType === "multi-day" && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            <strong>Višednevna ekskurzija:</strong> Plan se generiše strogo prema
+            <em> IDSS Pravilniku i Uputstvu o organizaciji ekskurzija (09.03.2026)</em> i
+            <em> Saglasnosti roditelja (Prilog 1)</em> — dnevni raspored, smještaj, prijevoz, plaćanje,
+            komunikacija s roditeljima i hitni protokoli prate Uputstvo 5.1, 5.2 i Pravilnik Član 15.
           </AlertDescription>
         </Alert>
       )}

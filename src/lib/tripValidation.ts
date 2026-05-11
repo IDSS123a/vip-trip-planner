@@ -184,7 +184,11 @@ export function isTripTypeAllowedForGrade(gradeLevel: string, tripType: string):
   if (COMBINED_GROUPS[gradeLevel]) {
     return COMBINED_GROUPS[gradeLevel].allowedTripTypes.includes(tripType);
   }
-  if (gradeLevel === "mixed" || gradeLevel === "all") return true;
+  // "all" i "all+preschool" su rezervisani ISKLJUČIVO za jednodnevni izlet (Pravilnik / Uputstvo).
+  if (gradeLevel === "all" || gradeLevel === "all+preschool") {
+    return tripType === "day-trip";
+  }
+  if (gradeLevel === "mixed") return true;
   const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
   const gradeConfig = IDSS_GROUPS[gradeKey];
   
@@ -196,6 +200,7 @@ export function isTripTypeAllowedForGrade(gradeLevel: string, tripType: string):
 // Helper to get max trip days for a grade
 export function getMaxTripDays(gradeLevel: string): number {
   if (COMBINED_GROUPS[gradeLevel]) return COMBINED_GROUPS[gradeLevel].maxTripDays;
+  if (gradeLevel === "all" || gradeLevel === "all+preschool") return 1;
   const gradeKey = gradeLevel === "preschool" ? "preschool" : `grade${gradeLevel}` as keyof typeof IDSS_GROUPS;
   const gradeConfig = IDSS_GROUPS[gradeKey];
   return gradeConfig?.maxTripDays || 7;
