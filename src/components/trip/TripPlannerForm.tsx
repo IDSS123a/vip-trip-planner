@@ -118,7 +118,12 @@ const TripPlannerForm = ({ form }: TripPlannerFormProps) => {
     if (!gradeLevel) return;
     const current = form.getValues("studentCount");
     if (current && current.trim() !== "") return; // korisnik je već nešto upisao — ne diraj
-    const combined: Record<string, number> = { "5+6": 44, "7+8": 48 };
+    const combined: Record<string, number> = {
+      "5+6": 44,
+      "7+8": 48,
+      "all": 250,            // procjena cijele škole IDSS
+      "all+preschool": 280,  // cijela škola + predškolska grupa
+    };
     if (combined[gradeLevel]) {
       form.setValue("studentCount", String(combined[gradeLevel]), { shouldValidate: false });
       return;
