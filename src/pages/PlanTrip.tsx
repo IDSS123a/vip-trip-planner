@@ -581,6 +581,7 @@ const PlanTrip = () => {
                 returnDate={watchedValues.returnDate ? format(watchedValues.returnDate, "yyyy-MM-dd") : undefined}
                 gradeLevel={watchedValues.gradeLevel}
                 studentCount={parseInt(watchedValues.studentCount) || 20}
+                tripType={watchedValues.tripType}
                 students={students}
                 onStudentsChange={setStudents}
                 onSave={(planIdx) => {
