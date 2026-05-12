@@ -449,6 +449,7 @@ const TripItinerary = ({
             {route_coordinates && route_coordinates.length > 0 && (
               <></>
             )}
+            {/* IDSS Audit Trail — citira pravila primijenjena na ovaj plan */}
             <IdssAuditTrail
               tripType={tripType}
               gradeLevel={gradeLevel}
