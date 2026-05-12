@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import TripRouteMap from "./TripRouteMap";
 import StudentListInput, { type Student } from "./StudentListInput";
+import IdssAuditTrail from "./IdssAuditTrail";
 import { useTripDocuments } from "@/hooks/useTripDocuments";
 
 interface Activity {
@@ -105,6 +106,7 @@ interface TripItineraryProps {
   returnDate?: string;
   gradeLevel?: string;
   studentCount?: number;
+  tripType?: "day-trip" | "multi-day" | string;
   students?: Student[];
   onStudentsChange?: (students: Student[]) => void;
   onSave?: (planIndex: number) => void;
@@ -143,6 +145,7 @@ const TripItinerary = ({
   returnDate,
   gradeLevel,
   studentCount,
+  tripType,
   students = [],
   onStudentsChange,
   onSave,
