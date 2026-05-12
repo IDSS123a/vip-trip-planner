@@ -58,9 +58,9 @@ const HeroSection = () => {
           {/* Stats */}
           <div className="flex flex-wrap gap-8 pt-8">
             {[
-              { icon: MapPin, value: "50+", label: "Destinacija" },
-              { icon: Calendar, value: "200+", label: "Planiranih Ekskurzija" },
-              { icon: Users, value: "500+", label: "Učenika" },
+              { icon: MapPin, value: "50+", label: t("home.statsDestinations") },
+              { icon: Calendar, value: "200+", label: t("home.statsTrips") },
+              { icon: Users, value: "500+", label: t("home.statsStudents") },
             ].map((stat, index) => (
               <div key={index} className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
