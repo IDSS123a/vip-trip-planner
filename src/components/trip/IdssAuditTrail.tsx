@@ -48,7 +48,7 @@ const buildRules = ({
         source: "Pravilnik IDSS — Član 2",
         article: "Sastav grupe",
         rule: "Cijela škola (± predškolska grupa) može ići isključivo na jednodnevni izlet.",
-        applied: `Odabrano „${gradeLevel === "all+preschool" ? "Cijela škola + Predškolska" : "Cijela škola"}" → višednevna opcija blokirana.`,
+        applied: `Odabrano '${gradeLevel === "all+preschool" ? "Cijela škola + Predškolska" : "Cijela škola"}' → višednevna opcija blokirana.`,
       });
     }
   } else if (tripType === "multi-day") {
@@ -74,7 +74,7 @@ const buildRules = ({
       source: "Saglasnost roditelja — Prilog 1",
       article: "Obavezna dokumentacija",
       rule: "Za svaku višednevnu ekskurziju mora biti generisana saglasnost roditelja po Prilogu 1.",
-      applied: "Dokument „Saglasnost Roditelja" dostupan u sekciji Generiranje PDF Dokumentacije.",
+      applied: "Dokument 'Saglasnost Roditelja' dostupan u sekciji Generiranje PDF Dokumentacije.",
     });
   }
 
