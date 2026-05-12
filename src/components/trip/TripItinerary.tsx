@@ -445,10 +445,6 @@ const TripItinerary = ({
               </CardContent>
             </Card>
 
-            {/* Map */}
-            {route_coordinates && route_coordinates.length > 0 && (
-              <></>
-            )}
             {/* IDSS Audit Trail — citira pravila primijenjena na ovaj plan */}
             <IdssAuditTrail
               tripType={tripType}
@@ -458,6 +454,7 @@ const TripItinerary = ({
               studentCount={studentCount}
               chaperonesCount={chaperones?.length}
             />
+            {/* Map */}
             {route_coordinates && route_coordinates.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
