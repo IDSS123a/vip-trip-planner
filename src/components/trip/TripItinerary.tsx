@@ -447,6 +447,17 @@ const TripItinerary = ({
 
             {/* Map */}
             {route_coordinates && route_coordinates.length > 0 && (
+              <></>
+            )}
+            <IdssAuditTrail
+              tripType={tripType}
+              gradeLevel={gradeLevel}
+              days={plan.days}
+              destinations={destinations}
+              studentCount={studentCount}
+              chaperonesCount={chaperones?.length}
+            />
+            {route_coordinates && route_coordinates.length > 0 && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
