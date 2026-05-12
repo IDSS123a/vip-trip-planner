@@ -3,59 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Clock, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import sarajevoImg from "@/assets/dest-sarajevo.jpg";
 import plitviceImg from "@/assets/dest-plitvice.jpg";
 import mostarImg from "@/assets/dest-mostar.jpg";
 import munichImg from "@/assets/dest-munich.jpg";
 
-const destinations = [
-  {
-    id: 1,
-    name: "Sarajevo – Stari Grad",
-    category: "Historija",
-    rating: 4.9,
-    reviews: 328,
-    duration: "3-4 sata",
-    grades: "1-9",
-    image: sarajevoImg,
-    featured: true,
-  },
-  {
-    id: 2,
-    name: "Plitvička Jezera",
-    category: "Priroda",
-    rating: 4.8,
-    reviews: 256,
-    duration: "Cjelodnevno",
-    grades: "5-9",
-    image: plitviceImg,
-    featured: true,
-  },
-  {
-    id: 3,
-    name: "Mostar – Stari Most",
-    category: "Kultura",
-    rating: 4.7,
-    reviews: 189,
-    duration: "Cjelodnevno",
-    grades: "3-9",
-    image: mostarImg,
-    featured: false,
-  },
-  {
-    id: 4,
-    name: "München – Deutsches Museum",
-    category: "Nauka",
-    rating: 4.8,
-    reviews: 412,
-    duration: "Višednevno",
-    grades: "9",
-    image: munichImg,
-    featured: false,
-  },
-];
-
 const DestinationsSection = () => {
+  const { t } = useTranslation();
+  const destinations = [
+    { id: 1, name: "Sarajevo – Stari Grad", category: t("home.catHistory"), rating: 4.9, reviews: 328, duration: t("home.destinationsHours34"), grades: "1-9", image: sarajevoImg, featured: true },
+    { id: 2, name: "Plitvička Jezera", category: t("home.catNature"), rating: 4.8, reviews: 256, duration: t("home.destinationsFullDay"), grades: "5-9", image: plitviceImg, featured: true },
+    { id: 3, name: "Mostar – Stari Most", category: t("home.catCulture"), rating: 4.7, reviews: 189, duration: t("home.destinationsFullDay"), grades: "3-9", image: mostarImg, featured: false },
+    { id: 4, name: "München – Deutsches Museum", category: t("home.catScience"), rating: 4.8, reviews: 412, duration: t("home.destinationsMultiDay"), grades: "9", image: munichImg, featured: false },
+  ];
   return (
     <section className="py-20 bg-muted/30">
       <div className="container">
@@ -63,15 +24,15 @@ const DestinationsSection = () => {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
           <div>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Popularne <span className="text-primary">Destinacije</span>
+              {t("home.destinationsTitle1")} <span className="text-primary">{t("home.destinationsTitle2")}</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl">
-              Pregledajte destinacije usklađene s IDSS Pravilnikom o organizaciji ekskurzija.
+              {t("home.destinationsSubtitle")}
             </p>
           </div>
           <Link to="/destinations">
             <Button variant="outline" className="group">
-              Sve Destinacije
+              {t("home.destinationsAll")}
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
@@ -98,7 +59,7 @@ const DestinationsSection = () => {
                     {destination.category}
                   </Badge>
                   {destination.featured && (
-                    <Badge className="bg-primary text-primary-foreground">Preporučeno</Badge>
+                    <Badge className="bg-primary text-primary-foreground">{t("home.destinationsRecommended")}</Badge>
                   )}
                 </div>
               </div>
@@ -118,7 +79,7 @@ const DestinationsSection = () => {
                     <Clock className="h-4 w-4" />
                     {destination.duration}
                   </div>
-                  <span>Razredi {destination.grades}</span>
+                  <span>{t("home.destinationsGrades")} {destination.grades}</span>
                 </div>
               </CardContent>
             </Card>
