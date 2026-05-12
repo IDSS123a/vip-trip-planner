@@ -10,67 +10,32 @@ import {
   DollarSign
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const features = [
-  {
-    icon: MapPin,
-    title: "Otkrijte Destinacije",
-    description: "Pregledajte obrazovne destinacije s recenzijama, ocjenama i detaljima o usklađenosti s nastavnim planom.",
-  },
-  {
-    icon: Calendar,
-    title: "Pametno Zakazivanje",
-    description: "Inteligentni odabir datuma s detekcijom konflikata, vremenskom prognozom i dostupnošću lokacija.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Digitalne Dozvole",
-    description: "Elektronski obrasci za pristanak s e-potpisima, automatskim podsjećanjima i praćenjem statusa.",
-  },
-  {
-    icon: Shield,
-    title: "Upravljanje Sigurnošću",
-    description: "Hitni kontakti, medicinske informacije, alati za prebrojavanje i dijeljenje lokacije u realnom vremenu.",
-  },
-  {
-    icon: Users,
-    title: "Koordinacija Pratitelja",
-    description: "Upravljanje volonterima, praćenje provjera i raspodjela grupa.",
-  },
-  {
-    icon: Bus,
-    title: "Planiranje Prijevoza",
-    description: "Rezervacije autobusa, raspored sjedenja, optimizacija rute i koordinacija vozača.",
-  },
-  {
-    icon: DollarSign,
-    title: "Praćenje Budžeta",
-    description: "Procjena troškova, prikupljanje uplata, praćenje rashoda i financijski izvještaji.",
-  },
-  {
-    icon: FileText,
-    title: "Graditelj Itinerera",
-    description: "Drag-and-drop kreiranje rasporeda s vremenskim rezervama, planiranjem obroka i detaljima aktivnosti.",
-  },
-  {
-    icon: Bell,
-    title: "Centar za Komunikaciju",
-    description: "Obavijesti, ažuriranja i notifikacije roditeljima, učenicima i osoblju.",
-  },
-];
+import { useTranslation } from "react-i18next";
 
 const FeaturesSection = () => {
+  const { t } = useTranslation();
+  const features = [
+    { icon: MapPin, title: t("features.f1Title"), description: t("features.f1Desc") },
+    { icon: Calendar, title: t("features.f2Title"), description: t("features.f2Desc") },
+    { icon: ClipboardCheck, title: t("features.f3Title"), description: t("features.f3Desc") },
+    { icon: Shield, title: t("features.f4Title"), description: t("features.f4Desc") },
+    { icon: Users, title: t("features.f5Title"), description: t("features.f5Desc") },
+    { icon: Bus, title: t("features.f6Title"), description: t("features.f6Desc") },
+    { icon: DollarSign, title: t("features.f7Title"), description: t("features.f7Desc") },
+    { icon: FileText, title: t("features.f8Title"), description: t("features.f8Desc") },
+    { icon: Bell, title: t("features.f9Title"), description: t("features.f9Desc") },
+  ];
   return (
     <section className="py-20 bg-background">
       <div className="container">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Sve Što Vam Treba za{" "}
-            <span className="text-primary">Savršenu Ekskurziju</span>
+            {t("home.featuresTitle1")}{" "}
+            <span className="text-primary">{t("home.featuresTitle2")}</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Naš sveobuhvatni skup alata brine o svakom detalju, tako da se možete fokusirati na kreiranje smislenih obrazovnih iskustava.
+            {t("home.featuresSubtitle")}
           </p>
         </div>
 
