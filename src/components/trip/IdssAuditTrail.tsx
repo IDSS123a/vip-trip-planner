@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollText, BookOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface IdssAuditTrailProps {
   tripType?: "day-trip" | "multi-day" | string;
@@ -99,6 +100,7 @@ const buildRules = ({
 };
 
 const IdssAuditTrail = (props: IdssAuditTrailProps) => {
+  const { t } = useTranslation();
   const rules = buildRules(props);
   if (!rules.length) return null;
 
@@ -137,10 +139,10 @@ const IdssAuditTrail = (props: IdssAuditTrailProps) => {
                 <span className="text-xs font-semibold text-foreground">{r.article}</span>
               </div>
               <p className="text-sm text-foreground">
-                <strong>Pravilo:</strong> {r.rule}
+                <strong>{t("audit.rule")}</strong> {r.rule}
               </p>
               <p className="text-sm text-muted-foreground">
-                <strong className="text-primary">Primijenjeno:</strong> {r.applied}
+                <strong className="text-primary">{t("audit.applied")}</strong> {r.applied}
               </p>
             </li>
           ))}

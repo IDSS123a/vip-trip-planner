@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Lock, User, Loader2, GraduationCap, ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const loginSchema = z.object({
   email: z.string().email("Unesite ispravnu email adresu"),
@@ -36,6 +37,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 type ResetFormData = z.infer<typeof resetSchema>;
 
 const Auth = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [showReset, setShowReset] = useState(false);
@@ -234,10 +236,10 @@ const Auth = () => {
           <Card className="border-border">
             <CardHeader>
               <Button variant="ghost" size="sm" onClick={() => setShowReset(false)} className="w-fit mb-2">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Nazad na Prijavu
+                <ArrowLeft className="h-4 w-4 mr-2" /> {t("authPage.backToLogin")}
               </Button>
-              <CardTitle>Resetuj Lozinku</CardTitle>
-              <CardDescription>Unesite svoj email za link za resetovanje</CardDescription>
+              <CardTitle>{t("authPage.resetTitle")}</CardTitle>
+              <CardDescription>{t("authPage.resetDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...resetForm}>
@@ -247,11 +249,11 @@ const Auth = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>{t("auth.email")}</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input {...field} type="email" placeholder="vase.ime@idss.ba" className="pl-10" disabled={isLoading} />
+                            <Input {...field} type="email" placeholder={t("authPage.emailPlaceholder")} className="pl-10" disabled={isLoading} />
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -259,7 +261,7 @@ const Auth = () => {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Slanje...</> : "Pošalji Link za Reset"}
+                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("authPage.sending")}</> : t("authPage.sendResetLink")}
                   </Button>
                 </form>
               </Form>
@@ -278,22 +280,22 @@ const Auth = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <GraduationCap className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">IDSS Ekskurzije</h1>
-          <p className="text-muted-foreground mt-2">Organizujte nezaboravna obrazovna iskustva</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("brand.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("authPage.pageTagline")}</p>
         </div>
 
         <Card className="border-border">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl text-center">Dobro došli</CardTitle>
+            <CardTitle className="text-xl text-center">{t("authPage.welcome")}</CardTitle>
             <CardDescription className="text-center">
-              Prijavite se za upravljanje ekskurzijama
+              {t("authPage.welcomeDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Prijava</TabsTrigger>
-                <TabsTrigger value="signup">Registracija</TabsTrigger>
+                <TabsTrigger value="login">{t("auth.loginTab")}</TabsTrigger>
+                <TabsTrigger value="signup">{t("auth.registerTab")}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="space-y-4">
@@ -304,14 +306,14 @@ const Auth = () => {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t("auth.email")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type="email"
-                                placeholder="vase.ime@idss.ba"
+                                placeholder={t("authPage.emailPlaceholder")}
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -326,14 +328,14 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Lozinka</FormLabel>
+                          <FormLabel>{t("auth.password")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder={t("authPage.passwordPlaceholder")}
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -351,17 +353,17 @@ const Auth = () => {
                         className="px-0 text-muted-foreground hover:text-primary"
                         onClick={() => setShowReset(true)}
                       >
-                        Zaboravljena lozinka?
+                        {t("auth.forgotPassword")}
                       </Button>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Prijava u toku...
+                          {t("authPage.signingIn")}
                         </>
                       ) : (
-                        "Prijavi se"
+                        t("auth.signIn")
                       )}
                     </Button>
                   </form>
@@ -376,13 +378,13 @@ const Auth = () => {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Ime i Prezime</FormLabel>
+                          <FormLabel>{t("auth.fullName")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
-                                placeholder="Ime Prezime"
+                                placeholder={t("authPage.namePlaceholder")}
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -397,14 +399,14 @@ const Auth = () => {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t("auth.email")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type="email"
-                                placeholder="vase.ime@idss.ba"
+                                placeholder={t("authPage.emailPlaceholder")}
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -419,14 +421,14 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Lozinka</FormLabel>
+                          <FormLabel>{t("auth.password")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder={t("authPage.passwordPlaceholder")}
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -441,14 +443,14 @@ const Auth = () => {
                       name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Potvrdi Lozinku</FormLabel>
+                          <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <Input
                                 {...field}
                                 type="password"
-                                placeholder="••••••••"
+                                placeholder={t("authPage.passwordPlaceholder")}
                                 className="pl-10"
                                 disabled={isLoading}
                               />
@@ -462,10 +464,10 @@ const Auth = () => {
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Kreiranje računa...
+                          {t("authPage.creatingAccount")}
                         </>
                       ) : (
-                        "Kreiraj Račun"
+                        t("authPage.createAccountBtn")
                       )}
                     </Button>
                   </form>

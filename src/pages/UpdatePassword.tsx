@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Loader2, GraduationCap, CheckCircle, XCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const updatePasswordSchema = z.object({
   password: z.string()
@@ -24,6 +25,7 @@ const updatePasswordSchema = z.object({
 type UpdatePasswordFormData = z.infer<typeof updatePasswordSchema>;
 
 const UpdatePassword = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
@@ -68,7 +70,7 @@ const UpdatePassword = () => {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Update Failed",
+          title: t("updatePassword.updateFailed"),
           description: error.message,
         });
         return;
@@ -76,8 +78,8 @@ const UpdatePassword = () => {
 
       setIsSuccess(true);
       toast({
-        title: "Lozinka ažurirana!",
-        description: "Your password has been successfully changed.",
+        title: t("updatePassword.successTitle"),
+        description: t("updatePassword.successToast"),
       });
 
       // Redirect to my-trips after 2 seconds
@@ -87,8 +89,8 @@ const UpdatePassword = () => {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        title: t("common.error"),
+        description: t("updatePassword.unexpectedError"),
       });
     } finally {
       setIsLoading(false);
@@ -101,7 +103,7 @@ const UpdatePassword = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Validating reset link...</p>
+          <p className="text-muted-foreground">{t("updatePassword.validating")}</p>
         </div>
       </div>
     );
@@ -117,14 +119,12 @@ const UpdatePassword = () => {
               <div className="mx-auto mb-4 w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
                 <XCircle className="h-8 w-8 text-destructive" />
               </div>
-              <CardTitle>Nevažeći ili istekao link</CardTitle>
-              <CardDescription>
-                Ovaj link za resetovanje lozinke je nevažeći ili je istekao. Zatražite novi.
-              </CardDescription>
+              <CardTitle>{t("updatePassword.invalidTitle")}</CardTitle>
+              <CardDescription>{t("updatePassword.invalidDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               <Button onClick={() => navigate("/auth")} className="w-full">
-                Nazad na Prijavu
+                {t("authPage.backToLogin")}
               </Button>
             </CardContent>
           </Card>
@@ -143,10 +143,8 @@ const UpdatePassword = () => {
               <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                 <CheckCircle className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>Lozinka ažurirana!</CardTitle>
-              <CardDescription>
-                Vaša lozinka je uspješno promijenjena. Preusmjeravamo vas...
-              </CardDescription>
+              <CardTitle>{t("updatePassword.successTitle")}</CardTitle>
+              <CardDescription>{t("updatePassword.successDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex justify-center">
@@ -167,16 +165,14 @@ const UpdatePassword = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
             <GraduationCap className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">IDSS Ekskurzije</h1>
-          <p className="text-muted-foreground">Postavite novu lozinku</p>
+          <h1 className="text-2xl font-bold text-foreground">{t("brand.title")}</h1>
+          <p className="text-muted-foreground">{t("updatePassword.pageTagline")}</p>
         </div>
 
         <Card className="border-border">
           <CardHeader>
-            <CardTitle>Ažuriraj Lozinku</CardTitle>
-            <CardDescription>
-              Unesite novu lozinku. Mora imati najmanje 6 znakova.
-            </CardDescription>
+            <CardTitle>{t("updatePassword.title")}</CardTitle>
+            <CardDescription>{t("updatePassword.desc")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -186,13 +182,13 @@ const UpdatePassword = () => {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>New Password</FormLabel>
+                      <FormLabel>{t("updatePassword.newPassword")}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
                             type="password"
-                            placeholder="••••••••"
+                            placeholder={t("authPage.passwordPlaceholder")}
                             className="pl-10"
                             {...field}
                           />
@@ -207,13 +203,13 @@ const UpdatePassword = () => {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Confirm Password</FormLabel>
+                      <FormLabel>{t("updatePassword.confirmPassword")}</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
                             type="password"
-                            placeholder="••••••••"
+                            placeholder={t("authPage.passwordPlaceholder")}
                             className="pl-10"
                             {...field}
                           />
@@ -227,10 +223,10 @@ const UpdatePassword = () => {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
+                      {t("updatePassword.updating")}
                     </>
                   ) : (
-                    "Ažuriraj Lozinku"
+                    t("updatePassword.update")
                   )}
                 </Button>
               </form>

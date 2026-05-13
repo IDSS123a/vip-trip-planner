@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Share2, Copy, Mail, Check, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface ShareTripDialogProps {
   shareId: string | null;
@@ -22,6 +23,7 @@ const ShareTripDialog = ({
   onMakePublic,
   disabled 
 }: ShareTripDialogProps) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
@@ -36,14 +38,14 @@ const ShareTripDialog = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({
-        title: "Link kopiran!",
-        description: "Link je kopiran u clipboard.",
+        title: t("share.copied"),
+        description: t("share.copiedDesc"),
       });
     } catch (err) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Nije moguće kopirati link.",
+        title: t("common.error"),
+        description: t("share.copyError"),
       });
     }
   };
@@ -67,14 +69,14 @@ const ShareTripDialog = ({
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2" disabled={disabled}>
           <Share2 className="h-4 w-4" />
-          Podijeli
+          {t("share.button")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5 text-primary" />
-            Podijeli Plan Putovanja
+            {t("share.dialogTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -82,7 +84,7 @@ const ShareTripDialog = ({
           {!shareId ? (
             <div className="text-center py-6">
               <p className="text-muted-foreground mb-4">
-                Prvo morate spremiti plan putovanja da biste ga mogli podijeliti.
+                {t("share.needSave")}
               </p>
             </div>
           ) : (
@@ -90,9 +92,9 @@ const ShareTripDialog = ({
               {/* Public toggle */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Javno dijeljenje</Label>
+                  <Label>{t("share.publicToggle")}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Omogući pristup putem linka
+                    {t("share.publicHint")}
                   </p>
                 </div>
                 <Switch
@@ -105,7 +107,7 @@ const ShareTripDialog = ({
               {/* Share link */}
               {isPublic && (
                 <div className="space-y-3">
-                  <Label>Link za dijeljenje</Label>
+                  <Label>{t("share.linkLabel")}</Label>
                   <div className="flex gap-2">
                     <Input
                       value={shareUrl}
@@ -133,7 +135,7 @@ const ShareTripDialog = ({
                       onClick={handleCopyLink}
                     >
                       <Link2 className="h-4 w-4" />
-                      Kopiraj Link
+                      {t("share.copyLink")}
                     </Button>
                     <Button
                       variant="outline"
@@ -141,7 +143,7 @@ const ShareTripDialog = ({
                       onClick={handleEmailShare}
                     >
                       <Mail className="h-4 w-4" />
-                      Email
+                      {t("share.emailBtn")}
                     </Button>
                   </div>
                 </div>
@@ -149,7 +151,7 @@ const ShareTripDialog = ({
 
               {!isPublic && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Uključite javno dijeljenje da biste dobili link koji možete podijeliti s drugima.
+                  {t("share.enableHint")}
                 </p>
               )}
             </>
