@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Send, Loader2, Users, FileText, Map } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const emailSchema = z.object({
   recipientEmail: z.string().email("Please enter a valid email address"),
@@ -48,6 +49,7 @@ interface EmailShareDialogProps {
 }
 
 const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
@@ -81,8 +83,8 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
 
       if (response?.success) {
         toast({
-          title: "Email Sent!",
-          description: `Trip information has been sent to ${data.recipientEmail}`,
+          title: t("email.sentTitle"),
+          description: `${t("email.sentDesc")} ${data.recipientEmail}`,
         });
         form.reset();
         setIsOpen(false);
@@ -93,8 +95,8 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
       console.error("Error sending email:", error);
       toast({
         variant: "destructive",
-        title: "Failed to Send",
-        description: error instanceof Error ? error.message : "Could not send the email. Please try again.",
+        title: t("email.failedTitle"),
+        description: error instanceof Error ? error.message : t("email.failedDesc"),
       });
     } finally {
       setIsSending(false);
@@ -102,15 +104,15 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
   };
 
   const templateOptions = [
-    { value: "trip_summary", label: "Trip Summary", icon: FileText, description: "Overview with key details" },
-    { value: "detailed_itinerary", label: "Detailed Itinerary", icon: FileText, description: "Day-by-day schedule" },
-    { value: "map_overview", label: "Route & Map", icon: Map, description: "Travel route visualization" },
+    { value: "trip_summary", label: t("email.tplSummary"), icon: FileText, description: t("email.tplSummaryDesc") },
+    { value: "detailed_itinerary", label: t("email.tplItinerary"), icon: FileText, description: t("email.tplItineraryDesc") },
+    { value: "map_overview", label: t("email.tplMap"), icon: Map, description: t("email.tplMapDesc") },
   ];
 
   const recipientOptions = [
-    { value: "parent", label: "Parent/Guardian", icon: Users },
-    { value: "teacher", label: "Teacher/Staff", icon: Users },
-    { value: "administration", label: "Administration", icon: Users },
+    { value: "parent", label: t("email.parent"), icon: Users },
+    { value: "teacher", label: t("email.teacher"), icon: Users },
+    { value: "administration", label: t("email.administration"), icon: Users },
   ];
 
   return (
@@ -118,17 +120,17 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2" disabled={disabled}>
           <Mail className="h-4 w-4" />
-          Send Email
+          {t("email.sendBtn")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
-            Share via Email
+            {t("email.dialogTitle")}
           </DialogTitle>
           <DialogDescription>
-            Send trip details for "{tripName}" via formatted email.
+            {t("email.dialogDesc", { name: tripName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,9 +141,9 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
               name="recipientName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Recipient Name</FormLabel>
+                  <FormLabel>{t("email.recipientName")}</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ime Prezime" disabled={isSending} />
+                    <Input {...field} placeholder={t("email.recipientNamePh")} disabled={isSending} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -153,12 +155,12 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
               name="recipientEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Recipient Email</FormLabel>
+                  <FormLabel>{t("email.recipientEmail")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       type="email"
-                      placeholder="roditelj@primjer.com"
+                      placeholder={t("email.recipientEmailPh")}
                       disabled={isSending}
                     />
                   </FormControl>
@@ -172,7 +174,7 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
               name="recipientType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Recipient Type</FormLabel>
+                  <FormLabel>{t("email.recipientType")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -180,7 +182,7 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select recipient type" />
+                        <SelectValue placeholder={t("email.recipientTypePh")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -204,7 +206,7 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
               name="template"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Template</FormLabel>
+                  <FormLabel>{t("email.template")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -212,7 +214,7 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select email template" />
+                        <SelectValue placeholder={t("email.templatePh")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -241,11 +243,11 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
               name="senderName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Your Name (Optional)</FormLabel>
+                  <FormLabel>{t("email.senderName")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="Teacher Name"
+                      placeholder={t("email.senderNamePh")}
                       disabled={isSending}
                     />
                   </FormControl>
@@ -261,18 +263,18 @@ const EmailShareDialog = ({ tripId, tripName, disabled }: EmailShareDialogProps)
                 onClick={() => setIsOpen(false)}
                 disabled={isSending}
               >
-                Cancel
+                {t("email.cancel")}
               </Button>
               <Button type="submit" disabled={isSending} className="gap-2">
                 {isSending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Sending...
+                    {t("email.sending")}
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    Send Email
+                    {t("email.sendBtn")}
                   </>
                 )}
               </Button>
