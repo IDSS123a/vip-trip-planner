@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
+import { useTranslation } from "react-i18next";
 
 export const OfflineSyncStatus = () => {
   const { syncStatus, syncPendingChanges } = useOfflineSync();
+  const { t } = useTranslation();
 
   return (
     <TooltipProvider>
@@ -15,17 +17,17 @@ export const OfflineSyncStatus = () => {
             <TooltipTrigger asChild>
               <Badge variant="outline" className="flex items-center gap-1 text-destructive border-destructive">
                 <CloudOff className="h-3 w-3" />
-                Offline
+                {t("offlineSync.offline")}
                 {syncStatus.pendingCount > 0 && (
                   <span className="ml-1">({syncStatus.pendingCount})</span>
                 )}
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Niste povezani. Promjene se spremaju lokalno.</p>
+              <p>{t("offlineSync.tooltipOffline")}</p>
               {syncStatus.pendingCount > 0 && (
                 <p className="text-muted-foreground">
-                  {syncStatus.pendingCount} promjena čeka sinkronizaciju.
+                  {syncStatus.pendingCount} {t("offlineSync.tooltipPending")}
                 </p>
               )}
             </TooltipContent>
@@ -35,11 +37,11 @@ export const OfflineSyncStatus = () => {
             <TooltipTrigger asChild>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <RefreshCw className="h-3 w-3 animate-spin" />
-                Sinkronizacija...
+                {t("offlineSync.syncing")}
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Sinkronizacija offline promjena u tijeku...</p>
+              <p>{t("offlineSync.tooltipSyncing")}</p>
             </TooltipContent>
           </Tooltip>
         ) : syncStatus.pendingCount > 0 ? (
@@ -52,11 +54,11 @@ export const OfflineSyncStatus = () => {
                 className="flex items-center gap-1 h-6 px-2"
               >
                 <Cloud className="h-3 w-3" />
-                <span className="text-xs">{syncStatus.pendingCount} za sinkronizaciju</span>
+                <span className="text-xs">{syncStatus.pendingCount} {t("offlineSync.pendingSync")}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Kliknite za ručnu sinkronizaciju</p>
+              <p>{t("offlineSync.tooltipManual")}</p>
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -64,14 +66,14 @@ export const OfflineSyncStatus = () => {
             <TooltipTrigger asChild>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <CheckCircle className="h-3 w-3 text-primary" />
-                Online
+                {t("offlineSync.online")}
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Povezani i sinkronizirani</p>
+              <p>{t("offlineSync.tooltipOnline")}</p>
               {syncStatus.lastSyncTime && (
                 <p className="text-muted-foreground text-xs">
-                  Zadnja sinkronizacija: {syncStatus.lastSyncTime.toLocaleTimeString()}
+                  {t("offlineSync.lastSync")} {syncStatus.lastSyncTime.toLocaleTimeString()}
                 </p>
               )}
             </TooltipContent>
