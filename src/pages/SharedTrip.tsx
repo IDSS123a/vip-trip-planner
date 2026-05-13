@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import TripItinerary from "@/components/trip/TripItinerary";
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 
 const SharedTrip = () => {
+  const { t } = useTranslation();
   const { shareId } = useParams<{ shareId: string }>();
   const { loadTripByShareId, isLoading } = useTripStorage();
   const { exportToPdf, isExporting } = usePdfExport();
@@ -124,7 +126,7 @@ const SharedTrip = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">Podijeljeni Plan</Badge>
+                <Badge variant="secondary">{t("share.sharedBadge")}</Badge>
               </div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                 {trip.name}
@@ -136,7 +138,7 @@ const SharedTrip = () => {
             <div className="flex gap-2">
               <Button variant="outline" className="gap-2" onClick={handlePrint}>
                 <Printer className="h-4 w-4" />
-                Print
+                {t("itinerary.print")}
               </Button>
               <Button 
                 className="gap-2" 
