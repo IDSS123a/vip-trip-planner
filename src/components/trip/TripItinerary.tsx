@@ -35,6 +35,7 @@ import TripRouteMap from "./TripRouteMap";
 import StudentListInput, { type Student } from "./StudentListInput";
 import IdssAuditTrail from "./IdssAuditTrail";
 import { useTripDocuments } from "@/hooks/useTripDocuments";
+import { useTranslation } from "react-i18next";
 
 interface Activity {
   time: string;
@@ -154,6 +155,7 @@ const TripItinerary = ({
   selectedPlanIndex = 0,
   onSelectPlan
 }: TripItineraryProps) => {
+  const { t } = useTranslation();
   const { 
     generateParentPermission, 
     generateStudentList, 
@@ -379,7 +381,7 @@ const TripItinerary = ({
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Badge variant={plan.type === "Budget" ? "secondary" : plan.type === "Balanced" ? "default" : "outline"}>
-                        Option {plan.id}
+                        {t("itinerary.option")} {plan.id}
                       </Badge>
                       <span className="text-sm text-muted-foreground">— {plan.type}</span>
                     </div>
@@ -387,19 +389,19 @@ const TripItinerary = ({
                     <div className="flex items-center gap-2 text-sm">
                       <span className={`flex items-center gap-1 ${getReliabilityColor(plan.reliability)}`}>
                         <ShieldCheck className="h-4 w-4" />
-                        Reliability: {plan.reliability}%
+                        {t("itinerary.reliability")}: {plan.reliability}%
                       </span>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="default" onClick={() => onSave?.(plan.id - 1)}>Snimi</Button>
-                    <Button size="sm" variant="outline" onClick={() => onExportPdf?.(plan.id - 1)}>Export</Button>
-                    <Button size="sm" variant="outline" onClick={() => onSwitchToMap?.()}>Share to Map</Button>
+                    <Button size="sm" variant="default" onClick={() => onSave?.(plan.id - 1)}>{t("itinerary.save")}</Button>
+                    <Button size="sm" variant="outline" onClick={() => onExportPdf?.(plan.id - 1)}>{t("itinerary.exportBtn")}</Button>
+                    <Button size="sm" variant="outline" onClick={() => onSwitchToMap?.()}>{t("itinerary.shareToMap")}</Button>
                     <Button size="sm" variant="outline" onClick={() => {
                       if (!route_coordinates || route_coordinates.length < 2) return;
                       const waypoints = route_coordinates.map(c => `${c.lat},${c.lng}`).join('/');
                       window.open(`https://www.google.com/maps/dir/${waypoints}`, '_blank');
-                    }}>Aktiviraj GPS</Button>
+                    }}>{t("itinerary.activateGps")}</Button>
                   </div>
                 </div>
               </CardHeader>
@@ -410,7 +412,7 @@ const TripItinerary = ({
                       <Calendar className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Days</p>
+                      <p className="text-xs text-muted-foreground">{t("itinerary.days")}</p>
                       <p className="font-semibold">{plan.days}</p>
                     </div>
                   </div>
