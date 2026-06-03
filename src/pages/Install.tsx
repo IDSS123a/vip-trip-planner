@@ -179,7 +179,7 @@ const Install = () => {
                     2
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-medium text-foreground">Dodaj na početni ekran</p>
+                    <p className="font-medium text-foreground">Dodaj na početni ekran / Add to Home Screen</p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       Odaberite "Add to Home Screen" <PlusSquare className="h-4 w-4" />
                     </p>

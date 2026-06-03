@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ type ContactFormData = z.infer<typeof contactSchema>;
 
 const Contact = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
@@ -38,8 +40,8 @@ const Contact = () => {
 
   const onSubmit = (data: ContactFormData) => {
     toast({
-      title: "Poruka poslana!",
-      description: "Odgovorit ćemo vam u roku od 24 sata.",
+      title: t("contactPage.sentTitle"),
+      description: t("contactPage.sentDesc"),
     });
     form.reset();
   };
@@ -52,10 +54,10 @@ const Contact = () => {
           {/* Page Header */}
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Kontakt s <span className="text-primary">Nama</span>
+              {t("contactPage.title1")} <span className="text-primary">{t("contactPage.title2")}</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Imate pitanja o planiranju ekskurzije? Naš tim vam stoji na raspolaganju za podršku.
+              {t("contactPage.subtitle")}
             </p>
           </div>
 
@@ -68,9 +70,9 @@ const Contact = () => {
                     <Mail className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Pišite nam</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t("contactPage.writeUs")}</h3>
                     <p className="text-muted-foreground text-sm mb-2">
-                      Odgovorit ćemo u roku od 24 sata
+                      {t("contactPage.writeUsDesc")}
                     </p>
                     <a href="mailto:info@idss.ba" className="text-primary hover:underline">
                       info@idss.ba
@@ -85,9 +87,9 @@ const Contact = () => {
                     <Phone className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Pozovite nas</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t("contactPage.callUs")}</h3>
                     <p className="text-muted-foreground text-sm mb-2">
-                      Pon-Pet, 08:00 – 16:00
+                      {t("contactPage.callUsHours")}
                     </p>
                     <a href="tel:+38733560520" className="text-primary hover:underline">
                       +387 33 560 520
@@ -102,7 +104,7 @@ const Contact = () => {
                     <MapPin className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Posjetite nas</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t("contactPage.visitUs")}</h3>
                     <p className="text-muted-foreground text-sm">
                       Internationale Deutsche Schule Sarajevo<br />
                       Buka 13, 71 000 Sarajevo<br />
@@ -118,10 +120,9 @@ const Contact = () => {
                     <Clock className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">Radno vrijeme</h3>
-                    <p className="text-muted-foreground text-sm">
-                      Ponedjeljak – Petak: 08:00 – 16:00<br />
-                      Subota – Nedjelja: zatvoreno
+                    <h3 className="font-semibold text-foreground mb-1">{t("contactPage.workingHours")}</h3>
+                    <p className="text-muted-foreground text-sm whitespace-pre-line">
+                      {t("contactPage.workingHoursValue")}
                     </p>
                   </div>
                 </CardContent>
@@ -132,9 +133,9 @@ const Contact = () => {
             <div className="lg:col-span-2">
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Pošaljite nam Poruku</CardTitle>
+                  <CardTitle className="text-foreground">{t("contactPage.sendMessage")}</CardTitle>
                   <CardDescription>
-                    Ispunite obrazac ispod i odgovorit ćemo vam u najkraćem mogućem roku.
+                    {t("contactPage.sendDesc")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -146,9 +147,9 @@ const Contact = () => {
                           name="name"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Ime i Prezime</FormLabel>
+                              <FormLabel>{t("contactPage.nameLabel")}</FormLabel>
                               <FormControl>
-                                <Input placeholder="Ime Prezime" {...field} />
+                                <Input placeholder={t("contactPage.namePh")} {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -160,7 +161,7 @@ const Contact = () => {
                           name="email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Email Adresa</FormLabel>
+                              <FormLabel>{t("contactPage.emailLabel")}</FormLabel>
                               <FormControl>
                                 <Input type="email" placeholder="vase.ime@idss.ba" {...field} />
                               </FormControl>
@@ -176,7 +177,7 @@ const Contact = () => {
                           name="phone"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Telefon (Opcionalno)</FormLabel>
+                              <FormLabel>{t("contactPage.phoneLabel")}</FormLabel>
                               <FormControl>
                                 <Input type="tel" placeholder="+387 33 560 520" {...field} />
                               </FormControl>
@@ -190,20 +191,20 @@ const Contact = () => {
                           name="subject"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Tema</FormLabel>
+                              <FormLabel>{t("contactPage.subjectLabel")}</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
-                                    <SelectValue placeholder="Odaberite temu" />
+                                    <SelectValue placeholder={t("contactPage.subjectPh")} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="general">Opšti upit</SelectItem>
-                                  <SelectItem value="trip-planning">Pomoć pri planiranju</SelectItem>
-                                  <SelectItem value="technical">Tehnička podrška</SelectItem>
-                                  <SelectItem value="billing">Pitanje o naplati</SelectItem>
-                                  <SelectItem value="partnership">Saradnja</SelectItem>
-                                  <SelectItem value="feedback">Povratne informacije</SelectItem>
+                                  <SelectItem value="general">{t("contactPage.subjGeneral")}</SelectItem>
+                                  <SelectItem value="trip-planning">{t("contactPage.subjPlanning")}</SelectItem>
+                                  <SelectItem value="technical">{t("contactPage.subjTechnical")}</SelectItem>
+                                  <SelectItem value="billing">{t("contactPage.subjBilling")}</SelectItem>
+                                  <SelectItem value="partnership">{t("contactPage.subjPartnership")}</SelectItem>
+                                  <SelectItem value="feedback">{t("contactPage.subjFeedback")}</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -217,10 +218,10 @@ const Contact = () => {
                         name="message"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Poruka</FormLabel>
+                            <FormLabel>{t("contactPage.messageLabel")}</FormLabel>
                             <FormControl>
                               <Textarea
-                                placeholder="Kako vam možemo pomoći?"
+                                placeholder={t("contactPage.messagePh")}
                                 className="min-h-[150px]"
                                 {...field}
                               />
@@ -232,7 +233,7 @@ const Contact = () => {
 
                       <Button type="submit" size="lg" className="w-full md:w-auto">
                         <Send className="mr-2 h-4 w-4" />
-                        Pošalji Poruku
+                        {t("contactPage.sendBtn")}
                       </Button>
                     </form>
                   </Form>
@@ -244,24 +245,24 @@ const Contact = () => {
           {/* FAQ Section */}
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-foreground mb-8 text-center">
-              Često Postavljana <span className="text-primary">Pitanja</span>
+              {t("contactPage.faqTitle1")} <span className="text-primary">{t("contactPage.faqTitle2")}</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 {
                   icon: HelpCircle,
-                  question: "Kako da počnem?",
-                  answer: "Kreirajte račun i koristite čarobnjaka za planiranje da biste za nekoliko minuta postavili prvu ekskurziju.",
+                  question: t("contactPage.faq1Q"),
+                  answer: t("contactPage.faq1A"),
                 },
                 {
                   icon: FileQuestion,
-                  question: "Postoji li besplatna verzija?",
-                  answer: "Da! Aplikacija je besplatna za sve nastavnike i osoblje IDSS škole.",
+                  question: t("contactPage.faq2Q"),
+                  answer: t("contactPage.faq2A"),
                 },
                 {
                   icon: MessageSquare,
-                  question: "Mogu li roditelji pratiti ekskurziju?",
-                  answer: "Roditelji dobijaju ažuriranja u realnom vremenu putem portala za roditelje.",
+                  question: t("contactPage.faq3Q"),
+                  answer: t("contactPage.faq3A"),
                 },
               ].map((faq, index) => (
                 <Card key={index} className="border-border bg-card">

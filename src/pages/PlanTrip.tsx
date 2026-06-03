@@ -149,16 +149,16 @@ const PlanTrip = () => {
       setPlansData(responseData);
 
       toast({
-        title: "3 Plana Putovanja Generirana!",
-        description: "Vaši planovi putovanja su uspješno kreirani. Pregledajte Budget, Balanced i Premium opcije.",
+        title: t("planToasts.generatedTitle"),
+        description: t("planToasts.generatedDesc"),
       });
     } catch (err) {
       console.error("Error generating plans:", err);
-      const errorMessage = err instanceof Error ? err.message : "Greška pri generiranju planova";
+      const errorMessage = err instanceof Error ? err.message : t("planToasts.generationFailed");
       setError(errorMessage);
       toast({
         variant: "destructive",
-        title: "Greška",
+        title: t("toasts.errorTitle"),
         description: errorMessage,
       });
     } finally {
@@ -174,8 +174,8 @@ const PlanTrip = () => {
     if (!plansData) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Prvo generirajte plan putovanja.",
+        title: t("toasts.errorTitle"),
+        description: t("planToasts.needPlanFirst"),
       });
       return;
     }
@@ -186,8 +186,8 @@ const PlanTrip = () => {
       if (pending.length > 0) {
         toast({
           variant: "destructive",
-          title: `Nedostaje ${pending.length} ${pending.length === 1 ? "saglasnost" : "saglasnosti"} roditelja`,
-          description: `Nije moguće finalizovati plan dok svi učenici nemaju status "Saglasnost predata". Označite saglasnosti u sekciji "Lista Učenika".`,
+          title: t("planToasts.consentMissingTitle", { count: pending.length }),
+          description: t("planToasts.consentMissingDesc"),
         });
         return;
       }
@@ -271,8 +271,8 @@ const PlanTrip = () => {
       setShareId(newShareId);
       setIsPublic(true);
       toast({
-        title: "Plan je sada javno dostupan!",
-        description: "Možete podijeliti link s drugima.",
+        title: t("planToasts.publicTitle"),
+        description: t("planToasts.publicDesc"),
       });
     }
   };
@@ -281,8 +281,8 @@ const PlanTrip = () => {
     if (!plansData?.plans?.[selectedPlanIndex]) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Odaberite plan za export.",
+        title: t("toasts.errorTitle"),
+        description: t("planToasts.selectPlanForExport"),
       });
       return;
     }
@@ -379,7 +379,7 @@ const PlanTrip = () => {
                           disabled={isLoading}
                         >
                           <Sparkles className="h-4 w-4" />
-                          {isLoading ? "Generiranje..." : "Generate 3 Plans (Live)"}
+                          {isLoading ? t("common.generating") : t("planTripExtra.generateLive")}
                         </Button>
                         <Button 
                           type="button" 
@@ -390,12 +390,12 @@ const PlanTrip = () => {
                             const data = form.getValues();
                             try {
                               localStorage.setItem('idss-offline-template', JSON.stringify(data));
-                              toast({ title: "Predložak spremljen!", description: "Podaci su spremljeni za offline korištenje." });
-                            } catch { toast({ variant: "destructive", title: "Greška", description: "Nije moguće spremiti predložak." }); }
+                              toast({ title: t("planToasts.templateSavedTitle"), description: t("planToasts.templateSavedDesc") });
+                            } catch { toast({ variant: "destructive", title: t("toasts.errorTitle"), description: t("planToasts.templateSaveFail") }); }
                           }}
                         >
                           <FileText className="h-4 w-4" />
-                          Generate Templates (Offline)
+                          {t("planTripExtra.generateOffline")}
                         </Button>
                         <Button 
                           type="button" 
@@ -405,7 +405,7 @@ const PlanTrip = () => {
                           onClick={() => {
                             try {
                               const saved = localStorage.getItem('idss-offline-template');
-                              if (!saved) { toast({ variant: "destructive", title: "Nema podataka", description: "Nema spremljenih predložaka u pregledniku." }); return; }
+                              if (!saved) { toast({ variant: "destructive", title: t("toasts.noDataTitle"), description: t("planToasts.noSavedTemplates") }); return; }
                               const data = JSON.parse(saved);
                               if (data.tripName) form.setValue('tripName', data.tripName);
                               if (data.departureCity) form.setValue('departureCity', data.departureCity);
@@ -418,12 +418,12 @@ const PlanTrip = () => {
                               if (data.specialNeeds) form.setValue('specialNeeds', data.specialNeeds);
                               if (data.budgetPerStudent) form.setValue('budgetPerStudent', data.budgetPerStudent);
                               if (data.plansData) setPlansData(data.plansData);
-                              toast({ title: "Podaci učitani!", description: "Spremljeni podaci su uspješno učitani." });
-                            } catch { toast({ variant: "destructive", title: "Greška", description: "Nije moguće učitati podatke." }); }
+                              toast({ title: t("planToasts.dataLoadedTitle"), description: t("planToasts.dataLoadedDesc") });
+                            } catch { toast({ variant: "destructive", title: t("toasts.errorTitle"), description: t("planToasts.dataLoadFail") }); }
                           }}
                         >
                           <Download className="h-4 w-4" />
-                          Load Browser Saves
+                          {t("planTripExtra.loadBrowserSaves")}
                         </Button>
                       </div>
 
@@ -446,19 +446,19 @@ const PlanTrip = () => {
                                 if (data.studentCount) form.setValue('studentCount', data.studentCount);
                                 if (data.chaperones) form.setValue('chaperones', data.chaperones);
                                 if (data.plansData) setPlansData(data.plansData);
-                                toast({ title: "Učitano!", description: "Podaci su učitani iz datoteke." });
-                              } catch { toast({ variant: "destructive", title: "Greška", description: "Neispravna datoteka." }); }
+                                toast({ title: t("planToasts.fileLoadedTitle"), description: t("planToasts.fileLoadedDesc") });
+                              } catch { toast({ variant: "destructive", title: t("toasts.errorTitle"), description: t("planToasts.invalidFile") }); }
                             };
                             reader.readAsText(file);
                           };
                           input.click();
                         }}>
                           <Download className="h-4 w-4" />
-                          Load from File
+                          {t("planTripExtra.loadFromFile")}
                         </Button>
                         <Button type="button" variant="outline" className="gap-2" onClick={handlePrint}>
                           <Printer className="h-4 w-4" />
-                          Print
+                          {t("planTripExtra.print")}
                         </Button>
                         <Button 
                           type="button" 
@@ -468,7 +468,7 @@ const PlanTrip = () => {
                           disabled={!plansData || isExporting}
                         >
                           <Download className="h-4 w-4" />
-                          {isExporting ? "Exporting..." : "Download PDF"}
+                          {isExporting ? t("planTripExtra.exporting") : t("planTripExtra.downloadPdf")}
                         </Button>
                       </div>
                     </form>
@@ -482,7 +482,7 @@ const PlanTrip = () => {
                   <CardContent className="pt-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
-                      Pregled Rute
+                      {t("planTripExtra.routePreview")}
                     </h3>
                     <TripRouteMap 
                       departureCity={watchedValues.departureCity || "Sarajevo"}
@@ -501,10 +501,10 @@ const PlanTrip = () => {
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold flex items-center gap-2">
                       <MapPin className="h-5 w-5 text-primary" />
-                      Interaktivna Karta Putovanja
+                      {t("planTripExtra.interactiveMap")}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Vizualizirajte rutu: {watchedValues.departureCity || "Polazište"} → {destinations.join(" → ") || "Destinacije"}
+                      {t("planTripExtra.visualizeRoute")}: {watchedValues.departureCity || t("planTripExtra.departurePlaceholder")} → {destinations.join(" → ") || t("planTripExtra.destinationsPlaceholder")}
                     </p>
                   </div>
                   <TripRouteMap 
@@ -521,11 +521,11 @@ const PlanTrip = () => {
                   variant="outline" 
                   onClick={() => setActiveTab("form")}
                 >
-                  Nazad na Formular
+                  {t("planTripExtra.backToForm")}
                 </Button>
                 <Button onClick={handleGeneratePlan} className="gap-2" disabled={isLoading}>
                   <Sparkles className="h-4 w-4" />
-                  Generiši 3 Plana Putovanja
+                  {t("planTripExtra.generate3Plans")}
                 </Button>
               </div>
             </TabsContent>
@@ -541,7 +541,7 @@ const PlanTrip = () => {
                     disabled={isSaving}
                   >
                     <Save className="h-4 w-4" />
-                    {isSaving ? "Spremanje..." : savedTripId ? "Ažuriraj Plan" : "Spremi Plan"}
+                    {isSaving ? t("planTripExtra.saving") : savedTripId ? t("planTripExtra.updatePlan") : t("planTripExtra.savePlan")}
                   </Button>
                   
                   <ShareTripDialog
@@ -559,12 +559,12 @@ const PlanTrip = () => {
                     disabled={isExporting}
                   >
                     <Download className="h-4 w-4" />
-                    {isExporting ? "Exporting..." : "Export PDF"}
+                    {isExporting ? t("planTripExtra.exporting") : t("planTripExtra.exportPdf")}
                   </Button>
 
                   <Button variant="outline" className="gap-2" onClick={handlePrint}>
                     <Printer className="h-4 w-4" />
-                    Print
+                    {t("planTripExtra.print")}
                   </Button>
                 </div>
               )}
@@ -602,7 +602,7 @@ const PlanTrip = () => {
                   variant="outline" 
                   onClick={() => setActiveTab("form")}
                 >
-                  Uredi Podatke
+                  {t("planTripExtra.editData")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -610,7 +610,7 @@ const PlanTrip = () => {
                   className="gap-2"
                 >
                   <MapPin className="h-4 w-4" />
-                  Prikaži Kartu
+                  {t("planTripExtra.showMap")}
                 </Button>
               </div>
             </TabsContent>

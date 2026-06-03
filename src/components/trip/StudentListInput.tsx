@@ -36,6 +36,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 export interface Student {
   id: string;
@@ -64,6 +65,7 @@ const StudentListInput = ({
   expectedCount = 20,
   gradeLevel 
 }: StudentListInputProps) => {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [bulkInput, setBulkInput] = useState("");
   const [newStudent, setNewStudent] = useState<Omit<Student, "id">>({
@@ -81,8 +83,8 @@ const StudentListInput = ({
     if (!newStudent.name.trim()) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Unesite ime i prezime učenika.",
+        title: t("toasts.errorTitle"),
+        description: t("students.errEmptyName"),
       });
       return;
     }
@@ -106,8 +108,8 @@ const StudentListInput = ({
     });
 
     toast({
-      title: "Učenik dodan",
-      description: newStudent.name + " je dodan/a na listu.",
+      title: t("students.studentAddedTitle"),
+      description: t("students.studentAddedDesc", { name: newStudent.name }),
     });
   };
 
@@ -139,8 +141,8 @@ const StudentListInput = ({
     if (!bulkInput.trim()) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Unesite imena učenika.",
+        title: t("toasts.errorTitle"),
+        description: t("students.errEmptyBulk"),
       });
       return;
     }
@@ -166,8 +168,8 @@ const StudentListInput = ({
     setIsDialogOpen(false);
 
     toast({
-      title: "Učenici uvezeni",
-      description: "Dodano " + newStudents.length + " učenika na listu.",
+      title: t("students.importedTitle"),
+      description: t("students.importedDesc", { count: newStudents.length }),
     });
   };
 
@@ -196,8 +198,8 @@ const StudentListInput = ({
     URL.revokeObjectURL(url);
 
     toast({
-      title: "CSV exportiran",
-      description: "Lista učenika je preuzeta.",
+      title: t("students.csvExportedTitle"),
+      description: t("students.csvExportedDesc"),
     });
   };
 
@@ -213,7 +215,7 @@ const StudentListInput = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Lista Učenika
+            {t("students.title")}
             {gradeLevel && <Badge variant="outline">{gradeLevel}</Badge>}
           </CardTitle>
           <div className="flex items-center gap-2">
@@ -232,11 +234,11 @@ const StudentListInput = ({
         {/* Summary Stats */}
         {students.length > 0 && (
           <div className="flex flex-wrap gap-2 text-sm">
-            <Badge variant="outline">Dječaci: {maleCount}</Badge>
-            <Badge variant="outline">Djevojčice: {femaleCount}</Badge>
+            <Badge variant="outline">{t("students.boys")}: {maleCount}</Badge>
+            <Badge variant="outline">{t("students.girls")}: {femaleCount}</Badge>
             {hasSpecialNeeds > 0 && (
               <Badge variant="outline" className="text-amber-600">
-                Posebne potrebe: {hasSpecialNeeds}
+                {t("students.specialNeeds")}: {hasSpecialNeeds}
               </Badge>
             )}
             <Badge variant={consentPendingCount === 0 ? "default" : "secondary"} className="gap-1">
@@ -245,7 +247,7 @@ const StudentListInput = ({
               ) : (
                 <ShieldAlert className="h-3 w-3" />
               )}
-              Saglasnosti: {consentSubmittedCount}/{students.length}
+              {t("students.consents")}: {consentSubmittedCount}/{students.length}
             </Badge>
           </div>
         )}
@@ -257,11 +259,10 @@ const StudentListInput = ({
               <ShieldAlert className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
                 <div className="font-medium text-foreground">
-                  Plan se ne može finalizovati — nedostaje {consentPendingCount} {consentPendingCount === 1 ? "saglasnost" : "saglasnosti"} roditelja
+                  {t("students.cannotFinalize")} {consentPendingCount} {consentPendingCount === 1 ? t("students.consentMissing1") : t("students.consentMissingMany")} {t("students.parentsConsent")}
                 </div>
                 <div className="text-muted-foreground text-xs">
-                  Za svakog učenika označite "Predato" tek kad imate potpisanu saglasnost
-                  (Pravilnik IDSS, Prilog 1). Dokument možete opciono uploadovati na svakoj stavci.
+                  {t("students.consentInstructions")}
                 </div>
               </div>
             </div>
@@ -272,7 +273,7 @@ const StudentListInput = ({
         <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
           <div className="md:col-span-2">
             <Input
-              placeholder="Ime i prezime učenika"
+              placeholder={t("students.namePh")}
               value={newStudent.name}
               onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && addStudent()}
@@ -294,14 +295,14 @@ const StudentListInput = ({
           </div>
           <div>
             <Input
-              placeholder="Ime roditelja"
+              placeholder={t("students.parentNamePh")}
               value={newStudent.parentName}
               onChange={(e) => setNewStudent({ ...newStudent, parentName: e.target.value })}
             />
           </div>
           <div>
             <Input
-              placeholder="Telefon"
+              placeholder={t("students.parentPhonePh")}
               value={newStudent.parentPhone}
               onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
             />
@@ -309,7 +310,7 @@ const StudentListInput = ({
           <div>
             <Button onClick={addStudent} className="w-full gap-2">
               <UserPlus className="h-4 w-4" />
-              Dodaj
+              {t("students.addBtn")}
             </Button>
           </div>
         </div>
@@ -320,14 +321,14 @@ const StudentListInput = ({
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
                 <Upload className="h-4 w-4" />
-                Bulk Unos
+                {t("students.bulkBtn")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Masovni Unos Učenika</DialogTitle>
+                <DialogTitle>{t("students.bulkTitle")}</DialogTitle>
                 <DialogDescription>
-                  Unesite podatke o učenicima, jedan učenik po liniji. Format: Ime i prezime, Spol (M/Ž), Ime roditelja, Telefon, Napomene
+                  {t("students.bulkDesc")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -338,16 +339,16 @@ const StudentListInput = ({
                   className="min-h-[200px] font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Savjet: Možete kopirati podatke iz Excel tabele (odvojene zarezima ili tabom).
+                  {t("students.bulkHint")}
                 </p>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Otkaži
+                  {t("students.cancel")}
                 </Button>
                 <Button onClick={handleBulkImport} className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Uvezi Učenike
+                  {t("students.importBtn")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -356,7 +357,7 @@ const StudentListInput = ({
           {students.length > 0 && (
             <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV}>
               <Download className="h-4 w-4" />
-              Export CSV
+              {t("students.exportCsv")}
             </Button>
           )}
 
@@ -367,11 +368,11 @@ const StudentListInput = ({
               className="gap-2 text-destructive hover:text-destructive"
               onClick={() => {
                 onStudentsChange([]);
-                toast({ title: "Lista obrisana", description: "Svi učenici su uklonjeni sa liste." });
+                toast({ title: t("students.listClearedTitle"), description: t("students.listClearedDesc") });
               }}
             >
               <Trash2 className="h-4 w-4" />
-              Obriši Sve
+              {t("students.clearAll")}
             </Button>
           )}
         </div>
@@ -401,19 +402,19 @@ const StudentListInput = ({
                     <Input
                       value={student.parentName}
                       onChange={(e) => updateStudent(student.id, "parentName", e.target.value)}
-                      placeholder="Roditelj"
+                      placeholder={t("students.parentColPh")}
                       className="h-8 text-sm"
                     />
                     <Input
                       value={student.parentPhone}
                       onChange={(e) => updateStudent(student.id, "parentPhone", e.target.value)}
-                      placeholder="Telefon"
+                      placeholder={t("students.parentPhonePh")}
                       className="h-8 text-sm"
                     />
                     <Input
                       value={student.medicalNotes}
                       onChange={(e) => updateStudent(student.id, "medicalNotes", e.target.value)}
-                      placeholder="Napomene"
+                      placeholder={t("students.notesColPh")}
                       className="h-8 text-sm"
                     />
                   </div>
@@ -438,19 +439,19 @@ const StudentListInput = ({
                       {student.consentStatus === "submitted" ? (
                         <>
                           <ShieldCheck className="h-3 w-3" />
-                          Saglasnost predata
+                          {t("students.consentSubmitted")}
                         </>
                       ) : (
                         <>
                           <ShieldAlert className="h-3 w-3" />
-                          Označi kao predato
+                          {t("students.markSubmitted")}
                         </>
                       )}
                     </Button>
                     <Input
                       value={student.consentSignedBy ?? ""}
                       onChange={(e) => updateStudent(student.id, "consentSignedBy", e.target.value)}
-                      placeholder="Ime roditelja koji potpisuje"
+                      placeholder={t("students.signerPh")}
                       className="h-7 text-xs flex-1 min-w-[160px]"
                     />
                     <Input
@@ -462,7 +463,7 @@ const StudentListInput = ({
                     <Input
                       value={student.consentDocumentUrl ?? ""}
                       onChange={(e) => updateStudent(student.id, "consentDocumentUrl", e.target.value)}
-                      placeholder="Link na dokument (opciono)"
+                      placeholder={t("students.docLinkPh")}
                       className="h-7 text-xs flex-1 min-w-[160px]"
                     />
                   </div>
@@ -475,8 +476,8 @@ const StudentListInput = ({
         {students.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>Nema unesenih učenika</p>
-            <p className="text-sm">Dodajte učenike pojedinačno ili koristite bulk unos</p>
+            <p>{t("students.emptyTitle")}</p>
+            <p className="text-sm">{t("students.emptyDesc")}</p>
           </div>
         )}
       </CardContent>
