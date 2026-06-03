@@ -88,13 +88,13 @@ const Auth = () => {
         if (error.message.includes("Invalid login credentials")) {
           toast({
             variant: "destructive",
-            title: "Prijava neuspješna",
-            description: "Pogrešan email ili lozinka. Pokušajte ponovo.",
+            title: t("authToasts.loginFailedTitle"),
+            description: t("authToasts.loginFailedInvalid"),
           });
         } else {
           toast({
             variant: "destructive",
-            title: "Prijava neuspješna",
+            title: t("authToasts.loginFailedTitle"),
             description: error.message,
           });
         }
@@ -102,15 +102,15 @@ const Auth = () => {
       }
 
       toast({
-        title: "Dobro došli nazad!",
-        description: "Uspješno ste prijavljeni.",
+        title: t("authToasts.welcomeBackTitle"),
+        description: t("authToasts.welcomeBackDesc"),
       });
       navigate("/my-trips");
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Došlo je do neočekivane greške. Pokušajte ponovo.",
+        title: t("toasts.errorTitle"),
+        description: t("authToasts.unexpectedError"),
       });
     } finally {
       setIsLoading(false);
@@ -137,15 +137,15 @@ const Auth = () => {
         if (error.message.includes("already registered")) {
           toast({
             variant: "destructive",
-            title: "Račun već postoji",
-            description: "Već postoji račun s ovom email adresom. Prijavite se umjesto registracije.",
+            title: t("authToasts.accountExistsTitle"),
+            description: t("authToasts.accountExistsDesc"),
           });
           setActiveTab("login");
           loginForm.setValue("email", data.email);
         } else {
           toast({
             variant: "destructive",
-            title: "Registracija neuspješna",
+            title: t("authToasts.signupFailedTitle"),
             description: error.message,
           });
         }
@@ -153,15 +153,15 @@ const Auth = () => {
       }
 
       toast({
-        title: "Račun kreiran!",
-        description: "Dobro došli u IDSS Ekskurzije – Planer Putovanja. Prijavljeni ste.",
+        title: t("authToasts.accountCreatedTitle"),
+        description: t("authToasts.accountCreatedDesc"),
       });
       navigate("/my-trips");
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Došlo je do neočekivane greške. Pokušajte ponovo.",
+        title: t("toasts.errorTitle"),
+        description: t("authToasts.unexpectedError"),
       });
     } finally {
       setIsLoading(false);
@@ -178,22 +178,22 @@ const Auth = () => {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Resetovanje neuspješno",
+          title: t("authToasts.resetFailedTitle"),
           description: error.message,
         });
         return;
       }
 
       toast({
-        title: "Provjerite email",
-        description: "Ako račun postoji, dobit ćete link za resetovanje lozinke.",
+        title: t("authToasts.checkEmailTitle"),
+        description: t("authToasts.checkEmailDesc"),
       });
       setShowReset(false);
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Došlo je do neočekivane greške.",
+        title: t("toasts.errorTitle"),
+        description: t("authToasts.unexpectedError"),
       });
     } finally {
       setIsLoading(false);
@@ -213,15 +213,15 @@ const Auth = () => {
       if (error) {
         toast({
           variant: "destructive",
-          title: "Google prijava neuspješna",
+          title: t("authToasts.googleFailedTitle"),
           description: error.message,
         });
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Greška",
-        description: "Nije moguće pokrenuti Google prijavu.",
+        title: t("toasts.errorTitle"),
+        description: t("authToasts.googleStartError"),
       });
     } finally {
       setIsLoading(false);
