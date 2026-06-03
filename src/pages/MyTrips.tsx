@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -90,20 +91,20 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case "upcoming":
-      return "Upcoming";
-    case "planning":
-      return "U Planiranju";
-    case "completed":
-      return "Realizovane";
-    default:
-      return status;
-  }
-};
-
 const MyTrips = () => {
+  const { t } = useTranslation();
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "upcoming":
+        return t("myTrips.statusUpcoming");
+      case "planning":
+        return t("myTrips.statusPlanning");
+      case "completed":
+        return t("myTrips.statusCompleted");
+      default:
+        return status;
+    }
+  };
   const [trips, setTrips] = useState<Trip[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -156,8 +157,8 @@ const MyTrips = () => {
       console.error("Error fetching trips:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to load your trips.",
+        title: t("toasts.errorTitle"),
+        description: t("myTrips.toastFetchFail"),
       });
     } finally {
       setIsLoading(false);
@@ -177,15 +178,15 @@ const MyTrips = () => {
 
       setTrips(trips.filter((t) => t.id !== tripToDelete));
       toast({
-        title: "Trip Deleted",
-        description: "The trip has been removed.",
+        title: t("myTrips.toastDeletedTitle"),
+        description: t("myTrips.toastDeletedDesc"),
       });
     } catch (error) {
       console.error("Error deleting trip:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to delete the trip.",
+        title: t("toasts.errorTitle"),
+        description: t("myTrips.toastDeleteFail"),
       });
     } finally {
       setTripToDelete(null);
@@ -199,7 +200,7 @@ const MyTrips = () => {
         .from("trips")
         .insert({
           user_id: user?.id,
-          name: `${trip.name} (Copy)`,
+          name: `${trip.name} (${t("myTrips.copySuffix")})`,
           departure_city: trip.departureCity,
           destinations: trip.destinations,
           departure_date: null,
@@ -218,16 +219,16 @@ const MyTrips = () => {
       if (error) throw error;
 
       toast({
-        title: "Trip Duplicated",
-        description: "A copy of the trip has been created.",
+        title: t("myTrips.toastDuplicatedTitle"),
+        description: t("myTrips.toastDuplicatedDesc"),
       });
       fetchTrips();
     } catch (error) {
       console.error("Error duplicating trip:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to duplicate the trip.",
+        title: t("toasts.errorTitle"),
+        description: t("myTrips.toastDuplicateFail"),
       });
     } finally {
       setIsDuplicating(null);
@@ -239,8 +240,8 @@ const MyTrips = () => {
     if (!selectedPlan) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "No plan data available for export.",
+        title: t("toasts.errorTitle"),
+        description: t("myTrips.toastNoPlanData"),
       });
       return;
     }
@@ -269,8 +270,8 @@ const MyTrips = () => {
 
       setTrips(trips.map((t) => (t.id === tripId ? { ...t, isPublic: true } : t)));
       toast({
-        title: "Trip is now public",
-        description: "Anyone with the link can view this trip.",
+        title: t("myTrips.toastPublicTitle"),
+        description: t("myTrips.toastPublicDesc"),
       });
     } catch (error) {
       console.error("Error making trip public:", error);
@@ -304,16 +305,16 @@ const MyTrips = () => {
                     <LogIn className="h-8 w-8 text-primary" />
                   </div>
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Prijavite se za pregled ekskurzija</h2>
+                <h2 className="text-2xl font-bold mb-2">{t("myTrips.loginPromptTitle")}</h2>
                 <p className="text-muted-foreground mb-6">
-                  Kreirajte račun ili se prijavite za spremanje i upravljanje vašim ekskurzijama.
+                  {t("myTrips.loginPromptDesc")}
                 </p>
                 <div className="flex gap-3 justify-center">
                   <Link to="/auth">
-                    <Button>Prijavi se</Button>
+                    <Button>{t("myTrips.loginBtn")}</Button>
                   </Link>
                   <Link to="/plan-trip">
-                    <Button variant="outline">Prvo Isplaniraj Ekskurziju</Button>
+                    <Button variant="outline">{t("myTrips.planFirstBtn")}</Button>
                   </Link>
                 </div>
               </CardContent>
@@ -334,16 +335,16 @@ const MyTrips = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-                Moje <span className="text-primary">Ekskurzije</span>
+                {t("myTrips.titlePrefix")} <span className="text-primary">{t("myTrips.titleHighlight")}</span>
               </h1>
               <p className="text-muted-foreground">
-                Upravljajte i pratite sve svoje ekskurzije na jednom mjestu.
+                {t("myTrips.subtitle")}
               </p>
             </div>
             <Link to="/plan-trip">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Ekskurzija
+                {t("myTrips.newTrip")}
               </Button>
             </Link>
           </div>
@@ -357,7 +358,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.upcoming}</p>
-                  <p className="text-sm text-muted-foreground">Predstojeće</p>
+                  <p className="text-sm text-muted-foreground">{t("myTrips.statUpcoming")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -368,7 +369,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.planning}</p>
-                  <p className="text-sm text-muted-foreground">U Planiranju</p>
+                  <p className="text-sm text-muted-foreground">{t("myTrips.statPlanning")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -379,7 +380,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.completed}</p>
-                  <p className="text-sm text-muted-foreground">Realizovane</p>
+                  <p className="text-sm text-muted-foreground">{t("myTrips.statCompleted")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -390,7 +391,7 @@ const MyTrips = () => {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.totalStudents}</p>
-                  <p className="text-sm text-muted-foreground">Ukupno Učenika</p>
+                  <p className="text-sm text-muted-foreground">{t("myTrips.statTotalStudents")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -401,10 +402,10 @@ const MyTrips = () => {
             <CardHeader>
               <Tabs defaultValue="all" onValueChange={setActiveTab}>
                 <TabsList>
-                  <TabsTrigger value="all">Sve Ekskurzije ({trips.length})</TabsTrigger>
-                  <TabsTrigger value="upcoming">Predstojeće ({stats.upcoming})</TabsTrigger>
-                  <TabsTrigger value="planning">U Planiranju ({stats.planning})</TabsTrigger>
-                  <TabsTrigger value="completed">Realizovane ({stats.completed})</TabsTrigger>
+                  <TabsTrigger value="all">{t("myTrips.tabAll")} ({trips.length})</TabsTrigger>
+                  <TabsTrigger value="upcoming">{t("myTrips.tabUpcoming")} ({stats.upcoming})</TabsTrigger>
+                  <TabsTrigger value="planning">{t("myTrips.tabPlanning")} ({stats.planning})</TabsTrigger>
+                  <TabsTrigger value="completed">{t("myTrips.tabCompleted")} ({stats.completed})</TabsTrigger>
                 </TabsList>
               </Tabs>
             </CardHeader>
@@ -416,14 +417,14 @@ const MyTrips = () => {
               ) : filteredTrips.length === 0 ? (
                 <div className="text-center py-12">
                   <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Nema pronađenih ekskurzija</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{t("myTrips.emptyTitle")}</h3>
                   <p className="text-muted-foreground mb-4">
-                    Započnite planiranje svoje prve ekskurzije!
+                    {t("myTrips.emptyDesc")}
                   </p>
                   <Link to="/plan-trip">
                     <Button>
                       <Plus className="mr-2 h-4 w-4" />
-                      Create Nova Ekskurzija
+                      {t("myTrips.createNew")}
                     </Button>
                   </Link>
                 </div>
@@ -445,7 +446,7 @@ const MyTrips = () => {
                               {getStatusLabel(status)}
                             </Badge>
                             {trip.isPublic && (
-                              <Badge variant="secondary">Public</Badge>
+                              <Badge variant="secondary">{t("myTrips.publicBadge")}</Badge>
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -465,7 +466,7 @@ const MyTrips = () => {
                             )}
                             <div className="flex items-center gap-1">
                               <Users className="h-4 w-4" />
-                              {trip.studentCount} students, {trip.chaperones.length} chaperones
+                              {trip.studentCount} {t("myTrips.studentsCount")}, {trip.chaperones.length} {t("myTrips.chaperonesCount")}
                             </div>
                             <div className="flex items-center gap-1">
                               <Bus className="h-4 w-4" />
@@ -498,12 +499,12 @@ const MyTrips = () => {
                               <DropdownMenuItem asChild>
                                 <Link to={`/trip/${trip.shareId}`}>
                                   <FileText className="mr-2 h-4 w-4" />
-                                  View Details
+                                  {t("myTrips.viewDetails")}
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => navigate(`/plan-trip?edit=${trip.id}`)}>
                                 <Edit className="mr-2 h-4 w-4" />
-                                Edit Trip
+                                {t("myTrips.editTrip")}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleDuplicateTrip(trip)}
@@ -514,14 +515,14 @@ const MyTrips = () => {
                                 ) : (
                                   <Copy className="mr-2 h-4 w-4" />
                                 )}
-                                Duplicate
+                                {t("myTrips.duplicate")}
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 onClick={() => handleExportPdf(trip)}
                                 disabled={isExporting}
                               >
                                 <Download className="mr-2 h-4 w-4" />
-                                Export PDF
+                                {t("myTrips.exportPdfMenu")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem 
@@ -529,7 +530,7 @@ const MyTrips = () => {
                                 onClick={() => setTripToDelete(trip.id)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Trip
+                                {t("myTrips.deleteTrip")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -549,15 +550,15 @@ const MyTrips = () => {
       <AlertDialog open={!!tripToDelete} onOpenChange={() => setTripToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Trip?</AlertDialogTitle>
+            <AlertDialogTitle>{t("myTrips.deleteConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. The trip and all its data will be permanently deleted.
+              {t("myTrips.deleteConfirmDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteTrip} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
