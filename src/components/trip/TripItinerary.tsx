@@ -36,6 +36,7 @@ import StudentListInput, { type Student } from "./StudentListInput";
 import IdssAuditTrail from "./IdssAuditTrail";
 import { useTripDocuments } from "@/hooks/useTripDocuments";
 import { useTranslation } from "react-i18next";
+import { useToast } from "@/hooks/use-toast";
 
 interface Activity {
   time: string;
@@ -156,6 +157,7 @@ const TripItinerary = ({
   onSelectPlan
 }: TripItineraryProps) => {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const { 
     generateParentPermission, 
     generateStudentList, 
@@ -215,8 +217,8 @@ const TripItinerary = ({
         <div className="flex items-center gap-3 p-4 bg-primary/5 rounded-lg border border-primary/20">
           <Sparkles className="h-5 w-5 text-primary animate-pulse" />
           <div>
-            <p className="font-medium">Generiranje 3 opcije plana putovanja...</p>
-            <p className="text-sm text-muted-foreground">AI analizira vaše podatke i kreira detaljne planove</p>
+            <p className="font-medium">{t("tripItineraryExtra.generatingTitle")}</p>
+            <p className="text-sm text-muted-foreground">{t("tripItineraryExtra.generatingDesc")}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -243,7 +245,7 @@ const TripItinerary = ({
         <div className="flex items-center gap-3">
           <AlertCircle className="h-5 w-5 text-destructive" />
           <div>
-            <p className="font-medium text-destructive">Greška pri generiranju planova</p>
+            <p className="font-medium text-destructive">{t("tripItineraryExtra.errorTitle")}</p>
             <p className="text-sm text-muted-foreground">{error}</p>
           </div>
         </div>
@@ -254,7 +256,7 @@ const TripItinerary = ({
   if (!plansData || !plansData.plans || plansData.plans.length === 0) {
     return (
       <div className="p-6 bg-muted rounded-lg text-center">
-        <p className="text-muted-foreground">Nema generiranih planova. Popunite formular i kliknite "Generiši 3 Plana".</p>
+        <p className="text-muted-foreground">{t("tripItineraryExtra.emptyState")}</p>
       </div>
     );
   }
@@ -268,7 +270,7 @@ const TripItinerary = ({
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <FolderOpen className="h-5 w-5 text-primary" />
-            Generiranje PDF Dokumentacije
+            {t("tripItineraryExtra.pdfDocsTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -280,7 +282,7 @@ const TripItinerary = ({
               variant="default"
             >
               <UserCheck className="h-4 w-4" />
-              {isGenerating ? "Generiranje..." : "Saglasnost Roditelja"}
+              {isGenerating ? t("tripItineraryExtra.generating") : t("tripItineraryExtra.parentConsent")}
             </Button>
             <Button 
               onClick={handleGenerateStudentList}
@@ -289,7 +291,7 @@ const TripItinerary = ({
               variant="outline"
             >
               <ClipboardList className="h-4 w-4" />
-              Lista Učenika
+              {t("tripItineraryExtra.studentList")}
             </Button>
             <Button 
               onClick={handleGenerateFullDocumentation}
@@ -298,11 +300,11 @@ const TripItinerary = ({
               variant="outline"
             >
               <FolderOpen className="h-4 w-4" />
-              Kompletna Dokumentacija
+              {t("tripItineraryExtra.fullDocs")}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Generirajte sve potrebne dokumente za ekskurziju: saglasnosti roditelja, liste učenika i kompletnu dokumentaciju sa itinerarom.
+            {t("tripItineraryExtra.docsHelper")}
           </p>
         </CardContent>
       </Card>
@@ -331,32 +333,32 @@ const TripItinerary = ({
           URL.revokeObjectURL(url);
         }}>
           <Download className="h-4 w-4" />
-          Generiši i Snimi (html)
+          {t("tripItineraryExtra.saveHtml")}
         </Button>
         <Button variant="outline" className="gap-2" onClick={() => {
           if (!plansData) return;
           try {
             const formData = { tripName, departureCity, destinations, departureDate, returnDate, gradeLevel, studentCount, chaperones, plansData };
             localStorage.setItem('idss-offline-template', JSON.stringify(formData));
-            alert('Predložak spremljen za offline korištenje!');
-          } catch (e) { alert('Greška pri spremanju predloška.'); }
+            toast({ title: t("tripItineraryExtra.offlineSavedTitle"), description: t("tripItineraryExtra.offlineSavedDesc") });
+          } catch (e) { toast({ variant: "destructive", title: t("toasts.errorTitle"), description: t("tripItineraryExtra.offlineSaveFail") }); }
         }}>
           <FileText className="h-4 w-4" />
-          Generiši Predložak (Offline)
+          {t("tripItineraryExtra.saveOfflineTemplate")}
         </Button>
         <Button variant="outline" className="gap-2" onClick={() => window.print()}>
           <Printer className="h-4 w-4" />
-          Print
+          {t("tripItineraryExtra.print")}
         </Button>
         <Button variant="outline" className="gap-2" onClick={() => onExportPdf?.(selectedPlanIndex)} disabled={!plansData}>
           <Download className="h-4 w-4" />
-          Download PDF
+          {t("tripItineraryExtra.downloadPdf")}
         </Button>
       </div>
 
       {/* Note */}
       <p className="text-sm text-muted-foreground italic">
-        Napomena: aplikacija koristi GeoNames (geokodiranje), Wikidata (POI) i OpenRouteService (rute/POI).
+        {t("tripItineraryExtra.apiNote")}
       </p>
 
       {/* 3 Plan Options */}
@@ -421,7 +423,7 @@ const TripItinerary = ({
                       <Route className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Distance</p>
+                      <p className="text-xs text-muted-foreground">{t("tripItineraryExtra.distance")}</p>
                       <p className="font-semibold">{plan.distance_km.toFixed(2)} km</p>
                     </div>
                   </div>
@@ -430,7 +432,7 @@ const TripItinerary = ({
                       <Clock className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Travel</p>
+                      <p className="text-xs text-muted-foreground">{t("tripItineraryExtra.travel")}</p>
                       <p className="font-semibold">{plan.travel_hours.toFixed(1)} h</p>
                     </div>
                   </div>
@@ -439,7 +441,7 @@ const TripItinerary = ({
                       <DollarSign className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Cost per Student</p>
+                      <p className="text-xs text-muted-foreground">{t("tripItineraryExtra.costPerStudent")}</p>
                       <p className="font-semibold text-primary">{plan.cost_per_student} EUR</p>
                     </div>
                   </div>
@@ -462,7 +464,7 @@ const TripItinerary = ({
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary" />
-                    Ruta Putovanja ({route_coordinates.length} tačaka)
+                    {t("tripItineraryExtra.routeTitle")} ({route_coordinates.length} {t("tripItineraryExtra.points")})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -478,7 +480,7 @@ const TripItinerary = ({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Itinerary */}
               <div className="lg:col-span-2 space-y-4">
-                <h3 className="text-lg font-semibold">Itinerary:</h3>
+                <h3 className="text-lg font-semibold">{t("tripItineraryExtra.itineraryHeading")}</h3>
                 {plan.itinerary.map((day) => (
                   <Card key={day.day}>
                     <CardHeader className="pb-3">
@@ -486,7 +488,7 @@ const TripItinerary = ({
                         <Badge variant="default" className="rounded-full">
                           {day.day}
                         </Badge>
-                        Day {day.day}: {day.title}
+                        {t("tripItineraryExtra.day")} {day.day}: {day.title}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -528,14 +530,14 @@ const TripItinerary = ({
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <DollarSign className="h-5 w-5" />
-                      Itinerary Costs
+                      {t("tripItineraryExtra.itineraryCosts")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <Bus className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Transport:</span>
+                        <span className="text-sm">{t("tripItineraryExtra.transport")}:</span>
                       </div>
                       <span className="font-medium">{plan.costs.transport.toLocaleString()} EUR</span>
                     </div>
@@ -543,7 +545,7 @@ const TripItinerary = ({
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <Hotel className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Accommodation:</span>
+                        <span className="text-sm">{t("tripItineraryExtra.accommodation")}:</span>
                       </div>
                       <span className="font-medium">{plan.costs.accommodation.toLocaleString()} EUR</span>
                     </div>
@@ -551,7 +553,7 @@ const TripItinerary = ({
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <Utensils className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Meals:</span>
+                        <span className="text-sm">{t("tripItineraryExtra.meals")}:</span>
                       </div>
                       <span className="font-medium">{plan.costs.meals.toLocaleString()} EUR</span>
                     </div>
@@ -559,27 +561,27 @@ const TripItinerary = ({
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Entry Fees:</span>
+                        <span className="text-sm">{t("tripItineraryExtra.entryFees")}:</span>
                       </div>
                       <span className="font-medium">{plan.costs.entry_fees.toLocaleString()} EUR</span>
                     </div>
                     <Separator />
-                    <div className="text-sm font-medium text-muted-foreground mt-2">Extras & Contingency:</div>
+                    <div className="text-sm font-medium text-muted-foreground mt-2">{t("tripItineraryExtra.extrasContingency")}</div>
                     <div className="flex justify-between items-center pl-4">
-                      <span className="text-sm">Activity Fees:</span>
+                      <span className="text-sm">{t("tripItineraryExtra.activityFees")}:</span>
                       <span className="font-medium">{plan.costs.activity_fees.toLocaleString()} EUR</span>
                     </div>
                     <div className="flex justify-between items-center pl-4">
-                      <span className="text-sm">Local Transport:</span>
+                      <span className="text-sm">{t("tripItineraryExtra.localTransport")}:</span>
                       <span className="font-medium">{plan.costs.local_transport.toLocaleString()} EUR</span>
                     </div>
                     <div className="flex justify-between items-center pl-4">
-                      <span className="text-sm">Contingency (5%):</span>
+                      <span className="text-sm">{t("tripItineraryExtra.contingency")}:</span>
                       <span className="font-medium">{plan.costs.contingency.toLocaleString()} EUR</span>
                     </div>
                     <Separator className="my-3" />
                     <div className="flex justify-between items-center bg-primary/10 p-3 rounded-lg">
-                      <span className="font-semibold">Total Trip Cost:</span>
+                      <span className="font-semibold">{t("tripItineraryExtra.totalCost")}</span>
                       <span className="font-bold text-lg text-primary">{plan.costs.total.toLocaleString()} EUR</span>
                     </div>
                   </CardContent>
@@ -588,7 +590,7 @@ const TripItinerary = ({
                 {/* Why This Fits */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Why this fits:</CardTitle>
+                    <CardTitle className="text-base">{t("tripItineraryExtra.whyFits")}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">{plan.why_this_fits}</p>
@@ -601,7 +603,7 @@ const TripItinerary = ({
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        Teachers:
+                        {t("tripItineraryExtra.teachers")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -615,7 +617,7 @@ const TripItinerary = ({
                   <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       <Hotel className="h-4 w-4" />
-                      Accommodation:
+                      {t("tripItineraryExtra.accommodationInfo")}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -629,7 +631,7 @@ const TripItinerary = ({
             {educational_resources && educational_resources.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">EDUCATIONAL RESOURCES & KEY SITES</CardTitle>
+                  <CardTitle className="text-lg">{t("tripItineraryExtra.educationalResources")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
