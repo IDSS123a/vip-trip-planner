@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import {
   initOfflineDB,
   getSyncQueue,
@@ -25,6 +26,7 @@ export const useOfflineSync = () => {
     lastSyncTime: null,
   });
   const { toast } = useToast();
+  const { t } = useTranslation();
   const syncInProgress = useRef(false);
 
   // Initialize IndexedDB
@@ -38,8 +40,8 @@ export const useOfflineSync = () => {
     const handleOnline = () => {
       setSyncStatus(prev => ({ ...prev, isOnline: true }));
       toast({
-        title: "Povezano!",
-        description: "Sinkronizacija offline promjena u tijeku...",
+        title: t("offlineSyncToast.connectedTitle"),
+        description: t("offlineSyncToast.connectedDesc"),
       });
       syncPendingChanges();
     };
@@ -48,8 +50,8 @@ export const useOfflineSync = () => {
       setSyncStatus(prev => ({ ...prev, isOnline: false }));
       toast({
         variant: "destructive",
-        title: "Offline način",
-        description: "Promjene će biti spremljene lokalno i sinkronizirane kad se vratite online.",
+        title: t("offlineSyncToast.offlineTitle"),
+        description: t("offlineSyncToast.offlineDesc"),
       });
     };
 
@@ -146,16 +148,16 @@ export const useOfflineSync = () => {
 
       if (successCount > 0) {
         toast({
-          title: "Sinkronizacija završena!",
-          description: `${successCount} promjena uspješno sinkronizirano.`,
+          title: t("offlineSyncToast.syncDoneTitle"),
+          description: t("offlineSyncToast.syncDoneDesc", { count: successCount }),
         });
       }
 
       if (failCount > 0) {
         toast({
           variant: "destructive",
-          title: "Neke promjene nisu sinkronizirane",
-          description: `${failCount} promjena nije moglo biti sinkronizirano nakon više pokušaja.`,
+          title: t("offlineSyncToast.syncFailTitle"),
+          description: t("offlineSyncToast.syncFailDesc", { count: failCount }),
         });
       }
 
