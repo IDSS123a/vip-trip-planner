@@ -6,35 +6,32 @@ import i18n from "@/i18n";
 import bs from "@/i18n/locales/bs";
 import en from "@/i18n/locales/en";
 
-const { toastSpy, insertImpl, getQueue, setQueue } = vi.hoisted(() => {
-  let q: any[] = [];
+const h = vi.hoisted(() => {
+  const { vi } = require("vitest");
   return {
-    toastSpy: (await import("vitest")).vi.fn(),
-    insertImpl: (await import("vitest")).vi.fn(),
-    getQueue: () => q,
-    setQueue: (next: any[]) => { q = next; },
+    toastSpy: vi.fn(),
+    insertImpl: vi.fn(),
+    state: { queue: [] as any[] },
   };
 });
 
 vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: toastSpy }),
-  toast: toastSpy,
+  useToast: () => ({ toast: h.toastSpy }),
+  toast: h.toastSpy,
 }));
 
 vi.mock("@/lib/offlineStorage", () => ({
   initOfflineDB: vi.fn().mockResolvedValue({}),
-  getSyncQueue: vi.fn(async () => getQueue().slice()),
+  getSyncQueue: vi.fn(async () => h.state.queue.slice()),
   removeFromSyncQueue: vi.fn(async (id: string) => {
-    setQueue(getQueue().filter((q) => q.id !== id));
+    h.state.queue = h.state.queue.filter((q) => q.id !== id);
   }),
   updateSyncQueueItem: vi.fn(async (id: string, patch: any) => {
-    setQueue(getQueue().map((q) => (q.id === id ? { ...q, ...patch } : q)));
+    h.state.queue = h.state.queue.map((q) => (q.id === id ? { ...q, ...patch } : q));
   }),
   addToSyncQueue: vi.fn(async (item: any) => {
     const id = crypto.randomUUID();
-    const next = getQueue().slice();
-    next.push({ id, timestamp: Date.now(), retries: 0, ...item });
-    setQueue(next);
+    h.state.queue.push({ id, timestamp: Date.now(), retries: 0, ...item });
     return id;
   }),
   cacheTrip: vi.fn().mockResolvedValue(undefined),
@@ -47,9 +44,9 @@ vi.mock("@/integrations/supabase/client", () => ({
     },
     from: () => ({
       insert: () => ({
-        select: () => ({ single: () => insertImpl() }),
+        select: () => ({ single: () => h.insertImpl() }),
       }),
-      update: () => ({ eq: () => insertImpl() }),
+      update: () => ({ eq: () => h.insertImpl() }),
     }),
   },
 }));
@@ -66,9 +63,9 @@ function setOnline(value: boolean) {
 
 describe("useOfflineSync — brutal stress test", () => {
   beforeEach(() => {
-    queue = [];
-    toastSpy.mockClear();
-    insertImpl.mockReset();
+    h.state.queue = [];
+    h.toastSpy.mockClear();
+    h.insertImpl.mockReset();
     setOnline(true);
   });
   afterEach(() => vi.clearAllMocks());
@@ -81,14 +78,14 @@ describe("useOfflineSync — brutal stress test", () => {
       await result.current.queueTripSave({ title: "Trip A" });
       await result.current.queueTripSave({ title: "Trip B" });
     });
-    expect(queue).toHaveLength(2);
+    expect(h.state.queue).toHaveLength(2);
 
-    insertImpl.mockResolvedValue({ data: { id: "id1" }, error: null });
+    h.insertImpl.mockResolvedValue({ data: { id: "id1" }, error: null });
     await act(async () => {
       setOnline(true);
     });
-    await waitFor(() => expect(queue.length).toBe(0), { timeout: 2000 });
-    expect(insertImpl).toHaveBeenCalled();
+    await waitFor(() => expect(h.state.queue.length).toBe(0), { timeout: 2000 });
+    expect(h.insertImpl).toHaveBeenCalled();
   });
 
   it("retries up to 3 times on intermittent failures, then drops the item", async () => {
@@ -96,29 +93,29 @@ describe("useOfflineSync — brutal stress test", () => {
     await act(async () => {
       await result.current.queueTripSave({ title: "Flaky" });
     });
-    insertImpl.mockResolvedValue({ data: null, error: new Error("boom") });
+    h.insertImpl.mockResolvedValue({ data: null, error: new Error("boom") });
 
     for (let i = 0; i < 4; i++) {
       await act(async () => {
         await result.current.syncPendingChanges();
       });
     }
-    expect(queue.length).toBe(0);
+    expect(h.state.queue.length).toBe(0);
   });
 
   it("emits offline toast in the active language (BS ↔ EN)", async () => {
     await i18n.changeLanguage("bs");
     renderHook(() => useOfflineSync(), { wrapper });
     await act(async () => setOnline(false));
-    expect(toastSpy).toHaveBeenCalledWith(
+    expect(h.toastSpy).toHaveBeenCalledWith(
       expect.objectContaining({ title: bs.offlineSyncToast.offlineTitle })
     );
 
-    toastSpy.mockClear();
+    h.toastSpy.mockClear();
     await i18n.changeLanguage("en");
     await act(async () => setOnline(true));
     await act(async () => setOnline(false));
-    expect(toastSpy).toHaveBeenCalledWith(
+    expect(h.toastSpy).toHaveBeenCalledWith(
       expect.objectContaining({ title: en.offlineSyncToast.offlineTitle })
     );
   });
@@ -129,13 +126,13 @@ describe("useOfflineSync — brutal stress test", () => {
       await result.current.queueTripSave({ title: "T1" });
       await result.current.queueTripSave({ title: "T2" });
     });
-    insertImpl.mockResolvedValue({ data: { id: "ok" }, error: null });
+    h.insertImpl.mockResolvedValue({ data: { id: "ok" }, error: null });
 
     await i18n.changeLanguage("bs");
     await act(async () => {
       await result.current.syncPendingChanges();
     });
-    const call = toastSpy.mock.calls.find(
+    const call = h.toastSpy.mock.calls.find(
       (c) => c[0]?.title === bs.offlineSyncToast.syncDoneTitle
     );
     expect(call?.[0]?.description).toContain("2");
