@@ -6,14 +6,11 @@ import i18n from "@/i18n";
 import bs from "@/i18n/locales/bs";
 import en from "@/i18n/locales/en";
 
-const h = vi.hoisted(() => {
-  const { vi } = require("vitest");
-  return {
-    toastSpy: vi.fn(),
-    insertImpl: vi.fn(),
-    state: { queue: [] as any[] },
-  };
-});
+const h = vi.hoisted(() => ({
+  toastSpy: vi.fn(),
+  insertImpl: vi.fn(),
+  state: { queue: [] as any[] },
+}));
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: h.toastSpy }),
