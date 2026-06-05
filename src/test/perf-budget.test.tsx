@@ -21,9 +21,9 @@ const costs = {
 const itin = [{
   day: 1, title: "D1",
   activities: [
-    { time: "08:00", description: "Polazak", type: "travel" as const, location: "A" },
-    { time: "12:00", description: "Ručak",  type: "meal"   as const, location: "B" },
-    { time: "15:00", description: "Posjeta", type: "visit"  as const, location: "C" },
+    { time: "08:00", description: "Polazak", type: "travel"   as const, location: "A" },
+    { time: "12:00", description: "Ručak",   type: "meal"     as const, location: "B" },
+    { time: "15:00", description: "Posjeta", type: "activity" as const, location: "C" },
   ],
 }];
 
