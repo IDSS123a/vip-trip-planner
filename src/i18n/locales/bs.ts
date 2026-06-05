@@ -324,6 +324,10 @@ const bs = {
     copiedDesc: "Link je kopiran u clipboard.",
     copyError: "Nije moguće kopirati link.",
     sharedBadge: "Podijeljeni Plan",
+    labelDates: "Datumi",
+    labelGrade: "Razred",
+    labelStudents: "Učenici",
+    labelTransport: "Prevoz",
   },
   email: {
     sendBtn: "Pošalji Email",
