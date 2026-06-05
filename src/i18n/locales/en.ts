@@ -326,6 +326,10 @@ const en: Translations = {
     copiedDesc: "Link copied to clipboard.",
     copyError: "Could not copy the link.",
     sharedBadge: "Shared Plan",
+    labelDates: "Dates",
+    labelGrade: "Grade",
+    labelStudents: "Students",
+    labelTransport: "Transport",
   },
   email: {
     sendBtn: "Send Email",
