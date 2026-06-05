@@ -109,8 +109,10 @@ describe("useOfflineSync — brutal stress test", () => {
     );
 
     h.toastSpy.mockClear();
+    setOnline(true);
     await i18n.changeLanguage("en");
-    await act(async () => setOnline(true));
+    // Re-render hook in EN context so its closures capture the new t()
+    renderHook(() => useOfflineSync(), { wrapper });
     await act(async () => setOnline(false));
     expect(h.toastSpy).toHaveBeenCalledWith(
       expect.objectContaining({ title: en.offlineSyncToast.offlineTitle })
@@ -118,6 +120,7 @@ describe("useOfflineSync — brutal stress test", () => {
   });
 
   it("sync-done toast interpolates {{count}} in the active locale", async () => {
+    await i18n.changeLanguage("bs");
     const { result } = renderHook(() => useOfflineSync(), { wrapper });
     await act(async () => {
       await result.current.queueTripSave({ title: "T1" });
@@ -125,7 +128,6 @@ describe("useOfflineSync — brutal stress test", () => {
     });
     h.insertImpl.mockResolvedValue({ data: { id: "ok" }, error: null });
 
-    await i18n.changeLanguage("bs");
     await act(async () => {
       await result.current.syncPendingChanges();
     });
