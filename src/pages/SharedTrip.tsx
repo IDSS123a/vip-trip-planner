@@ -160,7 +160,7 @@ const SharedTrip = () => {
                     <Calendar className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Datumi</p>
+                    <p className="text-xs text-muted-foreground">{t("share.labelDates")}</p>
                     <p className="font-medium text-sm">
                       {trip.departureDate || "TBD"} - {trip.returnDate || "TBD"}
                     </p>
@@ -176,7 +176,7 @@ const SharedTrip = () => {
                     <GraduationCap className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Razred</p>
+                    <p className="text-xs text-muted-foreground">{t("share.labelGrade")}</p>
                     <p className="font-medium text-sm">{trip.gradeLevel || "TBD"}</p>
                   </div>
                 </div>
@@ -190,7 +190,7 @@ const SharedTrip = () => {
                     <Users className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Učenici</p>
+                    <p className="text-xs text-muted-foreground">{t("share.labelStudents")}</p>
                     <p className="font-medium text-sm">{trip.studentCount}</p>
                   </div>
                 </div>
@@ -204,7 +204,7 @@ const SharedTrip = () => {
                     <Bus className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Prevoz</p>
+                    <p className="text-xs text-muted-foreground">{t("share.labelTransport")}</p>
                     <p className="font-medium text-sm capitalize">{trip.transport}</p>
                   </div>
                 </div>
