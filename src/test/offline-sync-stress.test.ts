@@ -6,26 +6,35 @@ import i18n from "@/i18n";
 import bs from "@/i18n/locales/bs";
 import en from "@/i18n/locales/en";
 
-const toastSpy = vi.fn();
+const { toastSpy, insertImpl, getQueue, setQueue } = vi.hoisted(() => {
+  let q: any[] = [];
+  return {
+    toastSpy: (await import("vitest")).vi.fn(),
+    insertImpl: (await import("vitest")).vi.fn(),
+    getQueue: () => q,
+    setQueue: (next: any[]) => { q = next; },
+  };
+});
+
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastSpy }),
   toast: toastSpy,
 }));
 
-let queue: any[] = [];
-const insertImpl = vi.fn();
 vi.mock("@/lib/offlineStorage", () => ({
   initOfflineDB: vi.fn().mockResolvedValue({}),
-  getSyncQueue: vi.fn(async () => queue.slice()),
+  getSyncQueue: vi.fn(async () => getQueue().slice()),
   removeFromSyncQueue: vi.fn(async (id: string) => {
-    queue = queue.filter((q) => q.id !== id);
+    setQueue(getQueue().filter((q) => q.id !== id));
   }),
   updateSyncQueueItem: vi.fn(async (id: string, patch: any) => {
-    queue = queue.map((q) => (q.id === id ? { ...q, ...patch } : q));
+    setQueue(getQueue().map((q) => (q.id === id ? { ...q, ...patch } : q)));
   }),
   addToSyncQueue: vi.fn(async (item: any) => {
     const id = crypto.randomUUID();
-    queue.push({ id, timestamp: Date.now(), retries: 0, ...item });
+    const next = getQueue().slice();
+    next.push({ id, timestamp: Date.now(), retries: 0, ...item });
+    setQueue(next);
     return id;
   }),
   cacheTrip: vi.fn().mockResolvedValue(undefined),
