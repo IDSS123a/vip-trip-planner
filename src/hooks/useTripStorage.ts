@@ -37,6 +37,15 @@ export const useTripStorage = () => {
       const { data: session } = await supabase.auth.getSession();
       const userId = session?.session?.user?.id || null;
 
+      if (!userId) {
+        toast({
+          variant: "destructive",
+          title: "Niste prijavljeni",
+          description: "Da biste sačuvali plan u svoj nalog, prvo se prijavite. Možete koristiti opciju 'Generiši Predložak (Offline)' za lokalno spremanje.",
+        });
+        return null;
+      }
+
       const { data, error } = await (supabase
         .from("trips" as any)
         .insert({
@@ -88,10 +97,13 @@ export const useTripStorage = () => {
       };
     } catch (error) {
       console.error("Error saving trip:", error);
+      const msg = (error as any)?.message || (error as any)?.error_description || String(error);
       toast({
         variant: "destructive",
         title: "Greška",
-        description: "Nije moguće spremiti plan putovanja.",
+        description: msg
+          ? `Nije moguće spremiti plan: ${msg}`
+          : "Nije moguće spremiti plan putovanja.",
       });
       return null;
     } finally {
@@ -133,10 +145,13 @@ export const useTripStorage = () => {
       return true;
     } catch (error) {
       console.error("Error updating trip:", error);
+      const msg = (error as any)?.message || (error as any)?.error_description || String(error);
       toast({
         variant: "destructive",
         title: "Greška",
-        description: "Nije moguće ažurirati plan putovanja.",
+        description: msg
+          ? `Nije moguće ažurirati plan: ${msg}`
+          : "Nije moguće ažurirati plan putovanja.",
       });
       return false;
     } finally {

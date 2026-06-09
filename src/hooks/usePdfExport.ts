@@ -44,6 +44,11 @@ interface TripPlan {
       description: string;
       type: string;
       location: string;
+      address?: string;
+      phone?: string;
+      opening_hours?: string;
+      website?: string;
+      price?: string;
       notes?: string;
     }>;
   }>;
@@ -266,13 +271,27 @@ export const usePdfExport = () => {
           });
           y += 4.4;
 
-          if (activity.location) {
+          // Concrete location details (location, address, hours, phone, website, price)
+          const detailRows: Array<[string, string | undefined]> = [
+            ["Lokacija", activity.location],
+            ["Adresa", activity.address],
+            ["Radno vrijeme", activity.opening_hours],
+            ["Telefon", activity.phone],
+            ["Web", activity.website],
+            ["Cijena", activity.price],
+          ];
+          for (const [label, value] of detailRows) {
+            if (!value) continue;
             y = ensureSpace(doc, y, 4.5);
             doc.setFontSize(8);
             doc.setFont("DejaVu", "normal");
             setText(doc, PDF_THEME.color.muted);
-            const lc = doc.splitTextToSize(`Lokacija: ${activity.location}`, descW) as string[];
-            doc.text(lc[0] || "", descX, y);
+            const txt = `${label}: ${value}`;
+            const lines = doc.splitTextToSize(txt, descW) as string[];
+            lines.forEach((line, i) => {
+              if (i > 0) { y += 3.8; y = ensureSpace(doc, y, 4); }
+              doc.text(line, descX, y);
+            });
             setText(doc, PDF_THEME.color.text);
             y += 4;
           }
