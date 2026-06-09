@@ -1004,8 +1004,26 @@ serve(async (req) => {
         },
         why_this_fits: plan.why_this_fits || "",
         accommodation_info: plan.accommodation_name
-          ? plan.accommodation_name + (plan.accommodation_address ? ", " + plan.accommodation_address : "") + (plan.accommodation_phone ? ", Tel: " + plan.accommodation_phone : "")
+          ? [
+              plan.accommodation_name,
+              plan.accommodation_address,
+              plan.accommodation_phone ? "Tel: " + plan.accommodation_phone : "",
+              plan.accommodation_website ? "Web: " + plan.accommodation_website : "",
+              plan.accommodation_hours ? plan.accommodation_hours : "",
+              plan.accommodation_price_per_night ? "Cijena: " + plan.accommodation_price_per_night : "",
+            ].filter(Boolean).join(" · ")
           : undefined,
+        accommodation_details: {
+          name: plan.accommodation_name,
+          address: plan.accommodation_address,
+          phone: plan.accommodation_phone,
+          website: plan.accommodation_website,
+          hours: plan.accommodation_hours,
+          type_actual: plan.accommodation_type_actual,
+          price_per_night: plan.accommodation_price_per_night,
+        },
+        ai_generated: !plan._fallback,
+        fallback_engine: !!plan._fallback,
         meeting_point: {
           name: tripData.departureAddress ? "Tačka okupljanja" : "Internationale Deutsche Schule Sarajevo",
           address: tripData.departureAddress?.trim() || "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
