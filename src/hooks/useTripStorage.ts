@@ -37,6 +37,15 @@ export const useTripStorage = () => {
       const { data: session } = await supabase.auth.getSession();
       const userId = session?.session?.user?.id || null;
 
+      if (!userId) {
+        toast({
+          variant: "destructive",
+          title: "Niste prijavljeni",
+          description: "Da biste sačuvali plan u svoj nalog, prvo se prijavite. Možete koristiti opciju 'Generiši Predložak (Offline)' za lokalno spremanje.",
+        });
+        return null;
+      }
+
       const { data, error } = await (supabase
         .from("trips" as any)
         .insert({
