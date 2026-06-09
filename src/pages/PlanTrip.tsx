@@ -133,6 +133,9 @@ const PlanTrip = () => {
           educationalFocus: data.educationalFocus || "",
           specialNeeds: data.specialNeeds || "",
           tripPriorities: data.tripPriorities || "",
+          mealPlan: data.mealPlan || undefined,
+          accommodationType: data.accommodationType || undefined,
+          medicalInfo: data.medicalInfo || undefined,
           previousYearDestination: previousYearDestination || undefined,
           language: (i18n.language || "bs").startsWith("en") ? "en" : "bs",
         }
@@ -167,7 +170,32 @@ const PlanTrip = () => {
   };
 
   const handleGeneratePlan = () => {
-    form.handleSubmit(onSubmit)();
+    form.handleSubmit(onSubmit, onInvalid)();
+  };
+
+  // RHF invalid handler — surface a clear, actionable toast that lists the
+  // exact fields the user needs to complete before plan generation can run.
+  const onInvalid = (errors: Record<string, any>) => {
+    setActiveTab("form");
+    const fieldLabels: Record<string, string> = {
+      departureCity: t("planTripExtra.fldDeparture", "Polazište"),
+      destinations: t("planTripExtra.fldDestinations", "Destinacije"),
+      tripType: t("planTripExtra.fldTripType", "Tip ekskurzije"),
+      gradeLevel: t("planTripExtra.fldGrade", "Razred"),
+      studentCount: t("planTripExtra.fldStudents", "Broj učenika"),
+      transport: t("planTripExtra.fldTransport", "Prijevoz"),
+      tripDate: t("planTripExtra.fldDeparture2", "Datum polaska"),
+      returnDate: t("planTripExtra.fldReturn", "Datum povratka"),
+      chaperones: t("planTripExtra.fldChaperones", "Pratitelji"),
+    };
+    const lines = Object.entries(errors)
+      .slice(0, 5)
+      .map(([k, v]: any) => `• ${fieldLabels[k] || k}: ${v?.message || "obavezno"}`);
+    toast({
+      variant: "destructive",
+      title: t("planTripExtra.fixFormTitle", "Plan nije moguće generirati"),
+      description: lines.join("\n") || t("planTripExtra.fixFormDesc", "Molimo popunite obavezna polja označena crveno."),
+    });
   };
 
   const handleSaveTrip = async () => {
