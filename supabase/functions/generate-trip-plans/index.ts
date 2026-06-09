@@ -698,6 +698,183 @@ export function validatePlanOvernights(
   return { ok: violations.length === 0, violations, overnightStops, expectedFinal: finalDestination };
 }
 
+// ──────────────────────────────────────────────────────────────────
+// USER-INPUT (USTAV) VALIDATION — accommodation/meal must match
+// ──────────────────────────────────────────────────────────────────
+const ACCOM_FORBIDDEN: Record<string, RegExp> = {
+  hotel: /\b(hostel|youth hostel|kamp\b|camping|planinska kuca|planinarski dom|mountain hut|apartman|apartment)\b/i,
+  hostel: /\bhotel\b/i,
+  youth_hostel: /\bhotel\b/i,
+  apartment: /\b(hotel|hostel)\b/i,
+  camp: /\b(hotel|hostel|apartman)\b/i,
+  mountain_hut: /\b(hotel|hostel|apartman)\b/i,
+};
+
+export function validateUserChoices(
+  plan: any,
+  accommodationType?: string,
+  mealPlan?: string,
+): string[] {
+  const issues: string[] = [];
+  if (accommodationType && ACCOM_FORBIDDEN[accommodationType]) {
+    const haystack = [
+      plan?.accommodation_name,
+      plan?.accommodation_address,
+      plan?.accommodation_type_actual,
+    ].filter(Boolean).join(" ");
+    if (ACCOM_FORBIDDEN[accommodationType].test(haystack)) {
+      issues.push(`Smještaj ne odgovara korisničkom izboru "${accommodationType}" (pronađen je zabranjen tip u "${haystack}").`);
+    }
+    // Walk itinerary accommodation activities
+    for (const day of plan?.itinerary || []) {
+      for (const a of day?.activities || []) {
+        if (String(a?.type || "").toLowerCase() !== "accommodation") continue;
+        const hay = [a?.location, a?.description, a?.notes].filter(Boolean).join(" ");
+        if (ACCOM_FORBIDDEN[accommodationType].test(hay)) {
+          issues.push(`Dan ${day?.day}: aktivnost smještaja ne odgovara izboru "${accommodationType}" ("${a?.location || a?.description}").`);
+        }
+      }
+    }
+  }
+  if (mealPlan === "self_catering" || mealPlan === "packed_lunch") {
+    // Should not plan restaurant meals
+    for (const day of plan?.itinerary || []) {
+      for (const a of day?.activities || []) {
+        if (String(a?.type || "").toLowerCase() === "meal" && /\brestoran|restaurant\b/i.test(a?.description || "")) {
+          // Allowed if just "obrok/paket" — flag only explicit restaurant booking
+          issues.push(`Dan ${day?.day}: planiran restoran iako korisnik je izabrao "${mealPlan}".`);
+          break;
+        }
+      }
+    }
+  }
+  return issues;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// FALLBACK PLAN ENGINE — used when AI Gateway is unavailable or fails
+// Generates a deterministic plan from real POI data so users always
+// get concrete location names, addresses, phones and opening hours.
+// ──────────────────────────────────────────────────────────────────
+function pickPoi(list: POI[], idx: number): POI | null {
+  if (!list || list.length === 0) return null;
+  return list[idx % list.length];
+}
+
+function poiActivity(time: string, type: string, poi: POI | null, fallback: string, prefix = ""): any {
+  if (!poi) {
+    return { time, type, description: fallback, location: fallback };
+  }
+  const desc = `${prefix}${poi.name}${poi.address ? ` — ${poi.address}` : ""}.${poi.openingHours ? ` Radno vrijeme: ${poi.openingHours}.` : ""}${poi.phone ? ` Tel: ${poi.phone}.` : ""}`;
+  return {
+    time,
+    type,
+    description: desc,
+    location: poi.name,
+    address: poi.address,
+    phone: poi.phone,
+    opening_hours: poi.openingHours,
+    website: poi.website,
+    lat: poi.lat,
+    lng: poi.lng,
+  };
+}
+
+export function generateFallbackPlan(
+  tripData: TripRequest,
+  cityContexts: CityContext[],
+  tripDays: number,
+  tier: 'Budget' | 'Balanced' | 'Premium',
+): any {
+  const finalDestination = tripData.destinations[tripData.destinations.length - 1];
+  const lookup = new Map<string, CityContext>();
+  for (const c of cityContexts) lookup.set(c.city.toLowerCase().trim(), c);
+  const finalCtx = lookup.get(finalDestination.toLowerCase().trim()) || cityContexts[cityContexts.length - 1];
+
+  // Accommodation: respect user choice when possible
+  let accomPoi: POI | null = null;
+  if (finalCtx) {
+    const hotels = finalCtx.hotels || [];
+    if (tripData.accommodationType === 'hotel') {
+      accomPoi = hotels.find(h => !/hostel/i.test(h.name)) || hotels[0] || null;
+    } else if (tripData.accommodationType === 'hostel' || tripData.accommodationType === 'youth_hostel') {
+      accomPoi = hotels.find(h => /hostel/i.test(h.name)) || hotels[0] || null;
+    } else {
+      accomPoi = hotels[0] || null;
+    }
+  }
+
+  const itinerary: any[] = [];
+  const start = new Date(tripData.departureDate);
+  for (let d = 0; d < tripDays; d++) {
+    const dayDate = new Date(start.getTime() + d * 86400000);
+    const dateStr = dayDate.toISOString().slice(0, 10);
+    const cityIdx = Math.min(d, cityContexts.length - 1);
+    const ctx = cityContexts[cityIdx] || finalCtx;
+    const activities: any[] = [];
+
+    if (d === 0) {
+      activities.push({
+        time: "07:00 - 07:30",
+        type: "activity",
+        description: `Okupljanje grupe na adresi ${tripData.departureAddress || "IDSS, Buka 13, Sarajevo"}. Provjera prisutnosti i kratak brief.`,
+        location: tripData.departureAddress || "IDSS, Buka 13, 71 000 Sarajevo",
+      });
+      activities.push({
+        time: "07:30 - 12:00",
+        type: "travel",
+        description: `Putovanje (${tripData.transport || 'autobus'}) ${tripData.departureCity} → ${tripData.destinations[0]}. Tehnička pauza svakih 2 sata (Pravilnik Član 15).`,
+        location: `Ruta ${tripData.departureCity} → ${tripData.destinations[0]}`,
+      });
+    }
+
+    activities.push(poiActivity("12:30 - 14:00", "meal", pickPoi(ctx?.restaurants || [], d), `Ručak u ${ctx?.city || finalDestination}`, "Ručak: "));
+    activities.push(poiActivity("14:30 - 16:30", "activity", pickPoi(ctx?.museums || [], d), `Obrazovni posjet u ${ctx?.city || finalDestination}`, "Posjeta: "));
+    activities.push(poiActivity("17:00 - 18:30", "activity", pickPoi(ctx?.attractions || [], d), `Razgledanje znamenitosti u ${ctx?.city || finalDestination}`, "Razgledanje: "));
+    activities.push(poiActivity("19:00 - 20:30", "meal", pickPoi(ctx?.restaurants || [], d + 1), `Večera u ${ctx?.city || finalDestination}`, "Večera: "));
+
+    if (tripDays > 1 && d < tripDays - 1) {
+      activities.push(poiActivity("21:00 - 22:00", "accommodation", accomPoi, `Smještaj u ${finalDestination}`, "Smještaj: "));
+    }
+
+    if (d === tripDays - 1 && tripDays > 1) {
+      activities.push({
+        time: "15:00 - 21:00",
+        type: "travel",
+        description: `Povratak ${finalDestination} → ${tripData.departureCity}. Tehničke pauze svakih 2 sata.`,
+        location: `Ruta ${finalDestination} → ${tripData.departureCity}`,
+      });
+    }
+
+    itinerary.push({
+      day: d + 1,
+      date: dateStr,
+      title: d === 0
+        ? `Polazak — ${tripData.destinations[0]}`
+        : d === tripDays - 1
+          ? `Povratak iz ${finalDestination}`
+          : `${ctx?.city || finalDestination} — obrazovni dan`,
+      summary: `Plan generisan iz baze lokalnih lokacija (offline fallback engine, ${tier}).`,
+      activities,
+    });
+  }
+
+  return {
+    type: tier,
+    label: tier === 'Budget' ? 'Ekonomična opcija' : tier === 'Balanced' ? 'Optimalni odnos cijene i kvaliteta' : 'Premium VIP iskustvo',
+    accommodation_name: accomPoi?.name || `Preporučeni ${tripData.accommodationType || 'smještaj'} u ${finalDestination}`,
+    accommodation_address: accomPoi?.address || finalDestination,
+    accommodation_phone: accomPoi?.phone || "—",
+    accommodation_website: accomPoi?.website || "",
+    accommodation_hours: "Check-in: 14:00, Check-out: 11:00",
+    accommodation_type_actual: tripData.accommodationType || 'hotel',
+    accommodation_price_per_night: tier === 'Budget' ? '28 EUR/os' : tier === 'Balanced' ? '48 EUR/os' : '85 EUR/os',
+    why_this_fits: `Plan generisan offline fallback inženjerom (bez AI Gateway-a) iz baze OpenStreetMap lokacija za ${finalDestination}. Sve stavke uključuju stvarna imena lokacija iz POI baze.`,
+    itinerary,
+    _fallback: true,
+  };
+}
+
 // =====================================================================
 // MAIN SERVER
 // =====================================================================
