@@ -351,6 +351,36 @@ async function generateSinglePlan(
   const accomType = tier === 'Budget' ? 'hostel ili 2* hotel' : tier === 'Balanced' ? '3* hotel' : '4-5* hotel';
   const mealType = tier === 'Budget' ? 'pristupačni restorani, fast food, pekare' : tier === 'Balanced' ? 'srednja klasa restorani, lokalna kuhinja' : 'vrhunski restorani, fine dining';
 
+  // === USTAVNI INPUT — strict user-chosen overrides ===
+  // Map enum values from the form to concrete, human-readable instructions for the AI.
+  const userAccomMap: Record<string, string> = {
+    hotel: "HOTEL (2*, 3*, 4* ili 5*) — ZABRANJEN hostel, omladinski hostel, hostel kapsule, kamp, planinska kuća, apartman",
+    hostel: "HOSTEL — koristi isključivo hostel/youth hostel ponudu, NE HOTEL",
+    youth_hostel: "OMLADINSKI HOSTEL (youth hostel) — bez hotela, bez kampova",
+    apartment: "APARTMAN — privatni/turistički apartmani, NE hotel, NE hostel",
+    camp: "KAMP — kampove i kamp-naselja, NE hotel, NE hostel",
+    mountain_hut: "PLANINSKA KUĆA / dom u prirodi, NE hotel, NE hostel",
+  };
+  const userMealMap: Record<string, string> = {
+    full_board: "PUNI PANSION — doručak + ručak + večera SVAKOG dana (uključujući dan dolaska/odlaska gdje je moguće)",
+    half_board: "POLUPANSION — doručak + večera SVAKOG dana",
+    breakfast_only: "SAMO DORUČAK uključen u smještaj; ručak i večera su slobodne aktivnosti",
+    self_catering: "BEZ ORGANIZOVANIH OBROKA — učenici sami biraju gdje će jesti, ne planiraj obroke u itinereru osim kao slobodno vrijeme",
+    packed_lunch: "PAKET OBROK — pripremljeni obroci, ne planiraj restorane za ručak",
+  };
+  const userTransportMap: Record<string, string> = {
+    bus: "AUTOBUS — sav međugradski prijevoz autobusom, NE avion/voz/brod",
+    train: "VOZ — sav međugradski prijevoz vozom, NE autobus/avion/brod",
+    plane: "AVION — međugradski prijevoz avionom + transferi do/od aerodroma",
+    ship: "BROD/TRAJEKT — sav međugradski prijevoz brodom/trajektom",
+    mixed: "KOMBINIRANI prijevoz (autobus + voz/avion) — koristi najefikasniju kombinaciju",
+  };
+  const userAccomChoice = tripData.accommodationType ? userAccomMap[tripData.accommodationType] : null;
+  const userMealChoice = tripData.mealPlan ? userMealMap[tripData.mealPlan] : null;
+  const userTransportChoice = tripData.transport ? userTransportMap[tripData.transport] : null;
+  const effectiveAccomType = userAccomChoice || accomType;
+  const effectiveMealType = userMealChoice || mealType;
+
   const numberedRoute = tripData.destinations.map((d, i) => `${i + 1}. ${d}`).join(', ');
   const meetingAddress = tripData.departureAddress?.trim() || "IDSS, Buka 13, 71 000 Sarajevo";
   const finalDestination = tripData.destinations[tripData.destinations.length - 1];
@@ -411,12 +441,20 @@ IDSS PRAVILNIK — OBAVEZNI STANDARDI (Uputstvo 5.1, 5.2, Pravilnik Član 15):
 
 OBAVEZNA PRAVILA:
 - Svaki obrok: KONKRETNO ime restorana, adresa, telefon, opis hrane (min 2 rečenice)
-- Smještaj: KONKRETNO ime (${accomType}), adresa, telefon, cijena/noć, opis
-- Svaka posjeta: KONKRETNO ime lokacije, adresa, radno vrijeme, cijena ulaznice, edukativni opis (min 2 rečenice)
+- Smještaj: KONKRETNO ime (${effectiveAccomType}), adresa, telefon, cijena/noć, opis
+- Svaka posjeta: KONKRETNO ime lokacije, adresa, radno vrijeme, telefon (ako postoji), website (ako postoji), cijena ulaznice, edukativni opis (min 2 rečenice)
 - Svaki dan: minimum 6 aktivnosti s preciznim vremenima
 - Dan putovanja: gdje će djeca jesti na putu (konkretno ime restorana na ruti)
 - Koristi STVARNA, POZNATA imena. Dopuni podatke iz konteksta SVOJIM ZNANJEM o tim gradovima.
-- Restorani: ${mealType}
+- Restorani: ${effectiveMealType}
+
+========================================
+USTAV (APSOLUTNI ZAHTJEVI KORISNIKA — NE SMIJU SE PREKRŠITI):
+${userAccomChoice ? `- TIP SMJEŠTAJA: ${userAccomChoice}` : ""}
+${userMealChoice ? `- PLAN ISHRANE: ${userMealChoice}` : ""}
+${userTransportChoice ? `- PRIJEVOZ: ${userTransportChoice}` : ""}
+Ako bilo koji od ovih zahtjeva NIJE ispoštovan, plan se odbacuje. Tier (Budget/Balanced/Premium) NE SMIJE nadjačati korisnikov izbor — utiče samo na cijenu/kategoriju unutar odabranog tipa.
+========================================
 
 Odgovori SAMO čistim JSON-om (bez markdown oznaka):
 {
@@ -425,6 +463,9 @@ Odgovori SAMO čistim JSON-om (bez markdown oznaka):
   "accommodation_name":"...",
   "accommodation_address":"...",
   "accommodation_phone":"...",
+  "accommodation_website":"...",
+  "accommodation_hours":"Check-in: ..., Check-out: ...",
+  "accommodation_type_actual":"hotel|hostel|youth_hostel|apartment|camp|mountain_hut",
   "accommodation_price_per_night":"... EUR/os",
   "why_this_fits":"2-3 rečenice",
   "itinerary":[
@@ -434,7 +475,7 @@ Odgovori SAMO čistim JSON-om (bez markdown oznaka):
       "title":"Naslov dana",
       "summary":"Kratak pregled",
       "activities":[
-        {"time":"07:00 - 07:30","description":"Detaljan opis min 2 rečenice sa svim konkretnim informacijama.","type":"activity|travel|meal|accommodation|free_time","location":"Ime lokacije","lat":0.0,"lng":0.0,"notes":"..."}
+        {"time":"07:00 - 07:30","description":"Detaljan opis min 2 rečenice sa svim konkretnim informacijama.","type":"activity|travel|meal|accommodation|free_time","location":"Ime lokacije","address":"Ulica br, Grad","phone":"+xxx ...","opening_hours":"Pon-Ned 09:00-18:00","website":"https://...","price":"... EUR / os","lat":0.0,"lng":0.0,"notes":"..."}
       ]
     }
   ]
