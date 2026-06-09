@@ -913,11 +913,7 @@ serve(async (req) => {
     const allCities = [tripData.departureCity, ...tripData.destinations, tripData.departureCity];
     const fullRoute = allCities.join(' → ');
 
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "AI servis nije konfigurisan. Kontaktirajte administratora." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // NOTE: missing LOVABLE_API_KEY is NOT fatal — fallback engine takes over.
 
     // Step 1: Fetch ALL city contexts IN PARALLEL
     console.log("Step 1: Fetching POIs for all cities in parallel...");
@@ -939,18 +935,23 @@ serve(async (req) => {
     // Step 3: Generate 3 plans IN PARALLEL with AI
     console.log("Step 3: Generating 3 plans in PARALLEL...");
     const tiers: Array<'Budget' | 'Balanced' | 'Premium'> = ['Budget', 'Balanced', 'Premium'];
-    const planResults = await Promise.all(
-      tiers.map(tier => generateSinglePlan(tripData, cityContexts, routeInfo, tripDays, fullRoute, tier, LOVABLE_API_KEY))
-    );
+    const planResults = LOVABLE_API_KEY
+      ? await Promise.all(
+          tiers.map(tier => generateSinglePlan(tripData, cityContexts, routeInfo, tripDays, fullRoute, tier, LOVABLE_API_KEY))
+        )
+      : tiers.map(() => null);
 
-    const successfulPlans = planResults.filter(p => p !== null);
-    if (successfulPlans.length === 0) {
-      return new Response(JSON.stringify({ error: "Generisanje planova nije uspjelo. Pokušajte ponovo." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Replace any failed/missing AI plans with deterministic fallback plans built from POIs.
+    const filledPlans = tiers.map((tier, idx) => {
+      const ai = planResults[idx];
+      if (ai) return ai;
+      console.warn(`AI plan ${tier} unavailable — using offline fallback engine.`);
+      return generateFallbackPlan(tripData, cityContexts, tripDays, tier);
+    });
+    const successfulPlans = filledPlans;
 
-    console.log(`${successfulPlans.length}/3 plans generated successfully`);
+    const aiOk = planResults.filter(p => p !== null).length;
+    console.log(`${aiOk}/3 AI plans generated; ${3 - aiOk} replaced by fallback engine.`);
 
     // Step 3b: Validate that overnights only happen in the final destination
     const finalDestination = tripData.destinations[tripData.destinations.length - 1];
@@ -960,21 +961,25 @@ serve(async (req) => {
     const validationReports: Array<{ tier: string; violations: string[] }> = [];
     for (const p of successfulPlans) {
       const v = validatePlanOvernights(p, finalDestination, intermediateStops, tripNights);
-      validationReports.push({ tier: p?.type || "?", violations: v.violations });
-      if (v.ok) {
+      const userIssues = validateUserChoices(p, tripData.accommodationType, tripData.mealPlan);
+      const allViolations = [...v.violations, ...userIssues];
+      validationReports.push({ tier: p?.type || "?", violations: allViolations });
+      if (allViolations.length === 0) {
         validatedPlans.push(p);
       } else {
-        console.warn(`Plan ${p?.type} odbačen — kršenje pravila noćenja:`, v.violations);
+        console.warn(`Plan ${p?.type} odbačen — kršenje pravila:`, allViolations);
+        // If AI plan violates the user's "USTAV" inputs, replace with fallback
+        // engine output that is guaranteed to honor the user's choices.
+        if (userIssues.length > 0 || !v.ok) {
+          const fb = generateFallbackPlan(tripData, cityContexts, tripDays, (p?.type || 'Balanced') as any);
+          validatedPlans.push(fb);
+        }
       }
     }
 
     if (validatedPlans.length === 0) {
-      return new Response(JSON.stringify({
-        error: "AI je generisao plan koji krši pravilo: sva noćenja MORAJU biti u konačnoj destinaciji. Pokušajte ponovo.",
-        validation_report: validationReports,
-      }), {
-        status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      // Final safety net — produce at least one fallback plan
+      validatedPlans.push(generateFallbackPlan(tripData, cityContexts, tripDays, 'Balanced'));
     }
 
     // Step 4: Enrich plans
