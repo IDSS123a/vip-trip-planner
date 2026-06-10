@@ -642,6 +642,7 @@ const en: Translations = {
     syncFailDesc_few: "{{count}} changes could not be synced after multiple attempts.",
     syncFailDesc_other: "{{count}} changes could not be synced after multiple attempts.",
     conflictResolvedTitle: "Conflict resolved",
+    conflictResolvedDesc: "{{count}} conflicts merged using 'last write wins' strategy.",
     conflictResolvedDesc_one: "{{count}} conflict merged using 'last write wins' strategy.",
     conflictResolvedDesc_few: "{{count}} conflicts merged using 'last write wins' strategy.",
     conflictResolvedDesc_other: "{{count}} conflicts merged using 'last write wins' strategy.",

@@ -640,6 +640,7 @@ const bs = {
     syncFailDesc_few: "{{count}} promjene nisu mogle biti sinkronizirane nakon više pokušaja.",
     syncFailDesc_other: "{{count}} promjena nije moglo biti sinkronizirano nakon više pokušaja.",
     conflictResolvedTitle: "Konflikt riješen",
+    conflictResolvedDesc: "{{count}} sukoba spojeno strategijom 'najnovija promjena pobjeđuje'.",
     conflictResolvedDesc_one: "{{count}} sukob spojen strategijom 'najnovija promjena pobjeđuje'.",
     conflictResolvedDesc_few: "{{count}} sukoba spojena strategijom 'najnovija promjena pobjeđuje'.",
     conflictResolvedDesc_other: "{{count}} sukoba spojeno strategijom 'najnovija promjena pobjeđuje'.",
