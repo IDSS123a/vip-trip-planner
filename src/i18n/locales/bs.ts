@@ -631,8 +631,18 @@ const bs = {
     offlineDesc: "Promjene će biti spremljene lokalno i sinkronizirane kad se vratite online.",
     syncDoneTitle: "Sinkronizacija završena!",
     syncDoneDesc: "{{count}} promjena uspješno sinkronizirano.",
+    syncDoneDesc_one: "{{count}} promjena uspješno sinkronizirana.",
+    syncDoneDesc_few: "{{count}} promjene uspješno sinkronizirane.",
+    syncDoneDesc_other: "{{count}} promjena uspješno sinkronizirano.",
     syncFailTitle: "Neke promjene nisu sinkronizirane",
     syncFailDesc: "{{count}} promjena nije moglo biti sinkronizirano nakon više pokušaja.",
+    syncFailDesc_one: "{{count}} promjena nije mogla biti sinkronizirana nakon više pokušaja.",
+    syncFailDesc_few: "{{count}} promjene nisu mogle biti sinkronizirane nakon više pokušaja.",
+    syncFailDesc_other: "{{count}} promjena nije moglo biti sinkronizirano nakon više pokušaja.",
+    conflictResolvedTitle: "Konflikt riješen",
+    conflictResolvedDesc_one: "{{count}} sukob spojen strategijom 'najnovija promjena pobjeđuje'.",
+    conflictResolvedDesc_few: "{{count}} sukoba spojena strategijom 'najnovija promjena pobjeđuje'.",
+    conflictResolvedDesc_other: "{{count}} sukoba spojeno strategijom 'najnovija promjena pobjeđuje'.",
   },
 };
 
