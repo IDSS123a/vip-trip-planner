@@ -1,0 +1,44 @@
+name: i18n & Tests (must pass before merge)
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  i18n-and-tests:
+    name: i18n hardcoded scan + full test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: i18n hardcoded-string lint (critical files)
+        run: bunx vitest run src/test/i18n-hardcoded.test.ts --reporter=verbose
+
+      - name: i18n parity + stress (BS ↔ EN keys)
+        run: bunx vitest run src/test/i18n-parity.test.ts src/test/i18n-stress.test.ts --reporter=verbose
+
+      - name: Pluralization + language persistence + conflict-merge
+        run: bunx vitest run src/test/i18n-plural.test.ts src/test/i18n-persistence.test.ts src/test/offline-conflict-merge.test.ts --reporter=verbose
+
+      - name: Full test suite
+        run: bunx vitest run --reporter=verbose
+
+      - name: Upload i18n report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: i18n-report
+          path: |
+            BRUTAL-OVERALL-STRESS-TEST.md
+          if-no-files-found: ignore
