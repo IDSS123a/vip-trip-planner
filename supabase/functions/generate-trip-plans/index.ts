@@ -381,6 +381,14 @@ async function generateSinglePlan(
   const effectiveAccomType = userAccomChoice || accomType;
   const effectiveMealType = userMealChoice || mealType;
 
+  // USTAVNI free-text input from "Važne informacije za planiranje puta".
+  // This is treated as the highest-priority instruction set from the teacher
+  // and is injected into BOTH the system and user prompts so the model cannot
+  // silently ignore it.
+  const userPrioritiesText = (tripData.tripPriorities || "").trim();
+  const userSpecialNeedsText = (tripData.specialNeeds || "").trim();
+  const userMedicalText = (tripData.medicalInfo || "").trim();
+
   const numberedRoute = tripData.destinations.map((d, i) => `${i + 1}. ${d}`).join(', ');
   const meetingAddress = tripData.departureAddress?.trim() || "IDSS, Buka 13, 71 000 Sarajevo";
   const finalDestination = tripData.destinations[tripData.destinations.length - 1];
@@ -453,6 +461,9 @@ USTAV (APSOLUTNI ZAHTJEVI KORISNIKA — NE SMIJU SE PREKRŠITI):
 ${userAccomChoice ? `- TIP SMJEŠTAJA: ${userAccomChoice}` : ""}
 ${userMealChoice ? `- PLAN ISHRANE: ${userMealChoice}` : ""}
 ${userTransportChoice ? `- PRIJEVOZ: ${userTransportChoice}` : ""}
+${userPrioritiesText ? `- VAŽNE INFORMACIJE ZA PLANIRANJE PUTA (USTAVNI slobodni unos nastavnika):\n"""${userPrioritiesText}"""\n  → Svaki zahtjev iz ovog teksta MORA biti integriran u itinerer i preferencije. Ako navodi sat polaska/povratka, broj pauza, zabrane (npr. "bez muzeja", "bez noćnih izlazaka"), preferencije ishrane, edukativne fokuse, ili specifične lokacije — sve TO MORA biti vidljivo u planu. Ako ne možeš ispoštovati neki dio, eksplicitno ga navedi u "why_this_fits" sa razlogom.` : ""}
+${userSpecialNeedsText ? `- POSEBNE POTREBE: ${userSpecialNeedsText} (planiraj pristupačnost, opremu i pauze koje to zahtijevaju)` : ""}
+${userMedicalText ? `- MEDICINSKE NAPOMENE: ${userMedicalText} (uračunaj u hitne kontakte i pauze)` : ""}
 Ako bilo koji od ovih zahtjeva NIJE ispoštovan, plan se odbacuje. Tier (Budget/Balanced/Premium) NE SMIJE nadjačati korisnikov izbor — utiče samo na cijenu/kategoriju unutar odabranog tipa.
 ========================================
 
@@ -714,6 +725,7 @@ export function validateUserChoices(
   plan: any,
   accommodationType?: string,
   mealPlan?: string,
+  tripPriorities?: string,
 ): string[] {
   const issues: string[] = [];
   if (accommodationType && ACCOM_FORBIDDEN[accommodationType]) {
@@ -744,6 +756,30 @@ export function validateUserChoices(
           // Allowed if just "obrok/paket" — flag only explicit restaurant booking
           issues.push(`Dan ${day?.day}: planiran restoran iako korisnik je izabrao "${mealPlan}".`);
           break;
+        }
+      }
+    }
+  }
+  // Best-effort enforcement of free-text USTAV ("Važne informacije za planiranje puta").
+  // We scan for explicit negative constraints the teacher commonly writes and
+  // flag any plan activity that obviously violates them.
+  const pri = (tripPriorities || "").toLowerCase();
+  if (pri) {
+    const NEGATIVE_RULES: Array<{ trigger: RegExp; forbid: RegExp; label: string }> = [
+      { trigger: /bez\s+muzeja|no\s+museum/i, forbid: /\b(muzej|museum)\b/i, label: "muzeja" },
+      { trigger: /bez\s+(noćnih|nocnih)\s+izlazaka|no\s+night\s+(out|activities)/i, forbid: /\b(noćni|nocni|night\s+club|noćni\s+izlazak)\b/i, label: "noćnih izlazaka" },
+      { trigger: /bez\s+shopping(a)?|no\s+shopping/i, forbid: /\b(shopping|kupovin)/i, label: "shoppinga" },
+      { trigger: /bez\s+restorana|no\s+restaurants?/i, forbid: /\b(restoran|restaurant)\b/i, label: "restorana" },
+    ];
+    for (const rule of NEGATIVE_RULES) {
+      if (!rule.trigger.test(pri)) continue;
+      for (const day of plan?.itinerary || []) {
+        for (const a of day?.activities || []) {
+          const hay = `${a?.description || ""} ${a?.location || ""} ${a?.notes || ""}`;
+          if (rule.forbid.test(hay)) {
+            issues.push(`Dan ${day?.day}: aktivnost krši USTAVNI zahtjev "bez ${rule.label}" iz polja Važne informacije.`);
+            break;
+          }
         }
       }
     }
@@ -961,7 +997,7 @@ serve(async (req) => {
     const validationReports: Array<{ tier: string; violations: string[] }> = [];
     for (const p of successfulPlans) {
       const v = validatePlanOvernights(p, finalDestination, intermediateStops, tripNights);
-      const userIssues = validateUserChoices(p, tripData.accommodationType, tripData.mealPlan);
+      const userIssues = validateUserChoices(p, tripData.accommodationType, tripData.mealPlan, tripData.tripPriorities);
       const allViolations = [...v.violations, ...userIssues];
       validationReports.push({ tier: p?.type || "?", violations: allViolations });
       if (allViolations.length === 0) {

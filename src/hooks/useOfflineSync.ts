@@ -95,10 +95,50 @@ export const useOfflineSync = () => {
       // Sort by timestamp to process in order
       queue.sort((a, b) => a.timestamp - b.timestamp);
 
+      // ──────────────────────────────────────────────────────────────
+      // Conflict resolution: when the same trip was edited offline from
+      // multiple clients/tabs, we receive multiple 'update' entries for
+      // the same tripId. Strategy = LAST WRITE WINS (latest timestamp).
+      // We merge older updates into the newest so the server sees one
+      // coherent payload instead of stomping each prior edit individually.
+      // ──────────────────────────────────────────────────────────────
+      const merged: typeof queue = [];
+      const updateByTrip = new Map<string, typeof queue[number]>();
+      let conflictCount = 0;
+      for (const item of queue) {
+        if (item.action === "update" && item.tripId) {
+          const existing = updateByTrip.get(item.tripId);
+          if (existing) {
+            conflictCount++;
+            // Merge: later wins on conflicting keys, but earlier non-conflicting
+            // fields are preserved.
+            const winner = item.timestamp >= existing.timestamp ? item : existing;
+            const loser = winner === item ? existing : item;
+            const mergedData = { ...loser.data, ...winner.data };
+            updateByTrip.set(item.tripId, { ...winner, data: mergedData });
+            // Drop the loser from the persisted queue to avoid double-apply
+            try { await removeFromSyncQueue(loser.id); } catch { /* noop */ }
+          } else {
+            updateByTrip.set(item.tripId, item);
+          }
+        } else {
+          merged.push(item);
+        }
+      }
+      for (const v of updateByTrip.values()) merged.push(v);
+      merged.sort((a, b) => a.timestamp - b.timestamp);
+
+      if (conflictCount > 0) {
+        toast({
+          title: t("offlineSyncToast.conflictResolvedTitle"),
+          description: t("offlineSyncToast.conflictResolvedDesc", { count: conflictCount }),
+        });
+      }
+
       let successCount = 0;
       let failCount = 0;
 
-      for (const item of queue) {
+      for (const item of merged) {
         try {
           const { data: session } = await supabase.auth.getSession();
           const userId = session?.session?.user?.id || null;
