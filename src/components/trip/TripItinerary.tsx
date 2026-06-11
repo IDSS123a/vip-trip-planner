@@ -390,20 +390,30 @@ const TripItinerary = ({
               <Alert variant={plan.validation_report?.user_issues?.length ? "destructive" : "default"}>
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>
-                  {plan.validation_report?.fallback_reason === "user_constitution_violation"
-                    ? t("planValidation.ustavTitle")
-                    : plan.fallback_engine
-                      ? t("planValidation.fallbackTitle")
-                      : t("planValidation.warningTitle")}
+                  {plan.validation_report?.fallback_reason === "pii_detected"
+                    ? t("planValidation.piiTitle")
+                    : plan.validation_report?.fallback_reason === "user_constitution_violation"
+                      ? t("planValidation.ustavTitle")
+                      : plan.fallback_engine
+                        ? t("planValidation.fallbackTitle")
+                        : t("planValidation.warningTitle")}
                 </AlertTitle>
                 <AlertDescription className="space-y-2">
                   <p className="text-sm">
-                    {plan.validation_report?.fallback_reason === "user_constitution_violation"
-                      ? t("planValidation.ustavDesc")
-                      : plan.fallback_engine
-                        ? t("planValidation.fallbackDesc")
-                        : t("planValidation.warningDesc")}
+                    {plan.validation_report?.fallback_reason === "pii_detected"
+                      ? t("planValidation.piiDesc")
+                      : plan.validation_report?.fallback_reason === "user_constitution_violation"
+                        ? t("planValidation.ustavDesc")
+                        : plan.fallback_engine
+                          ? t("planValidation.fallbackDesc")
+                          : t("planValidation.warningDesc")}
                   </p>
+                  {plan.validation_report?.fallback_reason && (
+                    <p className="text-xs" data-testid="fallback-reason">
+                      <span className="font-semibold">{t("planValidation.fallbackReasonLabel")}</span>{" "}
+                      <span>{t(`planValidation.reason_${plan.validation_report.fallback_reason}` as any, { defaultValue: plan.validation_report.fallback_reason })}</span>
+                    </p>
+                  )}
                   {(plan.validation_report?.user_issues?.length || 0) > 0 && (
                     <div>
                       <p className="text-xs font-semibold mt-2">{t("planValidation.violatedRules")}</p>
