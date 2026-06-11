@@ -385,6 +385,46 @@ const TripItinerary = ({
 
         {plans.map((plan) => (
           <TabsContent key={plan.id} value={String(plan.id)} className="space-y-6">
+            {/* Constitution / Fallback notice */}
+            {(plan.fallback_engine || (plan.validation_report && ((plan.validation_report.user_issues?.length || 0) + (plan.validation_report.violations?.length || 0)) > 0)) && (
+              <Alert variant={plan.validation_report?.user_issues?.length ? "destructive" : "default"}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>
+                  {plan.validation_report?.fallback_reason === "user_constitution_violation"
+                    ? t("planValidation.ustavTitle")
+                    : plan.fallback_engine
+                      ? t("planValidation.fallbackTitle")
+                      : t("planValidation.warningTitle")}
+                </AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p className="text-sm">
+                    {plan.validation_report?.fallback_reason === "user_constitution_violation"
+                      ? t("planValidation.ustavDesc")
+                      : plan.fallback_engine
+                        ? t("planValidation.fallbackDesc")
+                        : t("planValidation.warningDesc")}
+                  </p>
+                  {(plan.validation_report?.user_issues?.length || 0) > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold mt-2">{t("planValidation.violatedRules")}</p>
+                      <ul className="list-disc list-inside text-xs space-y-1">
+                        {plan.validation_report!.user_issues!.map((v, i) => (<li key={`u${i}`}>{v}</li>))}
+                      </ul>
+                    </div>
+                  )}
+                  {(plan.validation_report?.violations?.length || 0) > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold mt-2">{t("planValidation.otherViolations")}</p>
+                      <ul className="list-disc list-inside text-xs space-y-1">
+                        {plan.validation_report!.violations!.map((v, i) => (<li key={`v${i}`}>{v}</li>))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-xs italic mt-2">{t("planValidation.fallbackReplacedNote")}</p>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Plan Header Card */}
             <Card className="border-primary/20 overflow-hidden">
               <CardHeader className="bg-primary/5 border-b border-border">
