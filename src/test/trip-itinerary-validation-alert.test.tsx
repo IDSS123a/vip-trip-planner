@@ -111,7 +111,9 @@ describe("TripItinerary: Validation / USTAV alert", () => {
 
     renderTrip(plan);
 
-    expect(screen.getByText(/Detektovane zabranjene lične informacije/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Detektovane zabranjene lične informacije — plan zamijenjen/i)
+    ).toBeInTheDocument();
     expect(screen.getByText(userIssues[0])).toBeInTheDocument();
     const reasonBlock = screen.getByTestId("fallback-reason");
     expect(reasonBlock.textContent).toMatch(/Detektovane zabranjene lične informacije \(ime\/adresa\/telefon\)/i);
