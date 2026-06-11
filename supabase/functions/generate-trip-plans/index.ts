@@ -1079,6 +1079,7 @@ serve(async (req) => {
         },
         ai_generated: !plan._fallback,
         fallback_engine: !!plan._fallback,
+        validation_report: plan._validation || { violations: [], user_issues: [], fallback_reason: plan._fallback ? "ai_unavailable" : null },
         meeting_point: {
           name: tripData.departureAddress ? "Tačka okupljanja" : "Internationale Deutsche Schule Sarajevo",
           address: tripData.departureAddress?.trim() || "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",
