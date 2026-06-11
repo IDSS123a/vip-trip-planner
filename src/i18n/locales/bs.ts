@@ -655,6 +655,13 @@ const bs = {
     violatedRules: "Prekršena korisnička pravila (USTAV):",
     otherViolations: "Ostala odstupanja:",
     fallbackReplacedNote: "Zamijenjeni dijelovi su jasno označeni — uvijek možete ponovo generisati plan ili izmijeniti unose.",
+    piiTitle: "Detektovane zabranjene lične informacije — plan zamijenjen sigurnom verzijom",
+    piiDesc: "Generisani plan je sadržavao zabranjene lične podatke (lično ime, e-mail ili lični/mobilni telefon). Originalni AI plan je odbačen, a prikazana verzija je deterministički sklopljena iz baze stvarnih POI lokacija (OpenStreetMap) bez ikakvih ličnih podataka.",
+    fallbackReasonLabel: "Razlog fallbacka:",
+    reason_pii_detected: "Detektovane zabranjene lične informacije (ime/adresa/telefon).",
+    reason_user_constitution_violation: "AI nije ispoštovao obavezne korisničke unose (USTAV).",
+    reason_overnight_rule_violation: "Prekršeno pravilo da se noćenja smiju desiti samo u krajnjoj destinaciji.",
+    reason_ai_unavailable: "AI Gateway nije bio dostupan — korišten je lokalni fallback engine.",
   },
 };
 
