@@ -799,6 +799,50 @@ export function validateUserChoices(
 }
 
 // ──────────────────────────────────────────────────────────────────
+// PII GUARD — detects personal contact information that must never
+// leak into a generated plan (personal names with titles, e-mail
+// addresses, personal mobile phone numbers in BiH/EU patterns).
+// Business POI data (accommodation_phone, poi.phone, poi.address,
+// poi.website) is allowed and is therefore NOT scanned.
+// ──────────────────────────────────────────────────────────────────
+export interface PIIDetection {
+  found: boolean;
+  matches: string[]; // human-readable explanations (BS)
+}
+
+const PII_TITLE_NAME =
+  /\b(gospodin|gospođa|gospodja|gđa|gdja|gosp\.|g\.|mr\.?|mrs\.?|ms\.?|dr\.?)\s+[A-ZČĆŠŽĐ][\wčćšžđČĆŠŽĐ]{2,}(?:\s+[A-ZČĆŠŽĐ][\wčćšžđČĆŠŽĐ]{2,})?/iu;
+const PII_EMAIL = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/;
+// Personal mobile patterns (BiH 06X, generic +xx 6xx)
+const PII_PERSONAL_PHONE = /\b(?:\+?387[\s-]?)?06[0-9][\s\/\-]?\d{3}[\s\/\-]?\d{3,4}\b/;
+
+function scanTextForPII(text: string, where: string, hits: string[]) {
+  if (!text || typeof text !== "string") return;
+  const m1 = text.match(PII_TITLE_NAME);
+  if (m1) hits.push(`${where}: lično ime sa titulom ("${m1[0]}")`);
+  const m2 = text.match(PII_EMAIL);
+  if (m2) hits.push(`${where}: e-mail adresa ("${m2[0]}")`);
+  const m3 = text.match(PII_PERSONAL_PHONE);
+  if (m3) hits.push(`${where}: lični/mobilni telefon ("${m3[0]}")`);
+}
+
+export function detectPII(plan: any): PIIDetection {
+  const hits: string[] = [];
+  // Free-text plan fields that must never carry PII.
+  scanTextForPII(plan?.why_this_fits, "why_this_fits", hits);
+  scanTextForPII(plan?.accommodation_name, "accommodation_name", hits);
+  for (const day of plan?.itinerary || []) {
+    for (const a of day?.activities || []) {
+      const tag = `Dan ${day?.day} aktivnost`;
+      scanTextForPII(a?.description, `${tag} (description)`, hits);
+      scanTextForPII(a?.notes, `${tag} (notes)`, hits);
+      scanTextForPII(a?.location, `${tag} (location)`, hits);
+    }
+  }
+  return { found: hits.length > 0, matches: hits };
+}
+
+// ──────────────────────────────────────────────────────────────────
 // FALLBACK PLAN ENGINE — used when AI Gateway is unavailable or fails
 // Generates a deterministic plan from real POI data so users always
 // get concrete location names, addresses, phones and opening hours.
@@ -1009,6 +1053,12 @@ serve(async (req) => {
     for (const p of successfulPlans) {
       const v = validatePlanOvernights(p, finalDestination, intermediateStops, tripNights);
       const userIssues = validateUserChoices(p, tripData.accommodationType, tripData.mealPlan, tripData.tripPriorities);
+      const pii = detectPII(p);
+      if (pii.found) {
+        userIssues.push(
+          ...pii.matches.map((m) => `Zabranjene lične informacije pronađene → ${m}`),
+        );
+      }
       const allViolations = [...v.violations, ...userIssues];
       validationReports.push({ tier: p?.type || "?", violations: allViolations });
       if (allViolations.length === 0) {
@@ -1019,12 +1069,17 @@ serve(async (req) => {
         // engine output that is guaranteed to honor the user's choices.
         if (userIssues.length > 0 || !v.ok) {
           const fb = generateFallbackPlan(tripData, cityContexts, tripDays, (p?.type || 'Balanced') as any);
+          const fallbackReason = pii.found
+            ? "pii_detected"
+            : userIssues.length > 0
+              ? "user_constitution_violation"
+              : "overnight_rule_violation";
           validatedPlans.push({
             ...fb,
             _validation: {
               violations: v.violations,
               user_issues: userIssues,
-              fallback_reason: userIssues.length > 0 ? "user_constitution_violation" : "overnight_rule_violation",
+              fallback_reason: fallbackReason,
               replaced_tier: p?.type || null,
             },
           });

@@ -657,6 +657,13 @@ const en: Translations = {
     violatedRules: "Violated user rules (Constitution):",
     otherViolations: "Other deviations:",
     fallbackReplacedNote: "Replaced sections are clearly marked — you can always regenerate the plan or adjust your inputs.",
+    piiTitle: "Forbidden personal information detected — plan replaced with safe version",
+    piiDesc: "The generated plan contained forbidden personal data (personal name, e-mail or personal/mobile phone). The original AI plan was rejected and the version shown was assembled deterministically from a database of real POI locations (OpenStreetMap) without any personal data.",
+    fallbackReasonLabel: "Fallback reason:",
+    reason_pii_detected: "Forbidden personal information detected (name / address / phone).",
+    reason_user_constitution_violation: "AI did not honor mandatory user inputs (Constitution).",
+    reason_overnight_rule_violation: "Overnight stays may only occur at the final destination — rule violated.",
+    reason_ai_unavailable: "AI Gateway was unavailable — local fallback engine was used.",
   },
 };
 
