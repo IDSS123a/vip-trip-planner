@@ -811,7 +811,7 @@ export interface PIIDetection {
 }
 
 const PII_TITLE_NAME =
-  /\b(gospodin|gospođa|gospodja|gđa|gdja|gosp\.|g\.\s|mr\.?|mrs\.?|ms\.?|dr\.?)\s+[A-ZČĆŠŽĐ][a-zčćšžđ]{2,}(?:\s+[A-ZČĆŠŽĐ][a-zčćšžđ]{2,})?/u;
+  /\b(gospodin|gospođa|gospodja|gđa|gdja|gosp\.|g\.|mr\.?|mrs\.?|ms\.?|dr\.?)\s+[A-ZČĆŠŽĐ][\wčćšžđČĆŠŽĐ]{2,}(?:\s+[A-ZČĆŠŽĐ][\wčćšžđČĆŠŽĐ]{2,})?/iu;
 const PII_EMAIL = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/;
 // Personal mobile patterns (BiH 06X, generic +xx 6xx)
 const PII_PERSONAL_PHONE = /\b(?:\+?387[\s-]?)?06[0-9][\s\/\-]?\d{3}[\s\/\-]?\d{3,4}\b/;
