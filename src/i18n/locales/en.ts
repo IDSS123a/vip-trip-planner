@@ -647,6 +647,17 @@ const en: Translations = {
     conflictResolvedDesc_few: "{{count}} conflicts merged using 'last write wins' strategy.",
     conflictResolvedDesc_other: "{{count}} conflicts merged using 'last write wins' strategy.",
   },
+  planValidation: {
+    ustavTitle: "User constitution violated — plan replaced with safe version",
+    ustavDesc: "The AI did not honor your mandatory inputs (accommodation, meal plan, or 'Important trip information'). The original AI plan was rejected and the section shown was generated from the local database of real locations (OpenStreetMap) so your choice is guaranteed.",
+    fallbackTitle: "Plan generated from local POI database (fallback)",
+    fallbackDesc: "AI Gateway was unavailable or the response was rejected for accuracy. The plan was assembled deterministically from real POI data (OpenStreetMap) — no hallucinations.",
+    warningTitle: "Plan validation warning",
+    warningDesc: "Deviations from trip rules were detected. Review the details below.",
+    violatedRules: "Violated user rules (Constitution):",
+    otherViolations: "Other deviations:",
+    fallbackReplacedNote: "Replaced sections are clearly marked — you can always regenerate the plan or adjust your inputs.",
+  },
 };
 
 export default en;

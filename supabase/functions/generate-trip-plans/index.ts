@@ -457,6 +457,16 @@ OBAVEZNA PRAVILA:
 - Restorani: ${effectiveMealType}
 
 ========================================
+NO HALLUCINATION / NO HYPE — APSOLUTNA PRAVILA TAČNOSTI:
+- ZABRANJENO izmišljanje imena lokacija, adresa, telefona, websajtova, radnog vremena ili cijena. Ako podatak nije pouzdan, izostavi polje (ne stavljaj "N/A", ne izmišljaj brojeve).
+- ZABRANJENI marketinški pridjevi i superlativi tipa "najbolji", "nezaboravno", "vrhunsko iskustvo", "magično", "ekskluzivno". Piši FAKTOGRAFSKI, kratko, profesionalno.
+- Telefoni, e-mail, web — samo ako su u POI kontekstu ili sigurno opštepoznati (npr. službeni muzej). U suprotnom — izostavi polje.
+- Adrese — samo realne, postojeće ulice u datom gradu. Bez izmišljenih kućnih brojeva.
+- Cijene — orijentacione, u rasponima (npr. "8–12 EUR"), nikad lažna preciznost.
+- Svaki opis aktivnosti mora biti činjenicama-zasnovan, bez emocionalnog naboja.
+========================================
+
+========================================
 USTAV (APSOLUTNI ZAHTJEVI KORISNIKA — NE SMIJU SE PREKRŠITI):
 ${userAccomChoice ? `- TIP SMJEŠTAJA: ${userAccomChoice}` : ""}
 ${userMealChoice ? `- PLAN ISHRANE: ${userMealChoice}` : ""}
@@ -539,7 +549,8 @@ Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
           { role: "system", content: systemPrompt + languageInstruction },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.3,
+        temperature: 0.1,
+        top_p: 0.8,
       }),
       signal: controller.signal
     });
@@ -1001,14 +1012,22 @@ serve(async (req) => {
       const allViolations = [...v.violations, ...userIssues];
       validationReports.push({ tier: p?.type || "?", violations: allViolations });
       if (allViolations.length === 0) {
-        validatedPlans.push(p);
+        validatedPlans.push({ ...p, _validation: { violations: [], user_issues: [], fallback_reason: null } });
       } else {
         console.warn(`Plan ${p?.type} odbačen — kršenje pravila:`, allViolations);
         // If AI plan violates the user's "USTAV" inputs, replace with fallback
         // engine output that is guaranteed to honor the user's choices.
         if (userIssues.length > 0 || !v.ok) {
           const fb = generateFallbackPlan(tripData, cityContexts, tripDays, (p?.type || 'Balanced') as any);
-          validatedPlans.push(fb);
+          validatedPlans.push({
+            ...fb,
+            _validation: {
+              violations: v.violations,
+              user_issues: userIssues,
+              fallback_reason: userIssues.length > 0 ? "user_constitution_violation" : "overnight_rule_violation",
+              replaced_tier: p?.type || null,
+            },
+          });
         }
       }
     }
@@ -1060,6 +1079,7 @@ serve(async (req) => {
         },
         ai_generated: !plan._fallback,
         fallback_engine: !!plan._fallback,
+        validation_report: plan._validation || { violations: [], user_issues: [], fallback_reason: plan._fallback ? "ai_unavailable" : null },
         meeting_point: {
           name: tripData.departureAddress ? "Tačka okupljanja" : "Internationale Deutsche Schule Sarajevo",
           address: tripData.departureAddress?.trim() || "Buka 13, 71 000 Sarajevo, Bosna i Hercegovina",

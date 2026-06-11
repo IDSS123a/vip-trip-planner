@@ -645,6 +645,17 @@ const bs = {
     conflictResolvedDesc_few: "{{count}} sukoba spojena strategijom 'najnovija promjena pobjeđuje'.",
     conflictResolvedDesc_other: "{{count}} sukoba spojeno strategijom 'najnovija promjena pobjeđuje'.",
   },
+  planValidation: {
+    ustavTitle: "USTAV korisnika je prekršen — plan zamijenjen sigurnom verzijom",
+    ustavDesc: "AI nije ispoštovao Vaše obavezne unose (smještaj, ishrana ili 'Važne informacije za planiranje puta'). Originalni AI plan je odbačen, a prikazani dio je generisan iz lokalne baze stvarnih lokacija (OpenStreetMap) tako da garantovano poštuje Vaš izbor.",
+    fallbackTitle: "Plan generisan iz lokalne baze lokacija (fallback)",
+    fallbackDesc: "AI Gateway nije bio dostupan ili je odgovor odbačen zbog narušene tačnosti. Plan je sklopljen deterministički iz baze stvarnih POI lokacija (OpenStreetMap), bez halucinacija.",
+    warningTitle: "Upozorenje pri validaciji plana",
+    warningDesc: "Detektovana su odstupanja od pravila putovanja. Pregledajte detalje u nastavku.",
+    violatedRules: "Prekršena korisnička pravila (USTAV):",
+    otherViolations: "Ostala odstupanja:",
+    fallbackReplacedNote: "Zamijenjeni dijelovi su jasno označeni — uvijek možete ponovo generisati plan ili izmijeniti unose.",
+  },
 };
 
 export default bs;
