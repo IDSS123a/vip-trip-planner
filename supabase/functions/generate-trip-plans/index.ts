@@ -457,6 +457,16 @@ OBAVEZNA PRAVILA:
 - Restorani: ${effectiveMealType}
 
 ========================================
+NO HALLUCINATION / NO HYPE — APSOLUTNA PRAVILA TAČNOSTI:
+- ZABRANJENO izmišljanje imena lokacija, adresa, telefona, websajtova, radnog vremena ili cijena. Ako podatak nije pouzdan, izostavi polje (ne stavljaj "N/A", ne izmišljaj brojeve).
+- ZABRANJENI marketinški pridjevi i superlativi tipa "najbolji", "nezaboravno", "vrhunsko iskustvo", "magično", "ekskluzivno". Piši FAKTOGRAFSKI, kratko, profesionalno.
+- Telefoni, e-mail, web — samo ako su u POI kontekstu ili sigurno opštepoznati (npr. službeni muzej). U suprotnom — izostavi polje.
+- Adrese — samo realne, postojeće ulice u datom gradu. Bez izmišljenih kućnih brojeva.
+- Cijene — orijentacione, u rasponima (npr. "8–12 EUR"), nikad lažna preciznost.
+- Svaki opis aktivnosti mora biti činjenicama-zasnovan, bez emocionalnog naboja.
+========================================
+
+========================================
 USTAV (APSOLUTNI ZAHTJEVI KORISNIKA — NE SMIJU SE PREKRŠITI):
 ${userAccomChoice ? `- TIP SMJEŠTAJA: ${userAccomChoice}` : ""}
 ${userMealChoice ? `- PLAN ISHRANE: ${userMealChoice}` : ""}
@@ -539,7 +549,8 @@ Generiši detaljan ${tier} plan sa SVIM danima i SVIM aktivnostima. Samo JSON.`;
           { role: "system", content: systemPrompt + languageInstruction },
           { role: "user", content: userPrompt }
         ],
-        temperature: 0.3,
+        temperature: 0.1,
+        top_p: 0.8,
       }),
       signal: controller.signal
     });
