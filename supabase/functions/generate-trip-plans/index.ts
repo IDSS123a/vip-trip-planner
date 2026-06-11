@@ -1012,14 +1012,22 @@ serve(async (req) => {
       const allViolations = [...v.violations, ...userIssues];
       validationReports.push({ tier: p?.type || "?", violations: allViolations });
       if (allViolations.length === 0) {
-        validatedPlans.push(p);
+        validatedPlans.push({ ...p, _validation: { violations: [], user_issues: [], fallback_reason: null } });
       } else {
         console.warn(`Plan ${p?.type} odbačen — kršenje pravila:`, allViolations);
         // If AI plan violates the user's "USTAV" inputs, replace with fallback
         // engine output that is guaranteed to honor the user's choices.
         if (userIssues.length > 0 || !v.ok) {
           const fb = generateFallbackPlan(tripData, cityContexts, tripDays, (p?.type || 'Balanced') as any);
-          validatedPlans.push(fb);
+          validatedPlans.push({
+            ...fb,
+            _validation: {
+              violations: v.violations,
+              user_issues: userIssues,
+              fallback_reason: userIssues.length > 0 ? "user_constitution_violation" : "overnight_rule_violation",
+              replaced_tier: p?.type || null,
+            },
+          });
         }
       }
     }
