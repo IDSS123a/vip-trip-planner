@@ -37,6 +37,7 @@ import IdssAuditTrail from "./IdssAuditTrail";
 import { useTripDocuments } from "@/hooks/useTripDocuments";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Activity {
   time: string;
@@ -76,6 +77,14 @@ interface TripPlan {
   why_this_fits: string;
   accommodation_info: string;
   itinerary: DayItinerary[];
+  fallback_engine?: boolean;
+  ai_generated?: boolean;
+  validation_report?: {
+    violations?: string[];
+    user_issues?: string[];
+    fallback_reason?: string | null;
+    replaced_tier?: string | null;
+  };
 }
 
 interface RouteCoordinate {
