@@ -1053,6 +1053,12 @@ serve(async (req) => {
     for (const p of successfulPlans) {
       const v = validatePlanOvernights(p, finalDestination, intermediateStops, tripNights);
       const userIssues = validateUserChoices(p, tripData.accommodationType, tripData.mealPlan, tripData.tripPriorities);
+      const pii = detectPII(p);
+      if (pii.found) {
+        userIssues.push(
+          ...pii.matches.map((m) => `Zabranjene lične informacije pronađene → ${m}`),
+        );
+      }
       const allViolations = [...v.violations, ...userIssues];
       validationReports.push({ tier: p?.type || "?", violations: allViolations });
       if (allViolations.length === 0) {
@@ -1063,12 +1069,17 @@ serve(async (req) => {
         // engine output that is guaranteed to honor the user's choices.
         if (userIssues.length > 0 || !v.ok) {
           const fb = generateFallbackPlan(tripData, cityContexts, tripDays, (p?.type || 'Balanced') as any);
+          const fallbackReason = pii.found
+            ? "pii_detected"
+            : userIssues.length > 0
+              ? "user_constitution_violation"
+              : "overnight_rule_violation";
           validatedPlans.push({
             ...fb,
             _validation: {
               violations: v.violations,
               user_issues: userIssues,
-              fallback_reason: userIssues.length > 0 ? "user_constitution_violation" : "overnight_rule_violation",
+              fallback_reason: fallbackReason,
               replaced_tier: p?.type || null,
             },
           });
