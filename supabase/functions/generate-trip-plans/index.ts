@@ -975,6 +975,34 @@ function poiActivity(time: string, type: string, poi: POI | null, fallback: stri
   };
 }
 
+// Transport-aware travel description: plane/train/ship trips must NOT get
+// bus-style "tehnička pauza svakih 2 sata" text (Pravilnik Član 15 applies to bus only).
+export function buildTravelLeg(transport: string, from: string, to: string): { description: string; durationLabel: string } {
+  const t = (transport || "bus").toLowerCase();
+  if (t === "plane") {
+    return {
+      description: `Let ${from} → ${to} uz organizovan transfer do/od aerodroma. Direktan transfer i let — bez usputnih pauza za odmor ili obrok (nije primjenjivo za avionski prijevoz).`,
+      durationLabel: "07:30 - 11:00",
+    };
+  }
+  if (t === "train") {
+    return {
+      description: `Putovanje vozom ${from} → ${to}. Odmor i užina moguci u vozu — bez tehničkih zaustavljanja.`,
+      durationLabel: "07:30 - 12:00",
+    };
+  }
+  if (t === "ship") {
+    return {
+      description: `Putovanje brodom/trajektom ${from} → ${to}. Boravak na palubi prema uputama posade.`,
+      durationLabel: "07:30 - 12:00",
+    };
+  }
+  return {
+    description: `Putovanje autobusom ${from} → ${to}. Tehnička pauza svakih 2 sata (Pravilnik Član 15).`,
+    durationLabel: "07:30 - 12:00",
+  };
+}
+
 export function generateFallbackPlan(
   tripData: TripRequest,
   cityContexts: CityContext[],
@@ -984,7 +1012,15 @@ export function generateFallbackPlan(
   const finalDestination = tripData.destinations[tripData.destinations.length - 1];
   const lookup = new Map<string, CityContext>();
   for (const c of cityContexts) lookup.set(c.city.toLowerCase().trim(), c);
-  const finalCtx = lookup.get(finalDestination.toLowerCase().trim()) || cityContexts[cityContexts.length - 1];
+  const ctxOf = (name: string): CityContext | null => lookup.get(name.toLowerCase().trim()) || null;
+  const finalCtx = ctxOf(finalDestination) || cityContexts[cityContexts.length - 1] || null;
+  // Day contexts are ALWAYS destination cities — NEVER the departure city.
+  // Day 1 = travel + arrival activities in the FIRST destination; later days
+  // progress through intermediate destinations and end at the final one.
+  const destinationDays = tripData.destinations.map(d => ({ name: d, ctx: ctxOf(d) }));
+  const firstDest = tripData.destinations[0];
+  const transport = (tripData.transport || 'bus').toLowerCase();
+  const isPlane = transport === 'plane';
 
   // Accommodation: respect user choice when possible
   let accomPoi: POI | null = null;
@@ -1004,11 +1040,16 @@ export function generateFallbackPlan(
   for (let d = 0; d < tripDays; d++) {
     const dayDate = new Date(start.getTime() + d * 86400000);
     const dateStr = dayDate.toISOString().slice(0, 10);
-    const cityIdx = Math.min(d, cityContexts.length - 1);
-    const ctx = cityContexts[cityIdx] || finalCtx;
+    const dayDest = d === 0
+      ? destinationDays[0]
+      : destinationDays[Math.min(d, destinationDays.length - 1)];
+    const cityName = dayDest?.name || finalDestination;
+    // If POI data for this destination is missing, borrow the final destination's data.
+    const ctx = dayDest?.ctx || finalCtx;
     const activities: any[] = [];
 
     if (d === 0) {
+      const leg = buildTravelLeg(transport, tripData.departureCity, firstDest);
       activities.push({
         time: "07:00 - 07:30",
         type: "activity",
@@ -1016,27 +1057,42 @@ export function generateFallbackPlan(
         location: tripData.departureAddress || "IDSS, Buka 13, 71 000 Sarajevo",
       });
       activities.push({
-        time: "07:30 - 12:00",
+        time: leg.durationLabel,
         type: "travel",
-        description: `Putovanje (${tripData.transport || 'autobus'}) ${tripData.departureCity} → ${tripData.destinations[0]}. Tehnička pauza svakih 2 sata (Pravilnik Član 15).`,
-        location: `Ruta ${tripData.departureCity} → ${tripData.destinations[0]}`,
+        description: leg.description,
+        location: `Ruta ${tripData.departureCity} → ${firstDest}`,
       });
     }
 
-    activities.push(poiActivity("12:30 - 14:00", "meal", pickPoi(ctx?.restaurants || [], d), `Ručak u ${ctx?.city || finalDestination}`, "Ručak: "));
-    activities.push(poiActivity("14:30 - 16:30", "activity", pickPoi(ctx?.museums || [], d), `Obrazovni posjet u ${ctx?.city || finalDestination}`, "Posjeta: "));
-    activities.push(poiActivity("17:00 - 18:30", "activity", pickPoi(ctx?.attractions || [], d), `Razgledanje znamenitosti u ${ctx?.city || finalDestination}`, "Razgledanje: "));
-    activities.push(poiActivity("19:00 - 20:30", "meal", pickPoi(ctx?.restaurants || [], d + 1), `Večera u ${ctx?.city || finalDestination}`, "Večera: "));
+    // Arrival-day lunch starts AFTER arrival in the destination city.
+    const lunchTime = d === 0 && isPlane ? "11:30 - 13:00" : "12:30 - 14:00";
+    activities.push(poiActivity(lunchTime, "meal", pickPoi(ctx?.restaurants || [], d), `Ručak u ${cityName}`, "Ručak: "));
+    activities.push(poiActivity("14:30 - 16:30", "activity", pickPoi(ctx?.museums || [], d), `Obrazovni posjet u ${cityName}`, "Posjeta: "));
+    activities.push(poiActivity("17:00 - 18:30", "activity", pickPoi(ctx?.attractions || [], d), `Razgledanje znamenitosti u ${cityName}`, "Razgledanje: "));
+
+    if (tripDays === 1) {
+      // Day trip: direct return after the program — no dinner program, no accommodation.
+      const returnLeg = buildTravelLeg(transport, finalDestination, tripData.departureCity);
+      activities.push({
+        time: "18:30 - 21:30",
+        type: "travel",
+        description: `Povratak: ${returnLeg.description}`,
+        location: `Ruta ${finalDestination} → ${tripData.departureCity}`,
+      });
+    } else {
+      activities.push(poiActivity("19:00 - 20:30", "meal", pickPoi(ctx?.restaurants || [], d + 1), `Večera u ${cityName}`, "Večera: "));
+    }
 
     if (tripDays > 1 && d < tripDays - 1) {
       activities.push(poiActivity("21:00 - 22:00", "accommodation", accomPoi, `Smještaj u ${finalDestination}`, "Smještaj: "));
     }
 
     if (d === tripDays - 1 && tripDays > 1) {
+      const returnLeg = buildTravelLeg(transport, finalDestination, tripData.departureCity);
       activities.push({
-        time: "15:00 - 21:00",
+        time: isPlane ? "15:00 - 19:00" : "15:00 - 21:00",
         type: "travel",
-        description: `Povratak ${finalDestination} → ${tripData.departureCity}. Tehničke pauze svakih 2 sata.`,
+        description: `Povratak: ${returnLeg.description}`,
         location: `Ruta ${finalDestination} → ${tripData.departureCity}`,
       });
     }
@@ -1045,10 +1101,10 @@ export function generateFallbackPlan(
       day: d + 1,
       date: dateStr,
       title: d === 0
-        ? `Polazak — ${tripData.destinations[0]}`
+        ? `Polazak — ${firstDest}`
         : d === tripDays - 1
           ? `Povratak iz ${finalDestination}`
-          : `${ctx?.city || finalDestination} — obrazovni dan`,
+          : `${cityName} — obrazovni dan`,
       summary: `Plan generisan iz baze lokalnih lokacija (offline fallback engine, ${tier}).`,
       activities,
     });
