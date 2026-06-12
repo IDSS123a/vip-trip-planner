@@ -826,30 +826,124 @@ const PII_EMAIL = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/;
 // Personal mobile patterns (BiH 06X, generic +xx 6xx)
 const PII_PERSONAL_PHONE = /\b(?:\+?387[\s-]?)?06[0-9][\s\/\-]?\d{3}[\s\/\-]?\d{3,4}\b/;
 
-function scanTextForPII(text: string, where: string, hits: string[]) {
+// Structured business-contact fields where a phone number is legitimate
+// (POI/hotel landlines). PII name/e-mail checks still apply there.
+const PII_PHONE_EXEMPT_KEYS = new Set(["phone", "accommodation_phone"]);
+
+function scanTextForPII(text: string, where: string, hits: string[], skipPhone = false) {
   if (!text || typeof text !== "string") return;
   const m1 = text.match(PII_TITLE_NAME);
   if (m1) hits.push(`${where}: lično ime sa titulom ("${m1[0]}")`);
   const m2 = text.match(PII_EMAIL);
   if (m2) hits.push(`${where}: e-mail adresa ("${m2[0]}")`);
-  const m3 = text.match(PII_PERSONAL_PHONE);
-  if (m3) hits.push(`${where}: lični/mobilni telefon ("${m3[0]}")`);
+  if (!skipPhone) {
+    const m3 = text.match(PII_PERSONAL_PHONE);
+    if (m3) hits.push(`${where}: lični/mobilni telefon ("${m3[0]}")`);
+  }
 }
 
 export function detectPII(plan: any): PIIDetection {
   const hits: string[] = [];
-  // Free-text plan fields that must never carry PII.
+  // DEEP SCAN over the FULL output schema — every string field is checked,
+  // so PII cannot hide in titles, summaries, addresses or any other field.
   scanTextForPII(plan?.why_this_fits, "why_this_fits", hits);
-  scanTextForPII(plan?.accommodation_name, "accommodation_name", hits);
+  scanTextForPII(plan?.label, "label", hits);
+  for (const key of [
+    "accommodation_name", "accommodation_address", "accommodation_website",
+    "accommodation_hours", "accommodation_price_per_night", "accommodation_type_actual",
+  ]) {
+    scanTextForPII(plan?.[key], key, hits);
+  }
+  scanTextForPII(plan?.accommodation_phone, "accommodation_phone", hits, true);
   for (const day of plan?.itinerary || []) {
+    const dayTag = `Dan ${day?.day}`;
+    scanTextForPII(day?.title, `${dayTag} (title)`, hits);
+    scanTextForPII(day?.summary, `${dayTag} (summary)`, hits);
     for (const a of day?.activities || []) {
-      const tag = `Dan ${day?.day} aktivnost`;
-      scanTextForPII(a?.description, `${tag} (description)`, hits);
-      scanTextForPII(a?.notes, `${tag} (notes)`, hits);
-      scanTextForPII(a?.location, `${tag} (location)`, hits);
+      const tag = `${dayTag} aktivnost`;
+      for (const [k, v] of Object.entries(a || {})) {
+        if (typeof v !== "string") continue;
+        scanTextForPII(v, `${tag} (${k})`, hits, PII_PHONE_EXEMPT_KEYS.has(k));
+      }
     }
   }
   return { found: hits.length > 0, matches: hits };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// STRICT OUTPUT SCHEMA — whitelist-based sanitization. Any field the
+// model invents outside the documented schema is dropped, so PII can
+// never ride along in unexpected fields.
+// ──────────────────────────────────────────────────────────────────
+const PLAN_ALLOWED_KEYS = new Set([
+  "type", "label", "accommodation_name", "accommodation_address", "accommodation_phone",
+  "accommodation_website", "accommodation_hours", "accommodation_type_actual",
+  "accommodation_price_per_night", "why_this_fits", "itinerary", "_fallback", "_validation",
+]);
+const ACTIVITY_ALLOWED_KEYS = new Set([
+  "time", "description", "type", "location", "address", "phone",
+  "opening_hours", "website", "price", "notes", "lat", "lng",
+]);
+
+export function sanitizePlanSchema(plan: any): any {
+  if (!plan || typeof plan !== "object") return plan;
+  const out: any = {};
+  for (const k of Object.keys(plan)) {
+    if (PLAN_ALLOWED_KEYS.has(k)) out[k] = plan[k];
+  }
+  out.itinerary = Array.isArray(plan.itinerary)
+    ? plan.itinerary.map((d: any) => ({
+        day: Number(d?.day) || 0,
+        ...(typeof d?.date === "string" ? { date: d.date } : {}),
+        title: typeof d?.title === "string" ? d.title : "",
+        ...(typeof d?.summary === "string" ? { summary: d.summary } : {}),
+        activities: Array.isArray(d?.activities)
+          ? d.activities.map((a: any) => {
+              const act: any = {};
+              for (const [k, v] of Object.entries(a || {})) {
+                if (!ACTIVITY_ALLOWED_KEYS.has(k)) continue;
+                if (k === "lat" || k === "lng") {
+                  if (typeof v === "number" && isFinite(v)) act[k] = v;
+                } else if (typeof v === "string") {
+                  act[k] = v;
+                }
+              }
+              return act;
+            })
+          : [],
+      }))
+    : [];
+  return out;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// PII REDACTION — final defense-in-depth applied to EVERY outgoing
+// plan (AI or fallback). Even if detection heuristics were bypassed,
+// matched PII patterns are scrubbed before the response leaves.
+// ──────────────────────────────────────────────────────────────────
+const PII_TITLE_NAME_G = new RegExp(PII_TITLE_NAME.source, "giu");
+const PII_EMAIL_G = new RegExp(PII_EMAIL.source, "g");
+const PII_PERSONAL_PHONE_G = new RegExp(PII_PERSONAL_PHONE.source, "g");
+
+export function redactPIIText(text: string, skipPhone = false): string {
+  if (!text || typeof text !== "string") return text;
+  let out = text.replace(PII_EMAIL_G, "[uklonjeno]").replace(PII_TITLE_NAME_G, "[uklonjeno]");
+  if (!skipPhone) out = out.replace(PII_PERSONAL_PHONE_G, "[uklonjeno]");
+  return out;
+}
+
+export function redactPlanPII<T>(plan: T): T {
+  const walk = (node: any, parentKey?: string): any => {
+    if (typeof node === "string") return redactPIIText(node, PII_PHONE_EXEMPT_KEYS.has(parentKey || ""));
+    if (Array.isArray(node)) return node.map((v) => walk(v));
+    if (node && typeof node === "object") {
+      const out: any = {};
+      for (const [k, v] of Object.entries(node)) out[k] = walk(v, k);
+      return out;
+    }
+    return node;
+  };
+  return walk(plan);
 }
 
 // ──────────────────────────────────────────────────────────────────
