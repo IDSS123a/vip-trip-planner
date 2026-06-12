@@ -1252,8 +1252,13 @@ serve(async (req) => {
       validatedPlans.push(generateFallbackPlan(tripData, cityContexts, tripDays, 'Balanced'));
     }
 
+    // Step 3c: STRICT OUTPUT SCHEMA + PII REDACTION (defense-in-depth).
+    // Unknown fields are dropped and any residual PII pattern is scrubbed
+    // from EVERY outgoing plan — AI or fallback — so PII can never leave.
+    const securedPlans = validatedPlans.map((p: any) => redactPlanPII(sanitizePlanSchema(p)));
+
     // Step 4: Enrich plans
-    const enrichedPlans = validatedPlans.map((plan: any, idx: number) => {
+    const enrichedPlans = securedPlans.map((plan: any, idx: number) => {
       const tierType = plan.type || tiers[idx] || 'Balanced';
       const costs = calculateCosts(tripData, routeInfo, tripDays, tierType as 'Budget' | 'Balanced' | 'Premium');
 
