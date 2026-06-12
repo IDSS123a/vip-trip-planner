@@ -664,6 +664,8 @@ const en: Translations = {
     reason_user_constitution_violation: "AI did not honor mandatory user inputs (Constitution).",
     reason_overnight_rule_violation: "Overnight stays may only occur at the final destination — rule violated.",
     reason_ai_unavailable: "AI Gateway was unavailable — local fallback engine was used.",
+    pdfPiiTitle: "PDF safety check — personal data removed",
+    pdfPiiDesc: "Forbidden personal information (name / address / phone) was detected in the itinerary. It was removed automatically before export (reason: pii_detected).",
   },
 };
 
