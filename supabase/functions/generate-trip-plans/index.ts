@@ -467,6 +467,16 @@ NO HALLUCINATION / NO HYPE — APSOLUTNA PRAVILA TAČNOSTI:
 ========================================
 
 ========================================
+ZABRANJENE LIČNE INFORMACIJE (PII) — NULTA TOLERANCIJA:
+- STROGO ZABRANJENO navoditi lična imena bilo koje osobe (vodič, vozač, nastavnik, učenik, recepcioner) — sa ili bez titule (Gospodin, Gđa, Dr, Mr...).
+- STROGO ZABRANJENE e-mail adrese bilo koje vrste — koristi polje "website" za službene kontakte.
+- STROGO ZABRANJENI lični/mobilni brojevi telefona (BiH 06X..., +387 6X... i slični). Dozvoljeni su ISKLJUČIVO službeni brojevi institucija (hotel, muzej, restoran) iz POI konteksta, i to SAMO u strukturiranom polju "phone".
+- Telefonske brojeve NIKADA ne piši u "description", "notes", "location" ni "title" — isključivo u polje "phone".
+- STROGA ŠEMA IZLAZA: koristi ISKLJUČIVO polja navedena u JSON šemi ispod. Sva nepoznata/dodatna polja automatska validacija BRIŠE.
+- Automatska validacija ODBACUJE svaki plan koji sadrži lične podatke i zamjenjuje ga fallback verzijom — zato ih NIKADA ne uključuj.
+========================================
+
+========================================
 USTAV (APSOLUTNI ZAHTJEVI KORISNIKA — NE SMIJU SE PREKRŠITI):
 ${userAccomChoice ? `- TIP SMJEŠTAJA: ${userAccomChoice}` : ""}
 ${userMealChoice ? `- PLAN ISHRANE: ${userMealChoice}` : ""}
