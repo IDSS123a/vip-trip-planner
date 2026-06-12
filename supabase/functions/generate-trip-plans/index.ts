@@ -113,9 +113,7 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
 // =====================================================================
 
 async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 4): Promise<POI[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 6000);
-  try {
+  {
     const radius = 5000;
     let query = '';
     switch (poiType) {
@@ -136,30 +134,44 @@ async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limi
         break;
       default: return [];
     }
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'data=' + encodeURIComponent(query),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if (!response.ok) return [];
-    const data = await response.json();
-    if (!data.elements || !Array.isArray(data.elements)) return [];
-    return data.elements
-      .filter((item: any) => item.tags && item.tags.name)
-      .map((item: any) => ({
-        name: item.tags.name,
-        kind: poiType,
-        lat: item.lat || lat,
-        lng: item.lon || lng,
-        address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
-        website: item.tags.website || item.tags.url,
-        phone: item.tags.phone || item.tags['contact:phone'],
-        openingHours: item.tags.opening_hours
-      }));
-  } catch {
-    clearTimeout(timeout);
+    // Try multiple Overpass mirrors — a single rate-limited mirror was the
+    // reason plans came back with 0 concrete POIs (no names/addresses/phones).
+    const mirrors = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+    ];
+    for (const endpoint of mirrors) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(query),
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (!response.ok) continue;
+        const data = await response.json();
+        if (!data.elements || !Array.isArray(data.elements)) continue;
+        const pois = data.elements
+          .filter((item: any) => item.tags && item.tags.name)
+          .map((item: any) => ({
+            name: item.tags.name,
+            kind: poiType,
+            lat: item.lat || lat,
+            lng: item.lon || lng,
+            address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
+            website: item.tags.website || item.tags.url,
+            phone: item.tags.phone || item.tags['contact:phone'],
+            openingHours: item.tags.opening_hours
+          }));
+        if (pois.length > 0) return pois;
+      } catch {
+        clearTimeout(timeout);
+        // try next mirror
+      }
+    }
     return [];
   }
 }
