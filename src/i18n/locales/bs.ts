@@ -662,6 +662,8 @@ const bs = {
     reason_user_constitution_violation: "AI nije ispoštovao obavezne korisničke unose (USTAV).",
     reason_overnight_rule_violation: "Prekršeno pravilo da se noćenja smiju desiti samo u krajnjoj destinaciji.",
     reason_ai_unavailable: "AI Gateway nije bio dostupan — korišten je lokalni fallback engine.",
+    pdfPiiTitle: "PDF sigurnosna provjera — lični podaci uklonjeni",
+    pdfPiiDesc: "U itinereru su detektovane zabranjene lične informacije (ime/adresa/telefon). Automatski su uklonjene prije izvoza (razlog: pii_detected).",
   },
 };
 

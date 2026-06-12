@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import i18n from "@/i18n";
+import { scanPlanForPii, redactPlanPii, PII_FALLBACK_REASON } from "@/lib/piiGuard";
 import {
   createIdssPdf,
   paginate,
@@ -74,6 +76,30 @@ export const usePdfExport = () => {
     setIsExporting(true);
 
     try {
+      // ── PDF PII SAFETY CHECK ──
+      // Deep-scan the rendered itinerary for forbidden personal information
+      // (name/address/phone). If found, redact it and flag the same
+      // fallback_reason the backend uses ("pii_detected").
+      const piiHits = scanPlanForPii(data.plan);
+      if (piiHits.length > 0) {
+        const cleanPlan = redactPlanPii(data.plan) as TripPlan & { validation_report?: any };
+        const prevReport = (data.plan as any).validation_report || {};
+        cleanPlan.validation_report = {
+          ...prevReport,
+          fallback_reason: PII_FALLBACK_REASON,
+          user_issues: [
+            ...(prevReport.user_issues || []),
+            ...piiHits.map((h) => `PDF guard — ${h.where}: ${h.kind}`),
+          ],
+        };
+        data = { ...data, plan: cleanPlan };
+        toast({
+          variant: "destructive",
+          title: i18n.t("planValidation.pdfPiiTitle"),
+          description: i18n.t("planValidation.pdfPiiDesc"),
+        });
+      }
+
       const doc = createIdssPdf();
       const ML = PDF_THEME.margin.left;
       const MR = PDF_THEME.margin.right;

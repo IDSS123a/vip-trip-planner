@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { detectPII } from "./index.ts";
+import { detectPII, redactPlanPII, sanitizePlanSchema } from "./index.ts";
 
 Deno.test("detectPII: clean plan returns no hits", () => {
   const r = detectPII({
@@ -46,4 +46,68 @@ Deno.test("detectPII: business landline (033/560-520) is NOT flagged", () => {
     ],
   });
   assertEquals(r.found, false);
+});
+
+Deno.test("detectPII deep scan: PII hidden in day summary is detected", () => {
+  const r = detectPII({
+    itinerary: [
+      { day: 1, summary: "Za sva pitanja kontaktirajte gospođa Amila Hodžić.", activities: [] },
+    ],
+  });
+  assertEquals(r.found, true);
+});
+
+Deno.test("detectPII deep scan: e-mail in accommodation_address is detected", () => {
+  const r = detectPII({
+    accommodation_address: "Rezervacije: rezervacije.privatno@gmail.com",
+  });
+  assertEquals(r.found, true);
+});
+
+Deno.test("detectPII deep scan: mobile in activity address field is detected", () => {
+  const r = detectPII({
+    itinerary: [
+      { day: 1, activities: [{ description: "Posjeta muzeju.", address: "Zvati 062 333 444 za ulaz" }] },
+    ],
+  });
+  assertEquals(r.found, true);
+});
+
+Deno.test("detectPII: structured business phone field is exempt from phone pattern", () => {
+  const r = detectPII({
+    itinerary: [
+      { day: 1, activities: [{ description: "Hotel check-in.", phone: "061 555 333" }] },
+    ],
+  });
+  assertEquals(r.found, false);
+});
+
+Deno.test("redactPlanPII: scrubs e-mail, name and mobile from all text fields", () => {
+  const out = redactPlanPII({
+    why_this_fits: "Kontakt: vodic@example.com ili Gospodin Marko Marković na 061 123 456.",
+    itinerary: [{ day: 1, activities: [{ description: "Zovi 062 111 222.", phone: "033 560 520" }] }],
+  } as any) as any;
+  assertEquals(out.why_this_fits.includes("@"), false);
+  assertEquals(/06[0-9]/.test(out.itinerary[0].activities[0].description), false);
+  // structured business phone field is preserved
+  assertEquals(out.itinerary[0].activities[0].phone, "033 560 520");
+  assertEquals(out.why_this_fits.includes("[uklonjeno]"), true);
+});
+
+Deno.test("sanitizePlanSchema: unknown fields invented by the model are dropped", () => {
+  const out = sanitizePlanSchema({
+    type: "Balanced",
+    accommodation_name: "Hotel Mostar",
+    guide_personal_contact: "Gospodin Marko, 061 123 456",
+    itinerary: [
+      { day: 1, title: "Dan 1", secret_note: "x", activities: [
+        { time: "09:00", description: "Posjeta", contact_person: "Marko M.", lat: 43.3, lng: 17.8 },
+      ]},
+    ],
+  });
+  assertEquals("guide_personal_contact" in out, false);
+  assertEquals("secret_note" in out.itinerary[0], false);
+  assertEquals("contact_person" in out.itinerary[0].activities[0], false);
+  assertEquals(out.itinerary[0].activities[0].lat, 43.3);
+  assertEquals(out.accommodation_name, "Hotel Mostar");
 });

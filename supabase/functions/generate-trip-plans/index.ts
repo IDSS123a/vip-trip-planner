@@ -113,9 +113,7 @@ function getFallbackCoordinates(cityName: string): { lat: number; lng: number } 
 // =====================================================================
 
 async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limit: number = 4): Promise<POI[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 6000);
-  try {
+  {
     const radius = 5000;
     let query = '';
     switch (poiType) {
@@ -136,30 +134,44 @@ async function fetchPOIsOverpass(lat: number, lng: number, poiType: string, limi
         break;
       default: return [];
     }
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'data=' + encodeURIComponent(query),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-    if (!response.ok) return [];
-    const data = await response.json();
-    if (!data.elements || !Array.isArray(data.elements)) return [];
-    return data.elements
-      .filter((item: any) => item.tags && item.tags.name)
-      .map((item: any) => ({
-        name: item.tags.name,
-        kind: poiType,
-        lat: item.lat || lat,
-        lng: item.lon || lng,
-        address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
-        website: item.tags.website || item.tags.url,
-        phone: item.tags.phone || item.tags['contact:phone'],
-        openingHours: item.tags.opening_hours
-      }));
-  } catch {
-    clearTimeout(timeout);
+    // Try multiple Overpass mirrors — a single rate-limited mirror was the
+    // reason plans came back with 0 concrete POIs (no names/addresses/phones).
+    const mirrors = [
+      'https://overpass-api.de/api/interpreter',
+      'https://overpass.kumi.systems/api/interpreter',
+    ];
+    for (const endpoint of mirrors) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'data=' + encodeURIComponent(query),
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (!response.ok) continue;
+        const data = await response.json();
+        if (!data.elements || !Array.isArray(data.elements)) continue;
+        const pois = data.elements
+          .filter((item: any) => item.tags && item.tags.name)
+          .map((item: any) => ({
+            name: item.tags.name,
+            kind: poiType,
+            lat: item.lat || lat,
+            lng: item.lon || lng,
+            address: item.tags['addr:street'] ? (item.tags['addr:street'] + ' ' + (item.tags['addr:housenumber'] || '') + ', ' + (item.tags['addr:city'] || '')).trim() : undefined,
+            website: item.tags.website || item.tags.url,
+            phone: item.tags.phone || item.tags['contact:phone'],
+            openingHours: item.tags.opening_hours
+          }));
+        if (pois.length > 0) return pois;
+      } catch {
+        clearTimeout(timeout);
+        // try next mirror
+      }
+    }
     return [];
   }
 }
@@ -464,6 +476,16 @@ NO HALLUCINATION / NO HYPE — APSOLUTNA PRAVILA TAČNOSTI:
 - Adrese — samo realne, postojeće ulice u datom gradu. Bez izmišljenih kućnih brojeva.
 - Cijene — orijentacione, u rasponima (npr. "8–12 EUR"), nikad lažna preciznost.
 - Svaki opis aktivnosti mora biti činjenicama-zasnovan, bez emocionalnog naboja.
+========================================
+
+========================================
+ZABRANJENE LIČNE INFORMACIJE (PII) — NULTA TOLERANCIJA:
+- STROGO ZABRANJENO navoditi lična imena bilo koje osobe (vodič, vozač, nastavnik, učenik, recepcioner) — sa ili bez titule (Gospodin, Gđa, Dr, Mr...).
+- STROGO ZABRANJENE e-mail adrese bilo koje vrste — koristi polje "website" za službene kontakte.
+- STROGO ZABRANJENI lični/mobilni brojevi telefona (BiH 06X..., +387 6X... i slični). Dozvoljeni su ISKLJUČIVO službeni brojevi institucija (hotel, muzej, restoran) iz POI konteksta, i to SAMO u strukturiranom polju "phone".
+- Telefonske brojeve NIKADA ne piši u "description", "notes", "location" ni "title" — isključivo u polje "phone".
+- STROGA ŠEMA IZLAZA: koristi ISKLJUČIVO polja navedena u JSON šemi ispod. Sva nepoznata/dodatna polja automatska validacija BRIŠE.
+- Automatska validacija ODBACUJE svaki plan koji sadrži lične podatke i zamjenjuje ga fallback verzijom — zato ih NIKADA ne uključuj.
 ========================================
 
 ========================================
@@ -816,30 +838,124 @@ const PII_EMAIL = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/;
 // Personal mobile patterns (BiH 06X, generic +xx 6xx)
 const PII_PERSONAL_PHONE = /\b(?:\+?387[\s-]?)?06[0-9][\s\/\-]?\d{3}[\s\/\-]?\d{3,4}\b/;
 
-function scanTextForPII(text: string, where: string, hits: string[]) {
+// Structured business-contact fields where a phone number is legitimate
+// (POI/hotel landlines). PII name/e-mail checks still apply there.
+const PII_PHONE_EXEMPT_KEYS = new Set(["phone", "accommodation_phone"]);
+
+function scanTextForPII(text: string, where: string, hits: string[], skipPhone = false) {
   if (!text || typeof text !== "string") return;
   const m1 = text.match(PII_TITLE_NAME);
   if (m1) hits.push(`${where}: lično ime sa titulom ("${m1[0]}")`);
   const m2 = text.match(PII_EMAIL);
   if (m2) hits.push(`${where}: e-mail adresa ("${m2[0]}")`);
-  const m3 = text.match(PII_PERSONAL_PHONE);
-  if (m3) hits.push(`${where}: lični/mobilni telefon ("${m3[0]}")`);
+  if (!skipPhone) {
+    const m3 = text.match(PII_PERSONAL_PHONE);
+    if (m3) hits.push(`${where}: lični/mobilni telefon ("${m3[0]}")`);
+  }
 }
 
 export function detectPII(plan: any): PIIDetection {
   const hits: string[] = [];
-  // Free-text plan fields that must never carry PII.
+  // DEEP SCAN over the FULL output schema — every string field is checked,
+  // so PII cannot hide in titles, summaries, addresses or any other field.
   scanTextForPII(plan?.why_this_fits, "why_this_fits", hits);
-  scanTextForPII(plan?.accommodation_name, "accommodation_name", hits);
+  scanTextForPII(plan?.label, "label", hits);
+  for (const key of [
+    "accommodation_name", "accommodation_address", "accommodation_website",
+    "accommodation_hours", "accommodation_price_per_night", "accommodation_type_actual",
+  ]) {
+    scanTextForPII(plan?.[key], key, hits);
+  }
+  scanTextForPII(plan?.accommodation_phone, "accommodation_phone", hits, true);
   for (const day of plan?.itinerary || []) {
+    const dayTag = `Dan ${day?.day}`;
+    scanTextForPII(day?.title, `${dayTag} (title)`, hits);
+    scanTextForPII(day?.summary, `${dayTag} (summary)`, hits);
     for (const a of day?.activities || []) {
-      const tag = `Dan ${day?.day} aktivnost`;
-      scanTextForPII(a?.description, `${tag} (description)`, hits);
-      scanTextForPII(a?.notes, `${tag} (notes)`, hits);
-      scanTextForPII(a?.location, `${tag} (location)`, hits);
+      const tag = `${dayTag} aktivnost`;
+      for (const [k, v] of Object.entries(a || {})) {
+        if (typeof v !== "string") continue;
+        scanTextForPII(v, `${tag} (${k})`, hits, PII_PHONE_EXEMPT_KEYS.has(k));
+      }
     }
   }
   return { found: hits.length > 0, matches: hits };
+}
+
+// ──────────────────────────────────────────────────────────────────
+// STRICT OUTPUT SCHEMA — whitelist-based sanitization. Any field the
+// model invents outside the documented schema is dropped, so PII can
+// never ride along in unexpected fields.
+// ──────────────────────────────────────────────────────────────────
+const PLAN_ALLOWED_KEYS = new Set([
+  "type", "label", "accommodation_name", "accommodation_address", "accommodation_phone",
+  "accommodation_website", "accommodation_hours", "accommodation_type_actual",
+  "accommodation_price_per_night", "why_this_fits", "itinerary", "_fallback", "_validation",
+]);
+const ACTIVITY_ALLOWED_KEYS = new Set([
+  "time", "description", "type", "location", "address", "phone",
+  "opening_hours", "website", "price", "notes", "lat", "lng",
+]);
+
+export function sanitizePlanSchema(plan: any): any {
+  if (!plan || typeof plan !== "object") return plan;
+  const out: any = {};
+  for (const k of Object.keys(plan)) {
+    if (PLAN_ALLOWED_KEYS.has(k)) out[k] = plan[k];
+  }
+  out.itinerary = Array.isArray(plan.itinerary)
+    ? plan.itinerary.map((d: any) => ({
+        day: Number(d?.day) || 0,
+        ...(typeof d?.date === "string" ? { date: d.date } : {}),
+        title: typeof d?.title === "string" ? d.title : "",
+        ...(typeof d?.summary === "string" ? { summary: d.summary } : {}),
+        activities: Array.isArray(d?.activities)
+          ? d.activities.map((a: any) => {
+              const act: any = {};
+              for (const [k, v] of Object.entries(a || {})) {
+                if (!ACTIVITY_ALLOWED_KEYS.has(k)) continue;
+                if (k === "lat" || k === "lng") {
+                  if (typeof v === "number" && isFinite(v)) act[k] = v;
+                } else if (typeof v === "string") {
+                  act[k] = v;
+                }
+              }
+              return act;
+            })
+          : [],
+      }))
+    : [];
+  return out;
+}
+
+// ──────────────────────────────────────────────────────────────────
+// PII REDACTION — final defense-in-depth applied to EVERY outgoing
+// plan (AI or fallback). Even if detection heuristics were bypassed,
+// matched PII patterns are scrubbed before the response leaves.
+// ──────────────────────────────────────────────────────────────────
+const PII_TITLE_NAME_G = new RegExp(PII_TITLE_NAME.source, "giu");
+const PII_EMAIL_G = new RegExp(PII_EMAIL.source, "g");
+const PII_PERSONAL_PHONE_G = new RegExp(PII_PERSONAL_PHONE.source, "g");
+
+export function redactPIIText(text: string, skipPhone = false): string {
+  if (!text || typeof text !== "string") return text;
+  let out = text.replace(PII_EMAIL_G, "[uklonjeno]").replace(PII_TITLE_NAME_G, "[uklonjeno]");
+  if (!skipPhone) out = out.replace(PII_PERSONAL_PHONE_G, "[uklonjeno]");
+  return out;
+}
+
+export function redactPlanPII<T>(plan: T): T {
+  const walk = (node: any, parentKey?: string): any => {
+    if (typeof node === "string") return redactPIIText(node, PII_PHONE_EXEMPT_KEYS.has(parentKey || ""));
+    if (Array.isArray(node)) return node.map((v) => walk(v));
+    if (node && typeof node === "object") {
+      const out: any = {};
+      for (const [k, v] of Object.entries(node)) out[k] = walk(v, k);
+      return out;
+    }
+    return node;
+  };
+  return walk(plan);
 }
 
 // ──────────────────────────────────────────────────────────────────
@@ -871,6 +987,34 @@ function poiActivity(time: string, type: string, poi: POI | null, fallback: stri
   };
 }
 
+// Transport-aware travel description: plane/train/ship trips must NOT get
+// bus-style "tehnička pauza svakih 2 sata" text (Pravilnik Član 15 applies to bus only).
+export function buildTravelLeg(transport: string, from: string, to: string): { description: string; durationLabel: string } {
+  const t = (transport || "bus").toLowerCase();
+  if (t === "plane") {
+    return {
+      description: `Let ${from} → ${to} uz organizovan transfer do/od aerodroma. Direktan transfer i let — bez usputnih pauza za odmor ili obrok (nije primjenjivo za avionski prijevoz).`,
+      durationLabel: "07:30 - 11:00",
+    };
+  }
+  if (t === "train") {
+    return {
+      description: `Putovanje vozom ${from} → ${to}. Odmor i užina moguci u vozu — bez tehničkih zaustavljanja.`,
+      durationLabel: "07:30 - 12:00",
+    };
+  }
+  if (t === "ship") {
+    return {
+      description: `Putovanje brodom/trajektom ${from} → ${to}. Boravak na palubi prema uputama posade.`,
+      durationLabel: "07:30 - 12:00",
+    };
+  }
+  return {
+    description: `Putovanje autobusom ${from} → ${to}. Tehnička pauza svakih 2 sata (Pravilnik Član 15).`,
+    durationLabel: "07:30 - 12:00",
+  };
+}
+
 export function generateFallbackPlan(
   tripData: TripRequest,
   cityContexts: CityContext[],
@@ -880,7 +1024,15 @@ export function generateFallbackPlan(
   const finalDestination = tripData.destinations[tripData.destinations.length - 1];
   const lookup = new Map<string, CityContext>();
   for (const c of cityContexts) lookup.set(c.city.toLowerCase().trim(), c);
-  const finalCtx = lookup.get(finalDestination.toLowerCase().trim()) || cityContexts[cityContexts.length - 1];
+  const ctxOf = (name: string): CityContext | null => lookup.get(name.toLowerCase().trim()) || null;
+  const finalCtx = ctxOf(finalDestination) || cityContexts[cityContexts.length - 1] || null;
+  // Day contexts are ALWAYS destination cities — NEVER the departure city.
+  // Day 1 = travel + arrival activities in the FIRST destination; later days
+  // progress through intermediate destinations and end at the final one.
+  const destinationDays = tripData.destinations.map(d => ({ name: d, ctx: ctxOf(d) }));
+  const firstDest = tripData.destinations[0];
+  const transport = (tripData.transport || 'bus').toLowerCase();
+  const isPlane = transport === 'plane';
 
   // Accommodation: respect user choice when possible
   let accomPoi: POI | null = null;
@@ -900,11 +1052,16 @@ export function generateFallbackPlan(
   for (let d = 0; d < tripDays; d++) {
     const dayDate = new Date(start.getTime() + d * 86400000);
     const dateStr = dayDate.toISOString().slice(0, 10);
-    const cityIdx = Math.min(d, cityContexts.length - 1);
-    const ctx = cityContexts[cityIdx] || finalCtx;
+    const dayDest = d === 0
+      ? destinationDays[0]
+      : destinationDays[Math.min(d, destinationDays.length - 1)];
+    const cityName = dayDest?.name || finalDestination;
+    // If POI data for this destination is missing, borrow the final destination's data.
+    const ctx = dayDest?.ctx || finalCtx;
     const activities: any[] = [];
 
     if (d === 0) {
+      const leg = buildTravelLeg(transport, tripData.departureCity, firstDest);
       activities.push({
         time: "07:00 - 07:30",
         type: "activity",
@@ -912,27 +1069,42 @@ export function generateFallbackPlan(
         location: tripData.departureAddress || "IDSS, Buka 13, 71 000 Sarajevo",
       });
       activities.push({
-        time: "07:30 - 12:00",
+        time: leg.durationLabel,
         type: "travel",
-        description: `Putovanje (${tripData.transport || 'autobus'}) ${tripData.departureCity} → ${tripData.destinations[0]}. Tehnička pauza svakih 2 sata (Pravilnik Član 15).`,
-        location: `Ruta ${tripData.departureCity} → ${tripData.destinations[0]}`,
+        description: leg.description,
+        location: `Ruta ${tripData.departureCity} → ${firstDest}`,
       });
     }
 
-    activities.push(poiActivity("12:30 - 14:00", "meal", pickPoi(ctx?.restaurants || [], d), `Ručak u ${ctx?.city || finalDestination}`, "Ručak: "));
-    activities.push(poiActivity("14:30 - 16:30", "activity", pickPoi(ctx?.museums || [], d), `Obrazovni posjet u ${ctx?.city || finalDestination}`, "Posjeta: "));
-    activities.push(poiActivity("17:00 - 18:30", "activity", pickPoi(ctx?.attractions || [], d), `Razgledanje znamenitosti u ${ctx?.city || finalDestination}`, "Razgledanje: "));
-    activities.push(poiActivity("19:00 - 20:30", "meal", pickPoi(ctx?.restaurants || [], d + 1), `Večera u ${ctx?.city || finalDestination}`, "Večera: "));
+    // Arrival-day lunch starts AFTER arrival in the destination city.
+    const lunchTime = d === 0 && isPlane ? "11:30 - 13:00" : "12:30 - 14:00";
+    activities.push(poiActivity(lunchTime, "meal", pickPoi(ctx?.restaurants || [], d), `Ručak u ${cityName}`, "Ručak: "));
+    activities.push(poiActivity("14:30 - 16:30", "activity", pickPoi(ctx?.museums || [], d), `Obrazovni posjet u ${cityName}`, "Posjeta: "));
+    activities.push(poiActivity("17:00 - 18:30", "activity", pickPoi(ctx?.attractions || [], d), `Razgledanje znamenitosti u ${cityName}`, "Razgledanje: "));
+
+    if (tripDays === 1) {
+      // Day trip: direct return after the program — no dinner program, no accommodation.
+      const returnLeg = buildTravelLeg(transport, finalDestination, tripData.departureCity);
+      activities.push({
+        time: "18:30 - 21:30",
+        type: "travel",
+        description: `Povratak: ${returnLeg.description}`,
+        location: `Ruta ${finalDestination} → ${tripData.departureCity}`,
+      });
+    } else {
+      activities.push(poiActivity("19:00 - 20:30", "meal", pickPoi(ctx?.restaurants || [], d + 1), `Večera u ${cityName}`, "Večera: "));
+    }
 
     if (tripDays > 1 && d < tripDays - 1) {
       activities.push(poiActivity("21:00 - 22:00", "accommodation", accomPoi, `Smještaj u ${finalDestination}`, "Smještaj: "));
     }
 
     if (d === tripDays - 1 && tripDays > 1) {
+      const returnLeg = buildTravelLeg(transport, finalDestination, tripData.departureCity);
       activities.push({
-        time: "15:00 - 21:00",
+        time: isPlane ? "15:00 - 19:00" : "15:00 - 21:00",
         type: "travel",
-        description: `Povratak ${finalDestination} → ${tripData.departureCity}. Tehničke pauze svakih 2 sata.`,
+        description: `Povratak: ${returnLeg.description}`,
         location: `Ruta ${finalDestination} → ${tripData.departureCity}`,
       });
     }
@@ -941,10 +1113,10 @@ export function generateFallbackPlan(
       day: d + 1,
       date: dateStr,
       title: d === 0
-        ? `Polazak — ${tripData.destinations[0]}`
+        ? `Polazak — ${firstDest}`
         : d === tripDays - 1
           ? `Povratak iz ${finalDestination}`
-          : `${ctx?.city || finalDestination} — obrazovni dan`,
+          : `${cityName} — obrazovni dan`,
       summary: `Plan generisan iz baze lokalnih lokacija (offline fallback engine, ${tier}).`,
       activities,
     });
@@ -1092,8 +1264,13 @@ serve(async (req) => {
       validatedPlans.push(generateFallbackPlan(tripData, cityContexts, tripDays, 'Balanced'));
     }
 
+    // Step 3c: STRICT OUTPUT SCHEMA + PII REDACTION (defense-in-depth).
+    // Unknown fields are dropped and any residual PII pattern is scrubbed
+    // from EVERY outgoing plan — AI or fallback — so PII can never leave.
+    const securedPlans = validatedPlans.map((p: any) => redactPlanPII(sanitizePlanSchema(p)));
+
     // Step 4: Enrich plans
-    const enrichedPlans = validatedPlans.map((plan: any, idx: number) => {
+    const enrichedPlans = securedPlans.map((plan: any, idx: number) => {
       const tierType = plan.type || tiers[idx] || 'Balanced';
       const costs = calculateCosts(tripData, routeInfo, tripDays, tierType as 'Budget' | 'Balanced' | 'Premium');
 
